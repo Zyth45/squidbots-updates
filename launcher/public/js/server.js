@@ -273,7 +273,7 @@ function modulesView() {
     </section>
     <section class="panel module-card"><header><h2>${icon('user')}Multirace</h2>${moduleSwitch('modules-multirace', r.enabled, m.worldRunning || (!r.enabled && (!r.core || r.dbc < r.dbcNeeded)))}</header>
       <p class="muted">${esc(t('modules.multiraceText', 'More playable races. Every player then needs the patched game client: a game without it crashes when it meets a character or a bot of an added race.'))}</p>
-      <ul class="module-facts">${facts.map(([ok, text]) => `<li class="${ok ? 'ok' : 'bad'}">${icon(ok ? 'check' : 'warning')}<span>${esc(text)}</span></li>`).join('')}<li class="${r.client.state === 'yes' ? 'ok' : 'warn'}">${icon(r.client.state === 'yes' ? 'check' : 'info')}<span>${esc(client)}</span>${clientAction}${getClient}</li></ul>
+      <ul class="module-facts">${facts.map(([ok, text]) => `<li class="${ok ? 'ok' : 'bad'}">${icon(ok ? 'check' : 'warning')}<span>${esc(text)}</span></li>`).join('')}<li class="${r.client.state === 'yes' ? 'ok' : 'warn'}">${icon(r.client.state === 'yes' ? 'check' : 'info')}<span>${esc(client)}</span></li></ul>${clientAction || getClient ? `<div class="button-row module-actions">${clientAction}${getClient}</div>` : ''}
       <p class="small">${esc(r.enabled ? (r.bots ? t('modules.multiraceOnBots', 'On, bots included.') : t('modules.multiraceOn', 'On, players only.')) : t('modules.multiraceOff', 'Off.'))}</p>${stopFirst}
       ${moduleCredit('multirace', 'Ilusixn')}
     </section>

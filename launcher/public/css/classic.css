@@ -296,3 +296,4 @@
 .news-links { display: flex; gap: 6px; }
 /* The launcher's own update (downloading, ready) floats at the bottom: the page keeps its height, no scrollbar. */
 .page.classic > .update-banner { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 30; width: min(640px, calc(100% - 48px)); margin: 0; box-shadow: 0 12px 30px rgba(0, 0, 0, .5); }
+.module-actions { margin: 4px 0 6px 24px; flex-wrap: wrap; }
