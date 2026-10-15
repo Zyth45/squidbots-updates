@@ -292,3 +292,5 @@
 .dialog-content.update { overflow-x: hidden; min-width: 0; }
 .dialog-content.update > * { min-width: 0; }
 .update-line { white-space: normal; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+
+.news-links { display: flex; gap: 6px; }

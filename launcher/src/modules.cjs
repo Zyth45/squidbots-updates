@@ -111,7 +111,7 @@ async function setClientPatch(client, on) {
   return clientPatch(client);
 }
 
-// The auction house bot (from CoA Bots 2.4): one key, a restart, nothing to purge. Its own account (AHBOT) is not
+// The auction house bot (from CoA Bots 2.5): one key, a restart, nothing to purge. Its own account (AHBOT) is not
 // a random bot account, so purges never touch it.
 const AHBOT_CONF = 'CoA-Bots/Core/configs/modules/mod_ahbot.conf';
 async function ahbotStatus(root) {
@@ -124,7 +124,7 @@ async function setAhbot(root, on) {
   let text = await fsp.readFile(file, 'utf8').catch(() => null);
   if (text === null) {
     text = await fsp.readFile(`${file}.dist`, 'utf8').catch(() => null);
-    if (text === null) throw new Error('The auction house bot comes with CoA Bots 2.4.');
+    if (text === null) throw new Error('The auction house bot comes with CoA Bots 2.5.');
   } else await fsp.copyFile(file, `${file}.bak-${new Date().toISOString().replace(/[:.]/g, '-')}`);
   await fsp.writeFile(file, await setKey(text, 'AuctionHouseBot.Enable', on ? 'true' : 'false'));
   return ahbotStatus(root);

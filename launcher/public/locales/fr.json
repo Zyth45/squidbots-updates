@@ -834,7 +834,7 @@
   "race.added": "race {id}",
   "modules.ahbot": "Hôtel des ventes",
   "modules.ahbotText": "Un commissaire-priseur remplit l'hôtel des ventes d'objets à acheter et achète ce que vous vendez. Il a son propre compte, jamais supprimé quand les bots sont recréés.",
-  "modules.ahbotSoon": "Disponible avec CoA Bots 2.4.",
+  "modules.ahbotSoon": "Disponible avec CoA Bots 2.5.",
   "modules.ahbotOn": "Activé (en jeu : .ahbot reload, .ahbot empty).",
   "modules.restartNeeded": "Enregistré : pris en compte au prochain démarrage du serveur.",
   "tab.modules": "Modules",
@@ -859,5 +859,6 @@
   "home.forceStop": "Forcer l'arrêt du monde",
   "home.stuckText": "Le monde ne répond plus depuis {n} minutes : il est bloqué. Forcez son arrêt, puis redémarrez le serveur.",
   "home.forceStopBody": "Seul le worldserver de ce serveur est arrêté ; la base garde tout ce qui a été sauvegardé. Ce que les joueurs ont fait depuis la dernière sauvegarde peut être perdu. Le reste du serveur est ensuite arrêté normalement.",
-  "home.forceStopped": "Le serveur est arrêté. Vous pouvez le redémarrer."
+  "home.forceStopped": "Le serveur est arrêté. Vous pouvez le redémarrer.",
+  "home.botsHelp": "Aide des bots"
 }

@@ -277,7 +277,7 @@ function modulesView() {
     </section>
     <section class="panel module-card ${m.ahbot.available ? '' : 'soon'}"><header><h2>${icon('coin')}${esc(t('modules.ahbot', 'Auction house'))}</h2>${moduleSwitch('modules-ahbot', m.ahbot.enabled, m.worldRunning || !m.ahbot.available)}</header>
       <p class="muted">${esc(t('modules.ahbotText', 'An auctioneer fills the auction house with items to buy and buys what you sell. It has its own account, never removed when the bots are recreated.'))}</p>
-      <p class="small">${esc(!m.ahbot.available ? t('modules.ahbotSoon', 'Available with CoA Bots 2.4.') : m.ahbot.enabled ? t('modules.ahbotOn', 'On (in game: .ahbot reload, .ahbot empty).') : t('modules.multiraceOff', 'Off.'))}</p>${m.ahbot.available ? stopFirst : ''}
+      <p class="small">${esc(!m.ahbot.available ? t('modules.ahbotSoon', 'Available with CoA Bots 2.5.') : m.ahbot.enabled ? t('modules.ahbotOn', 'On (in game: .ahbot reload, .ahbot empty).') : t('modules.multiraceOff', 'Off.'))}</p>${m.ahbot.available ? stopFirst : ''}
       ${moduleCredit('ahbot', 'AzerothCore')}
     </section>
   </div>

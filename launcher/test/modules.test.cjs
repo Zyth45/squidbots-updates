@@ -46,7 +46,7 @@ test('multirace: refused without the core switch or without the 23 race files; o
 test('auction house bot: greyed until the package has it, then switched with a .bak', async () => {
   const root = await repack();
   assert.deepEqual(await modules.ahbotStatus(root), { available: false, enabled: false });
-  await assert.rejects(modules.setAhbot(root, true), /2\.4/);
+  await assert.rejects(modules.setAhbot(root, true), /2\.5/);
   await write(root, { 'CoA-Bots/Core/configs/modules/mod_ahbot.conf.dist': 'AuctionHouseBot.Enable = false\nAuctionHouseBot.Account = 0\n' });
   assert.equal((await modules.setAhbot(root, true)).enabled, true);
   assert.equal((await modules.setAhbot(root, false)).enabled, false);

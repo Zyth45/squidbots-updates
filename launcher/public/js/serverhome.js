@@ -323,7 +323,7 @@ function feedNewsRow() {
   const notes = App.state.notes || [];
   const news = notes.length ? notes : App.state.feed?.news || [];
   if (!news.length) return '';
-  const discord = App.state.feed?.discord?.invite ? `<button class="link-button" data-action="feed-open" data-kind="discord">${icon('discord')}${esc(t('home.discordJoin', 'Join the Discord'))}</button>` : '';
+  const discord = `<span class="news-links"><button class="link-button" data-action="source-link" data-id="botsHelp">${icon('book')}${esc(t('home.botsHelp', 'Bots help'))}</button>${App.state.feed?.discord?.invite ? `<button class="link-button" data-action="feed-open" data-kind="discord">${icon('discord')}${esc(t('home.discordJoin', 'Join the Discord'))}</button>` : ''}</span>`;
   return `<section class="news-row"><div class="news-head"><h2>${esc(notes.length ? t('home.lastPatch', 'Last patch note') : t('home.announcements', 'News'))}</h2>${discord}</div><div class="news-live"><div class="news-grid one">${news.slice(0, 1).map((item, index) => `<article class="news-card ${notes.length ? 'bots' : 'news'}" data-action="${notes.length ? 'note-open' : 'feed-news'}" data-index="${index}" tabindex="0" role="button"><div class="news-art">${icon(notes.length ? 'bot' : 'book')}</div><div class="news-text"><small>${esc(item.date)}</small><strong>${esc(item.title)}</strong><p>${esc(item.summary || item.text)}</p></div></article>`).join('')}</div>${liveView()}</div></section>`;
 }
 
