@@ -84,7 +84,8 @@ async function stats(root) {
   if (!pid) return { running: false };
   try { process.kill(pid, 0); } catch { return { running: false }; }
   const [info, proc] = await Promise.all([raCommand(root, 'server info', 8000).then(parseInfo).catch(() => null), processStats(pid)]);
-  return { running: true, ...(info || {}), memory: proc?.memory ?? null, cpu: proc?.cpu ?? null, bots: botsInGame(root), at: Date.now() };
+  // The world runs but its console does not answer: it is busy, usually creating its bots at a first start.
+  return { running: true, consoleBusy: !info, ...(info || {}), memory: proc?.memory ?? null, cpu: proc?.cpu ?? null, bots: botsInGame(root), at: Date.now() };
 }
 
 module.exports = { raCommand, parseInfo, stats };

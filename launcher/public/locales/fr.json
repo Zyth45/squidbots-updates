@@ -853,5 +853,7 @@
   "settings.launcherUpToDate": "Votre launcher est à jour.",
   "feed.copied": "Le navigateur n'a pas pu s'ouvrir : le lien est copié, collez-le dans votre navigateur.",
   "feed.opened": "Ouvert dans votre navigateur.",
-  "bots.installBody2": "L’installeur des bots fourni avec le repack prépare la base des bots. Le worldserver doit être arrêté. Vos réglages des bots sont gardés."
+  "bots.installBody2": "L’installeur des bots fourni avec le repack prépare la base des bots. Le worldserver doit être arrêté. Vos réglages des bots sont gardés.",
+  "home.botsCreating": "Bots en route…",
+  "home.botsCreatingText": "Le serveur crée ses bots (environ 10 minutes au premier démarrage). Ne le fermez pas : il pourra être arrêté dès qu'il répondra à nouveau."
 }
