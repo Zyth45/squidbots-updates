@@ -55,6 +55,10 @@ const isClassic = () => true;
 let toastTimer;
 function toast(message, kind = 'info') {
   const element = $('#toast');
+  // An open dialog sits above the page: the message goes inside it so it is seen, not blurred behind.
+  const dialogElement = $('#dialog');
+  const host = dialogElement?.open ? dialogElement : document.body;
+  if (element.parentElement !== host) host.appendChild(element);
   element.className = `toast ${kind}`;
   element.innerHTML = `${icon(kind === 'error' ? 'warning' : kind === 'success' ? 'check' : 'info')}<span>${esc(message)}</span>`;
   element.hidden = false;
