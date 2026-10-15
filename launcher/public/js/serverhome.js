@@ -252,7 +252,7 @@ function homeView() {
     const first = repack
       ? `<button class="split-button update" data-action="feed-open" data-kind="repack"><span class="split-main">${icon('download')}<span><strong>${esc(t('home.download', 'Download the server'))}</strong><small>${esc(repack.name || repack.release)}${repack.size ? ` · ${esc(repack.size)}` : ''}</small></span></span></button>`
       : `<button class="split-button ready" data-tab="server"><span class="split-main">${icon('download')}<span><strong>${esc(t('home.install', 'Install'))}</strong></span></span></button>`;
-    return `<div class="page classic">${launcherBanner()}<section class="hero classic-hero"><div class="classic-main"><h1>${esc(t('home.title', 'My server'))}</h1><p class="status-line">${esc(repack ? t('home.noServerFeed', 'No server yet: download the full CoA Bots repack (Proton), then import the zip here. The launcher checks it and unpacks it; after that, every update comes from here in one click.') : t('home.noServer', 'No server yet: install the CoA repack with its bots in a few clicks, or show the folder of the one you have.'))}</p>
+    return `<div class="page classic"><section class="hero classic-hero"><div class="classic-main"><h1>${esc(t('home.title', 'My server'))}</h1><p class="status-line">${esc(repack ? t('home.noServerFeed', 'No server yet: download the full CoA Bots repack (Proton), then import the zip here. The launcher checks it and unpacks it; after that, every update comes from here in one click.') : t('home.noServer', 'No server yet: install the CoA repack with its bots in a few clicks, or show the folder of the one you have.'))}</p>
       <div class="button-row">${first}</div>
       <div class="button-row"><button class="button ghost" data-action="home-import">${icon('folder')}${esc(t('home.haveZip', 'I have the zip: import it'))}</button><button class="button ghost" data-action="server-choose">${icon('folder')}${esc(t('home.haveServer', 'I already have a server folder'))}</button></div></div></section>${feedNewsRow()}</div>`;
   }
@@ -281,7 +281,7 @@ function homeView() {
   const lights = services.map(service => `<span class="mini-service"><span class="light ${service.state === 'running' ? 'on' : service.state === 'starting' || service.state === 'stopping' ? 'busy' : 'off'}"></span>${esc(service.name)}</span>`).join('');
   const menu = [['srv-tab', 'services', t('home.menuServices', 'Services one by one')], ['srv-tab', 'backups', t('srv.tab.backups', 'Backups')], ['server-folder', '', t('home.menuFolder', 'Open the server folder')],
     ['instance-new', '', t('home.menuNew', 'Create a new server (clean instance)…')], ['instance-add', '', t('home.menuAdd', 'Add a repack folder I unpacked…')], ['instance-pick', '', t('home.menuSwitch', 'My servers…')]];
-  return `<div class="page classic">${launcherBanner()}
+  return `<div class="page classic">
     <section class="hero classic-hero server-hero">
       <div class="classic-main">
         <h1>CoA Repack</h1>
@@ -493,6 +493,7 @@ Object.assign(App.actions, {
   }, button),
   // Settings > About: look for a new launcher now (the result also shows on the home page banner).
   'launcher-check': button => guard(async () => {
+    toast(t('settings.launcherChecking', 'Looking for a new launcher…'));
     const status = await App.api.checkLauncher();
     App.state.launcherUpdate = status;
     const kind = status?.phase === 'error' ? 'error' : 'success';

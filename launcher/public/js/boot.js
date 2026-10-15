@@ -69,7 +69,9 @@ function subscribe() {
   api.onFeed(feed => { App.state.feed = feed; if (['home', 'server'].includes(App.state.tab) && !$('#dialog').open) App.render(); });
   api.onLauncherUpdate(status => {
     App.state.launcherUpdate = status;
-    if (App.state.tab === 'home' && !$('#dialog').open) App.render();
+    // Only the bar is redrawn: the page underneath (a form being filled…) is left alone.
+    const bar = $('#launcher-banner');
+    if (bar) bar.innerHTML = launcherBanner();
     if (status.phase === 'downloaded') toast(t('launcher.ready', 'A new launcher is ready: it installs when you restart.'), 'success');
   });
   api.onGameExit(async () => { App.state.client = await api.clientInfo(); App.refresh('play'); });
