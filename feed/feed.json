@@ -51,5 +51,12 @@
     "id": "1546991088751874168",
     "invite": "https://discord.gg/dgVEFDy6J",
     "name": "Conquest of AzerothCore"
+  },
+  "clientRaces": {
+    "name": "CoA Custom 1.7 — client patch (races)",
+    "release": "coa-custom-1.7",
+    "url": "https://github.com/ilusixn/azerothcore-wotlk-coa/releases/download/coa-custom-1.7/CoA-Custom-1.7-client.zip",
+    "size": "1,2 Go",
+    "notes": "Copy files\\client\\*.MPQ into your game Data folder and dinput8.dll next to Ascension.exe."
   }
 }

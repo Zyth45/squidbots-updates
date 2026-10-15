@@ -263,6 +263,8 @@ function modulesView() {
   const client = { yes: t('modules.clientYes', 'Your game has the race patch.'), partial: t('modules.clientPartial', 'Your game has only part of the race patch.'), no: t('modules.clientNo', 'Your game does not have the race patch.'), disabled: t('modules.clientDisabled', 'The race patch of your game is switched off (.disabled).'), unknown: t('modules.clientUnknown', 'Game folder not chosen yet (SquidBots addon card).') }[r.client.state];
   const clientAction = r.client.state === 'disabled' ? `<button class="button ghost small" data-action="modules-client" data-on="1">${esc(t('modules.clientOn', 'Switch it back on'))}</button>`
     : ['yes', 'partial'].includes(r.client.state) ? `<button class="button ghost small" data-action="modules-client" data-on="0">${esc(t('modules.clientOff', 'Switch it off in my game'))}</button>` : '';
+  // Where to get the patched client (link of the signed feed).
+  const getClient = App.state.feed?.clientRaces && r.client.state !== 'yes' ? `<button class="button ghost small" data-action="feed-open" data-kind="clientRaces">${icon('download')}${esc(t('modules.getClient', 'Get the patched client'))}</button>` : '';
   return `<div class="grid-2 modules">
     <section class="panel module-card"><header><h2>${icon('bot')}SquidBots</h2>${moduleSwitch('modules-squidbots', m.squidbots.enabled, m.worldRunning || !m.squidbots.installed)}</header>
       <p class="muted">${esc(t('modules.squidbotsText', 'The random bots and the group AI. Off, the server starts without them (your own characters are not changed).'))}</p>
@@ -271,7 +273,7 @@ function modulesView() {
     </section>
     <section class="panel module-card"><header><h2>${icon('user')}Multirace</h2>${moduleSwitch('modules-multirace', r.enabled, m.worldRunning || (!r.enabled && (!r.core || r.dbc < r.dbcNeeded)))}</header>
       <p class="muted">${esc(t('modules.multiraceText', 'More playable races. Every player then needs the patched game client: a game without it crashes when it meets a character or a bot of an added race.'))}</p>
-      <ul class="module-facts">${facts.map(([ok, text]) => `<li class="${ok ? 'ok' : 'bad'}">${icon(ok ? 'check' : 'warning')}<span>${esc(text)}</span></li>`).join('')}<li class="${r.client.state === 'yes' ? 'ok' : 'warn'}">${icon(r.client.state === 'yes' ? 'check' : 'info')}<span>${esc(client)}</span>${clientAction}</li></ul>
+      <ul class="module-facts">${facts.map(([ok, text]) => `<li class="${ok ? 'ok' : 'bad'}">${icon(ok ? 'check' : 'warning')}<span>${esc(text)}</span></li>`).join('')}<li class="${r.client.state === 'yes' ? 'ok' : 'warn'}">${icon(r.client.state === 'yes' ? 'check' : 'info')}<span>${esc(client)}</span>${clientAction}${getClient}</li></ul>
       <p class="small">${esc(r.enabled ? (r.bots ? t('modules.multiraceOnBots', 'On, bots included.') : t('modules.multiraceOn', 'On, players only.')) : t('modules.multiraceOff', 'Off.'))}</p>${stopFirst}
       ${moduleCredit('multirace', 'Ilusixn')}
     </section>

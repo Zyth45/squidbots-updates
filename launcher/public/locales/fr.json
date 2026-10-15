@@ -860,5 +860,6 @@
   "home.stuckText": "Le monde ne répond plus depuis {n} minutes : il est bloqué. Forcez son arrêt, puis redémarrez le serveur.",
   "home.forceStopBody": "Seul le worldserver de ce serveur est arrêté ; la base garde tout ce qui a été sauvegardé. Ce que les joueurs ont fait depuis la dernière sauvegarde peut être perdu. Le reste du serveur est ensuite arrêté normalement.",
   "home.forceStopped": "Le serveur est arrêté. Vous pouvez le redémarrer.",
-  "home.botsHelp": "Aide des bots"
+  "home.botsHelp": "Aide des bots",
+  "modules.getClient": "Obtenir le client patché"
 }

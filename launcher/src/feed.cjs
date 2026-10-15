@@ -23,6 +23,8 @@ function cleanFeed(data) {
   if (!data || typeof data !== 'object') throw new Error('The news feed is malformed.');
   return {
     repack: cleanLink(data.repack),
+    // The game client patch for the added races (Multirace module).
+    clientRaces: cleanLink(data.clientRaces),
     client: cleanLink(data.client),
     repacks: (Array.isArray(data.repacks) ? data.repacks : []).filter(item => /^[0-9a-f]{64}$/i.test(item?.sha256 || '')).slice(0, 50)
       .map(item => ({ sha256: item.sha256.toLowerCase(), name: text(item.name, 80), release: text(item.release, 80), notes: text(item.notes, 300) })),
