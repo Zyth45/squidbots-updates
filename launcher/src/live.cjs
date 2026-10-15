@@ -84,8 +84,22 @@ async function stats(root) {
   if (!pid) return { running: false };
   try { process.kill(pid, 0); } catch { return { running: false }; }
   const [info, proc] = await Promise.all([raCommand(root, 'server info', 8000).then(parseInfo).catch(() => null), processStats(pid)]);
-  // The world runs but its console does not answer: it is busy, usually creating its bots at a first start.
-  return { running: true, consoleBusy: !info, ...(info || {}), memory: proc?.memory ?? null, cpu: proc?.cpu ?? null, bots: botsInGame(root), at: Date.now() };
+  // The world runs but its console does not answer: busy (bots created at a first start) or stuck (a shutdown
+  // that never ends). How long it has been so tells them apart for the page.
+  if (info) busySince.delete(root); else if (!busySince.has(root)) busySince.set(root, Date.now());
+  return { running: true, consoleBusy: !info, busyFor: info ? 0 : Date.now() - busySince.get(root), ...(info || {}), memory: proc?.memory ?? null, cpu: proc?.cpu ?? null, bots: botsInGame(root), at: Date.now() };
 }
 
-module.exports = { raCommand, parseInfo, stats };
+const busySince = new Map();
+
+// Last resort when the world no longer answers: its own process (and only it) is ended. MySQL keeps the data;
+// what players did since the last save is lost.
+function forceStopWorld(root) {
+  const pid = worldPid(root);
+  if (!pid) throw new Error('The worldserver of this server is not running.');
+  return new Promise((resolve, reject) => execFile('taskkill', ['/PID', String(pid), '/T', '/F'], { windowsHide: true, timeout: 20000 }, error => {
+    if (error) reject(new Error(`The worldserver could not be stopped: ${error.message}`)); else { busySince.delete(root); resolve(true); }
+  }));
+}
+
+module.exports = { raCommand, parseInfo, stats, forceStopWorld };

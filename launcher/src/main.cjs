@@ -735,6 +735,14 @@ function registerIpc() {
     await modules.setClientPatch(client, on === true);
     return modulesStatus();
   });
+  handle('live:forceStopWorld', async () => {
+    if (!serverPath()) throw new Error('Choose the server folder first.');
+    await live.forceStopWorld(serverPath());
+    // The rest (relay, login, database) is then stopped the normal way.
+    const found = serverControl();
+    if (found) await found.stopAll().catch(() => {});
+    return serverInfo();
+  });
   handle('live:stats', () => (serverPath() ? live.stats(serverPath()) : { running: false }));
   handle('console:run', async command => {
     if (!serverPath()) throw new Error('Choose the server folder first.');

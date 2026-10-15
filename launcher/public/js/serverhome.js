@@ -1,4 +1,4 @@
-﻿'use strict';
+'use strict';
 // Server edition: the Home page (state of the server, start / stop, core and bots at a glance) and the
 // Verification page (every check on the core, the bots, the services, the database and the files).
 
@@ -6,7 +6,7 @@ const isServerEdition = () => App.state.config?.edition === 'server';
 
 function newsCards(list) {
   const areaInfo = { client: ['play', t('classic.newsGame', 'Game')], server: ['layers', t('classic.newsServer', 'Server')], bots: ['bot', t('classic.newsBots', 'Bots')] };
-  return list.map(item => `<article class="news-card ${esc(item.area)}" data-action="news-open" data-area="${esc(item.area)}" tabindex="0" role="button"><div class="news-art">${icon(areaInfo[item.area]?.[0] || 'info')}</div><div class="news-text"><small>${item.publishedAt ? esc(new Date(item.publishedAt).toLocaleDateString(I18N.lang)) : ''} Â· ${esc(areaInfo[item.area]?.[1] || item.area)}</small><strong>${esc(item.version)}</strong><p>${esc(item.notes.join(' Â· ') || t('classic.noNotes', 'No notes for this release.'))}</p></div></article>`).join('');
+  return list.map(item => `<article class="news-card ${esc(item.area)}" data-action="news-open" data-area="${esc(item.area)}" tabindex="0" role="button"><div class="news-art">${icon(areaInfo[item.area]?.[0] || 'info')}</div><div class="news-text"><small>${item.publishedAt ? esc(new Date(item.publishedAt).toLocaleDateString(I18N.lang)) : ''} · ${esc(areaInfo[item.area]?.[1] || item.area)}</small><strong>${esc(item.version)}</strong><p>${esc(item.notes.join(' · ') || t('classic.noNotes', 'No notes for this release.'))}</p></div></article>`).join('');
 }
 
 // ---------------------------------------------------------------- the checks, in words
@@ -93,7 +93,7 @@ const CHECK_TEXT = {
     bad: ['Bot settings not filled in', 'playerbots.conf still has <MYSQL_PORT> or <APP_PASSWORD>: run the bots installer again.'],
   },
   'bots.whisper': { warn: ['Bots whisper every quest step', 'AiPlayerbot.BotsWhisperPublic = 1 (old default of 1.2/1.3). The fix sets 0.'] },
-  'bots.leftover': { bad: ['A 1.5 file left in the 1.6 bots', 'Database\\world\\updates of 1.5 makes the 1.6 installer stop ("Replace â€¦ oldValue"). The fix removes that folder; then install the bots again.'] },
+  'bots.leftover': { bad: ['A 1.5 file left in the 1.6 bots', 'Database\\world\\updates of 1.5 makes the 1.6 installer stop ("Replace … oldValue"). The fix removes that folder; then install the bots again.'] },
   'bots.ram': {
     ok: ['Enough memory for the bots', '{bots} bots need about {neededText} of {totalText}.'],
     warn: ['Too many bots for this PC', '{bots} bots need about {neededText} and this PC has {totalText}: lower MinRandomBots and MaxRandomBots in the server settings.'],
@@ -125,7 +125,7 @@ const CHECK_TEXT = {
   'bots.which': { warn: ['Two playerbots.conf, only one is read', 'With the bots the server reads CoA-Bots\\Core\\configs\\modules\\playerbots.conf. The one in Core\\configs\\modules is ignored: change the bot settings from the Server settings page.'] },
   'bots.missingkeys': {
     ok: ['Bot settings complete', 'playerbots.conf has every key of this version.'],
-    warn: ['Bot settings of an older version', '{count} key(s) of this version are missing ({keys}â€¦): they run at their defaults. The fix adds them with their default values (a copy is kept).'],
+    warn: ['Bot settings of an older version', '{count} key(s) of this version are missing ({keys}…): they run at their defaults. The fix adds them with their default values (a copy is kept).'],
   },
   'coa.remote': { info: ['Only this PC can play', 'CoA.AllowRemoteClients = 0: players on other PCs are refused even with the right address.'] },
   'logs.size': {
@@ -133,8 +133,8 @@ const CHECK_TEXT = {
     warn: ['Very large logs', '{files}. Stop the server, then delete or move them. Logger.playerbots = {level} in the settings.'],
   },
   'conf.missing': {
-    info: ['{count} setting(s) not in the files, no effect', '{keys}â€¦: the server uses its defaults, the same as in the modules. Only the logs mention it.'],
-    warn: ['{count} missing setting(s) fill the log', '{keys}â€¦: one of them is asked for up to {repeats} times, so Server.log keeps growing. Module settings files are not where the server reads them: "Fix" (when shown) copies the ones this repack has; the others come with the next update. Nothing changes in game: the defaults already apply.'],
+    info: ['{count} setting(s) not in the files, no effect', '{keys}…: the server uses its defaults, the same as in the modules. Only the logs mention it.'],
+    warn: ['{count} missing setting(s) fill the log', '{keys}…: one of them is asked for up to {repeats} times, so Server.log keeps growing. Module settings files are not where the server reads them: "Fix" (when shown) copies the ones this repack has; the others come with the next update. Nothing changes in game: the defaults already apply.'],
   },
   'mysql.foreign': { warn: ['MySQL of another folder running', '{file}: it may hold the port or the database files. Stop that server before starting, updating or moving players.'] },
   'realm.address': { info: ['Realm address: {address}', 'Players on another PC need the LAN or public address (and the firewall open on 3724 and 8085).'] },
@@ -154,7 +154,7 @@ const ACTIONS = {
 function checkText(check) {
   const entry = CHECK_TEXT[check.id]?.[check.state] || [check.id, ''];
   const data = { ...check.data };
-  if (data.variant) data.variant = ` Â· ${data.variant}`;
+  if (data.variant) data.variant = ` · ${data.variant}`;
   if (typeof data.free === 'number') data.free = formatBytes(data.free);
   if (typeof data.needed === 'number') { data.neededText = formatBytes(data.needed); data.totalText = formatBytes(data.total); }
   for (const key of ['error', 'latest']) if (data[key] === undefined) data[key] = '';
@@ -168,7 +168,7 @@ function verifyView() {
   const running = App.state.verifying;
   const head = `<div class="verify-head"><div class="verify-score ${v ? (v.summary.bad ? 'bad' : v.summary.warn ? 'warn' : 'ok') : ''}">${v ? (v.summary.bad ? icon('warning') : v.summary.warn ? icon('info') : icon('check')) : icon('shield')}<div><strong>${esc(!v ? t('verify.never', 'Not checked yet') : v.summary.bad ? t('verify.bad', '{n} problem(s) to fix', { n: v.summary.bad }) : v.summary.warn ? t('verify.warn', '{n} point(s) to look at', { n: v.summary.warn }) : t('verify.ok', 'All good'))}</strong><small>${esc(v ? t('verify.when', 'Checked at {time}{deep}', { time: new Date(v.at).toLocaleTimeString(I18N.lang), deep: v.deep ? t('verify.withFiles', ', files included') : '' }) : t('verify.hint', 'A quick check reads the versions, the services and the logs.'))}</small></div></div>
     <div class="button-row"><button class="button ghost" data-action="verify-copy" title="${esc(t('verify.copyHint', 'For the support Discord: the versions of the core and the bots'))}">${icon('book')}${esc(t('verify.copy', 'Copy the versions'))}</button><button class="button ghost" data-action="verify-run" ${running ? 'disabled' : ''}>${icon('refresh')}${esc(t('verify.quick', 'Check again'))}</button><button class="button primary" data-action="verify-deep" ${running ? 'disabled' : ''}>${icon('shield')}${esc(t('verify.deep', 'Check every file'))}</button></div></div>`;
-  if (!v) return `<div class="page verify">${head}${running ? `<div class="task-line">${icon('refresh')}<span>${esc(t('verify.running', 'Checkingâ€¦'))}</span></div>` : ''}</div>`;
+  if (!v) return `<div class="page verify">${head}${running ? `<div class="task-line">${icon('refresh')}<span>${esc(t('verify.running', 'Checking…'))}</span></div>` : ''}</div>`;
   const groups = GROUPS.map(([id, iconName, label]) => {
     const list = v.checks.filter(check => check.group === id);
     if (!list.length) return '';
@@ -181,7 +181,7 @@ function verifyView() {
       return `<div class="check ${check.state}"><span class="check-light"></span><div><strong>${esc(title)}</strong>${text ? `<small>${esc(text)}</small>` : ''}</div>${button}</div>`;
     }).join('')}</section>`;
   }).join('');
-  return `<div class="page verify">${head}${running ? `<div class="task-line">${icon('refresh')}<span>${esc(t('verify.running', 'Checkingâ€¦'))}</span></div>` : ''}<div class="grid-2">${groups}</div></div>`;
+  return `<div class="page verify">${head}${running ? `<div class="task-line">${icon('refresh')}<span>${esc(t('verify.running', 'Checking…'))}</span></div>` : ''}<div class="grid-2">${groups}</div></div>`;
 }
 
 async function runVerify(deep = false) {
@@ -250,7 +250,7 @@ function homeView() {
   if (!info.path) {
     const repack = s.feed?.repack;
     const first = repack
-      ? `<button class="split-button update" data-action="feed-open" data-kind="repack"><span class="split-main">${icon('download')}<span><strong>${esc(t('home.download', 'Download the server'))}</strong><small>${esc(repack.name || repack.release)}${repack.size ? ` Â· ${esc(repack.size)}` : ''}</small></span></span></button>`
+      ? `<button class="split-button update" data-action="feed-open" data-kind="repack"><span class="split-main">${icon('download')}<span><strong>${esc(t('home.download', 'Download the server'))}</strong><small>${esc(repack.name || repack.release)}${repack.size ? ` · ${esc(repack.size)}` : ''}</small></span></span></button>`
       : `<button class="split-button ready" data-tab="server"><span class="split-main">${icon('download')}<span><strong>${esc(t('home.install', 'Install'))}</strong></span></span></button>`;
     return `<div class="page classic">${launcherBanner()}<section class="hero classic-hero"><div class="classic-main"><h1>${esc(t('home.title', 'My server'))}</h1><p class="status-line">${esc(repack ? t('home.noServerFeed', 'No server yet: download the full CoA Bots repack (Proton), then import the zip here. The launcher checks it and unpacks it; after that, every update comes from here in one click.') : t('home.noServer', 'No server yet: install the CoA repack with its bots in a few clicks, or show the folder of the one you have.'))}</p>
       <div class="button-row">${first}</div>
@@ -264,19 +264,23 @@ function homeView() {
   // The world runs but its console does not answer (bots being created at a first start): stopping would only
   // time out, so the button waits.
   const busy = all && s.live?.running && s.live.consoleBusy;
-  const button = moving ? ['refresh', moving.state === 'starting' ? t('server.startingAll', 'Starting the serverâ€¦') : t('server.stoppingAll', 'Stopping the serverâ€¦'), '', 'busy']
-    : busy ? ['refresh', t('home.botsCreating', 'Creating the botsâ€¦'), '', 'busy']
+  // Silent for more than 20 minutes: not bot creation any more, the world is stuck (a shutdown that never ends).
+  const stuck = busy && s.live.busyFor > 20 * 60 * 1000;
+  const button = moving ? ['refresh', moving.state === 'starting' ? t('server.startingAll', 'Starting the server…') : t('server.stoppingAll', 'Stopping the server…'), '', 'busy']
+    : stuck ? ['warning', t('home.forceStop', 'Force the world to stop'), 'world-force-stop', 'ready']
+    : busy ? ['refresh', t('home.botsCreating', 'Bots on the way…'), '', 'busy']
     : running ? ['pause', t('home.stop', 'Stop the server'), 'service-stop-all', 'ready'] : ['play', t('home.start', 'Start the server'), 'service-start-all', 'update'];
-  const status = busy ? t('home.botsCreatingText', 'The server is creating its bots (about 10 minutes at a first start). Do not close it: it can be stopped as soon as it answers again.')
+  const status = stuck ? t('home.stuckText', 'The world has not answered for {n} minutes: it is stuck. Force it to stop, then start the server again.', { n: Math.round(s.live.busyFor / 60000) })
+    : busy ? t('home.botsCreatingText', 'The server is creating its bots (about 10 minutes at a first start). Do not close it: it can be stopped as soon as it answers again.')
     : foreign ? t('home.foreign', '{name}: port {port} is taken by another program.', { name: foreign.name, port: foreign.port })
     : all ? (info.ports?.auth && info.ports.auth !== 3724 ? t('home.runningPort', 'Your server is running. Players set their realmlist to 127.0.0.1:{port}.', { port: info.ports.auth }) : t('home.running', 'Your server is running. Players connect to 127.0.0.1.')) : running ? t('server.partial', '{n} of {total} services running', { n: running, total: services.length }) : t('server.allStopped', 'The server is stopped');
   const v = s.verify;
-  const verifyText = s.verifying ? t('verify.running', 'Checkingâ€¦') : !v ? t('verify.never', 'Not checked yet') : v.summary.bad ? t('verify.bad', '{n} problem(s) to fix', { n: v.summary.bad }) : v.summary.warn ? t('verify.warn', '{n} point(s) to look at', { n: v.summary.warn }) : t('verify.ok', 'All good');
+  const verifyText = s.verifying ? t('verify.running', 'Checking…') : !v ? t('verify.never', 'Not checked yet') : v.summary.bad ? t('verify.bad', '{n} problem(s) to fix', { n: v.summary.bad }) : v.summary.warn ? t('verify.warn', '{n} point(s) to look at', { n: v.summary.warn }) : t('verify.ok', 'All good');
   const verifyState = !v ? '' : v.summary.bad ? 'bad' : v.summary.warn ? 'warn' : 'ok';
   const dash = s.dashboard;
   const lights = services.map(service => `<span class="mini-service"><span class="light ${service.state === 'running' ? 'on' : service.state === 'starting' || service.state === 'stopping' ? 'busy' : 'off'}"></span>${esc(service.name)}</span>`).join('');
   const menu = [['srv-tab', 'services', t('home.menuServices', 'Services one by one')], ['srv-tab', 'backups', t('srv.tab.backups', 'Backups')], ['server-folder', '', t('home.menuFolder', 'Open the server folder')],
-    ['instance-new', '', t('home.menuNew', 'Create a new server (clean instance)â€¦')], ['instance-add', '', t('home.menuAdd', 'Add a repack folder I unpackedâ€¦')], ['instance-pick', '', t('home.menuSwitch', 'My serversâ€¦')]];
+    ['instance-new', '', t('home.menuNew', 'Create a new server (clean instance)…')], ['instance-add', '', t('home.menuAdd', 'Add a repack folder I unpacked…')], ['instance-pick', '', t('home.menuSwitch', 'My servers…')]];
   return `<div class="page classic">${launcherBanner()}
     <section class="hero classic-hero server-hero">
       <div class="classic-main">
@@ -292,8 +296,8 @@ function homeView() {
         <span class="chip classic-folder" title="${esc(info.path)}">${icon('folder')}<span>${esc(info.path)}</span></span>
       </div>
       <aside class="classic-side">${updateCard()}
-        <button class="side-card" ${s.update?.state?.state === 'available' ? 'data-action="update-open"' : 'data-tab="verify"'}>${icon('layers')}<span><strong>${esc(t('home.core', 'Core'))}</strong><small>${esc(info.details?.release || info.version || 'â€”')}</small></span>${s.updates.core || s.update?.state?.state === 'available' ? '<i class="dot"></i>' : icon('next')}</button>
-        <button class="side-card" data-tab="verify">${icon('bot')}<span><strong>CoA Bots</strong><small>${esc(info.bots?.installed ? `${info.bots.version}${info.bots.builtFor ? ` Â· ${info.bots.builtFor}` : ''}` : t('bots.notInstalled', 'Not installed'))}</small></span>${s.updates.bots ? '<i class="dot"></i>' : icon('next')}</button>
+        <button class="side-card" ${s.update?.state?.state === 'available' ? 'data-action="update-open"' : 'data-tab="verify"'}>${icon('layers')}<span><strong>${esc(t('home.core', 'Core'))}</strong><small>${esc(info.details?.release || info.version || '—')}</small></span>${s.updates.core || s.update?.state?.state === 'available' ? '<i class="dot"></i>' : icon('next')}</button>
+        <button class="side-card" data-tab="verify">${icon('bot')}<span><strong>CoA Bots</strong><small>${esc(info.bots?.installed ? `${info.bots.version}${info.bots.builtFor ? ` · ${info.bots.builtFor}` : ''}` : t('bots.notInstalled', 'Not installed'))}</small></span>${s.updates.bots ? '<i class="dot"></i>' : icon('next')}</button>
         <button class="side-card verify-card ${verifyState}" data-tab="verify">${icon('shield')}<span><strong>${esc(t('tab.verify', 'Verification'))}</strong><small>${esc(verifyText)}</small></span>${icon('next')}</button>
         ${addonCard()}
         ${newerRepack(info) ? `<button class="side-card" data-action="repack-newer">${icon('download')}<span><strong>${esc(t('home.newRepack', 'New repack available'))}</strong><small>${esc(newerRepack(info).name || newerRepack(info).release)}</small></span><i class="dot"></i></button>` : ''}
@@ -331,13 +335,13 @@ function liveView() {
   if (l === undefined) setTimeout(refreshLive, 0);
   const tile = (iconName, label, value, hint = '') => `<div class="live-tile">${icon(iconName)}<span><small>${esc(label)}</small><strong>${esc(value)}</strong>${hint ? `<em>${esc(hint)}</em>` : ''}</span></div>`;
   if (!l?.running) return `<section class="live"><h3>${esc(t('live.title', 'Server live'))}</h3><p class="muted">${esc(t('live.stopped', 'The figures appear here while the server runs: players, bots, tick and memory.'))}</p></section>`;
-  const dash = value => (value === null || value === undefined ? 'â€”' : value);
+  const dash = value => (value === null || value === undefined ? '—' : value);
   const tick = l.tickMean ?? l.tick;
   return `<section class="live"><h3>${esc(t('live.title', 'Server live'))}</h3><div class="live-grid">
     ${tile('user', t('live.players', 'Players'), dash(l.players))}
-    ${tile('bot', t('live.bots', 'Bots in game'), l.bots ? String(l.bots.count) : 'â€”', l.bots ? t('live.inCombat', '{n} in combat', { n: l.bots.inCombat }) : '')}
-    ${tile('refresh', t('live.tick', 'Tick'), tick === null || tick === undefined ? 'â€”' : `${tick} ms`, tick > 150 ? t('live.tickSlow', 'slow') : tick !== null && tick !== undefined ? t('live.tickOk', 'smooth') : '')}
-    ${tile('database', t('live.memory', 'Memory'), l.memory ? formatBytes(l.memory) : 'â€”')}
+    ${tile('bot', t('live.bots', 'Bots in game'), l.bots ? String(l.bots.count) : '—', l.bots ? t('live.inCombat', '{n} in combat', { n: l.bots.inCombat }) : '')}
+    ${tile('refresh', t('live.tick', 'Tick'), tick === null || tick === undefined ? '—' : `${tick} ms`, tick > 150 ? t('live.tickSlow', 'slow') : tick !== null && tick !== undefined ? t('live.tickOk', 'smooth') : '')}
+    ${tile('database', t('live.memory', 'Memory'), l.memory ? formatBytes(l.memory) : '—')}
   </div></section>`;
 }
 
@@ -373,7 +377,7 @@ async function consoleSend(command) {
   if (/^\.?server (shutdown|restart)/i.test(command) && !(await confirmDialog({ title: t('console.stopTitle', 'Stop the server?'), body: esc(t('console.stopBody', 'This command stops the worldserver for everyone connected.')), confirm: t('console.stopConfirm', 'Send it'), danger: true }))) return;
   consoleHistory = [command, ...consoleHistory.filter(item => item !== command)].slice(0, 30);
   consoleIndex = -1;
-  const entry = { command, output: t('console.waiting', 'â€¦') };
+  const entry = { command, output: t('console.waiting', '…') };
   App.state.consoleLog = [...App.state.consoleLog, entry].slice(-60);
   App.render();
   try { entry.output = (await App.api.consoleRun(command)) || t('console.noOutput', '(no answer)'); }
@@ -417,7 +421,7 @@ function discordPanel() {
 function launcherBanner() {
   const update = App.state.launcherUpdate;
   if (update?.phase === 'downloaded') return `<div class="update-banner"><i class="dot"></i><span>${esc(t('home.launcherReady', 'A new version of the launcher ({version}) is ready.', { version: update.version || '' }))}</span><button class="button primary small" data-action="launcher-install">${esc(t('home.launcherRestart', 'Restart and update'))}</button></div>`;
-  if (update?.phase === 'downloading') return `<div class="update-banner"><i class="dot"></i><span>${esc(t('home.launcherDownloading', 'Downloading the new launcherâ€¦ {percent}%', { percent: update.percent || 0 }))}</span></div>`;
+  if (update?.phase === 'downloading') return `<div class="update-banner"><i class="dot"></i><span>${esc(t('home.launcherDownloading', 'Downloading the new launcher… {percent}%', { percent: update.percent || 0 }))}</span></div>`;
   return '';
 }
 
@@ -460,7 +464,7 @@ function showNews(area) {
   const label = { client: t('classic.newsGame', 'Game'), server: t('classic.newsServer', 'Server'), bots: t('classic.newsBots', 'Bots') }[area] || area;
   const date = item.publishedAt ? new Date(item.publishedAt).toLocaleString(I18N.lang, { dateStyle: 'long', timeStyle: 'short' }) : '';
   const facts = item.files ? t('news.facts', '{files} files, {size} in all (only the changed ones are downloaded)', { files: formatNumber(item.files), size: formatBytes(item.bytes) }) : '';
-  dialog.open(`${dialog.header(item.version, `${label}${date ? ` Â· ${date}` : ''}`)}<div class="dialog-content patch-notes">
+  dialog.open(`${dialog.header(item.version, `${label}${date ? ` · ${date}` : ''}`)}<div class="dialog-content patch-notes">
     ${item.notes.length ? `<h3>${esc(t('news.notes', 'In this release'))}</h3><ul>${item.notes.map(note => `<li>${esc(note)}</li>`).join('')}</ul>` : `<p class="muted">${esc(t('classic.noNotes', 'No notes for this release.'))}</p>`}
     ${facts ? `<p class="muted small">${esc(facts)}</p>` : ''}
     ${item.changelog ? `<div class="changelog"><p class="eyebrow">${esc(t('news.changelog', 'Changelog of the installed bots'))}</p>${markdownLite(item.changelog)}</div>` : ''}
@@ -480,6 +484,13 @@ Object.assign(App.actions, {
   }, target),
   'home-import': () => { App.state.srvTab = 'install'; App.go('server'); App.actions['repack-import']?.(document.createElement('button')); },
   'launcher-install': button => guard(() => App.api.installLauncher(), button),
+  'world-force-stop': button => guard(async () => {
+    if (!await confirmDialog({ title: t('home.forceStop', 'Force the world to stop'), body: esc(t('home.forceStopBody', 'Only the worldserver of this server is ended; the database keeps everything saved. What players did since the last save may be lost. The rest of the server is then stopped normally.')), confirm: t('home.forceStop', 'Force the world to stop'), danger: true })) return;
+    App.state.server = await App.api.forceStopWorld();
+    App.state.live = null;
+    toast(t('home.forceStopped', 'The server is stopped. You can start it again.'), 'success');
+    App.render();
+  }, button),
   // Settings > About: look for a new launcher now (the result also shows on the home page banner).
   'launcher-check': button => guard(async () => {
     const status = await App.api.checkLauncher();
@@ -527,11 +538,11 @@ Object.assign(App.actions, {
     toast(t('verify.fixed', 'Fixed. The checks were run again.'), 'success');
     App.render();
   }, button),
-  'dashboard-start': button => guard(async () => { toast(t('home.dashboardStarting', 'Starting the dashboardâ€¦')); App.state.dashboard = await App.api.startDashboard(); await App.api.openDashboard(); App.render(); }, button),
+  'dashboard-start': button => guard(async () => { toast(t('home.dashboardStarting', 'Starting the dashboard…')); App.state.dashboard = await App.api.startDashboard(); await App.api.openDashboard(); App.render(); }, button),
   'dashboard-open': button => guard(() => App.api.openDashboard(), button),
   // Start, wait until it answers, then open its window.
   'dashboard-launch': button => guard(async () => {
-    toast(t('home.dashboardStarting', 'Starting the dashboardâ€¦'));
+    toast(t('home.dashboardStarting', 'Starting the dashboard…'));
     App.state.dashboard = await App.api.startDashboard();
     for (let i = 0; i < 20 && !App.state.dashboard?.running; i++) { await new Promise(resolve => setTimeout(resolve, 1000)); App.state.dashboard = await App.api.dashboardStatus(); }
     if (App.state.dashboard?.running) await App.api.openDashboard();
@@ -584,8 +595,8 @@ Object.assign(App.actions, {
   }, button),
   'instance-pick': button => guard(async () => {
     const list = await App.api.instances();
-    const rows = list.map(item => `<div class="history-row"><div><strong>${esc(item.path)}</strong><small>${esc([item.repack ? item.release || '?' : t('instance.empty', 'not installed yet'), item.bots ? `CoA Bots ${item.bots}` : '', item.ports?.auth ? t('instance.portsOf', 'ports {mysql}/{auth}/{world}', { mysql: item.ports.mysql, auth: item.ports.auth, world: item.ports.world }) : ''].filter(Boolean).join(' Â· '))}</small></div>${item.current ? `<span class="pill ok">${esc(t('instance.current', 'Current'))}</span>` : `<button class="button primary small" data-action="instance-switch" data-path="${esc(item.path)}" ${item.exists ? '' : 'disabled'}>${esc(t('instance.use', 'Use'))}</button><button class="button ghost small" data-action="instance-forget" data-path="${esc(item.path)}">${esc(t('instance.forget', 'Forget'))}</button>`}</div>`).join('');
-    dialog.open(`${dialog.header(t('home.menuSwitch', 'My serversâ€¦').replace('â€¦', ''), t('instance.listHint', 'Forgetting a server only removes it from this list: its folder stays on the disk.'))}<div class="dialog-content"><div class="history-list">${rows}</div></div><footer class="dialog-foot"><button class="button ghost" data-action="instance-add">${icon('folder')}${esc(t('home.menuAdd', 'Add a repack folder I unpackedâ€¦'))}</button><button class="button ghost" data-action="instance-new">${icon('download')}${esc(t('home.menuNew', 'Create a new server (clean instance)â€¦'))}</button></footer>`, 'wide');
+    const rows = list.map(item => `<div class="history-row"><div><strong>${esc(item.path)}</strong><small>${esc([item.repack ? item.release || '?' : t('instance.empty', 'not installed yet'), item.bots ? `CoA Bots ${item.bots}` : '', item.ports?.auth ? t('instance.portsOf', 'ports {mysql}/{auth}/{world}', { mysql: item.ports.mysql, auth: item.ports.auth, world: item.ports.world }) : ''].filter(Boolean).join(' · '))}</small></div>${item.current ? `<span class="pill ok">${esc(t('instance.current', 'Current'))}</span>` : `<button class="button primary small" data-action="instance-switch" data-path="${esc(item.path)}" ${item.exists ? '' : 'disabled'}>${esc(t('instance.use', 'Use'))}</button><button class="button ghost small" data-action="instance-forget" data-path="${esc(item.path)}">${esc(t('instance.forget', 'Forget'))}</button>`}</div>`).join('');
+    dialog.open(`${dialog.header(t('home.menuSwitch', 'My servers…').replace('…', ''), t('instance.listHint', 'Forgetting a server only removes it from this list: its folder stays on the disk.'))}<div class="dialog-content"><div class="history-list">${rows}</div></div><footer class="dialog-foot"><button class="button ghost" data-action="instance-add">${icon('folder')}${esc(t('home.menuAdd', 'Add a repack folder I unpacked…'))}</button><button class="button ghost" data-action="instance-new">${icon('download')}${esc(t('home.menuNew', 'Create a new server (clean instance)…'))}</button></footer>`, 'wide');
   }, button),
   // A repack unpacked by hand: its folder is chosen, checked, added to "My servers" and managed from now on.
   'instance-add': button => guard(async () => {
@@ -593,7 +604,7 @@ Object.assign(App.actions, {
     if (!info) return;
     dialog.close();
     Object.assign(App.state, { server: info, serverCheck: null, botsCheck: null, conf: null, backups: null, upgrade: null, verify: null, network: null, botsError: '', pending: {} });
-    toast(info.installed ? t('instance.switched', 'Now managing {path}.', { path: info.path }) : t('instance.notRepack', 'This folder is not a complete repack (Start_All_Server.bat, Core, mysqlâ€¦): choose the folder that holds them.'), info.installed ? 'success' : 'error');
+    toast(info.installed ? t('instance.switched', 'Now managing {path}.', { path: info.path }) : t('instance.notRepack', 'This folder is not a complete repack (Start_All_Server.bat, Core, mysql…): choose the folder that holds them.'), info.installed ? 'success' : 'error');
     App.go('home');
     refreshUpdates();
     if (info.installed) runVerify(false);

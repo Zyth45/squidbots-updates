@@ -69,6 +69,7 @@ contextBridge.exposeInMainWorld('launcher', Object.freeze({
   updatePickClient: () => call('update:pickClient'),
   addonStatus: () => call('addon:status'),
   liveStats: () => call('live:stats'),
+  forceStopWorld: () => call('live:forceStopWorld'),
   modulesStatus: () => call('modules:status'),
   openSource: id => call('source:open', id),
   modulesSquidbots: on => call('modules:squidbots', on),
