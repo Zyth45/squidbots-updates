@@ -142,3 +142,12 @@ test('stable and test channels: optional test addresses, validated like the othe
   assert.equal(sanitize({ channel: 'test' }).channel, 'test');
   assert.equal(sanitize({ channel: 'nightly' }).channel, 'stable');
 });
+
+test('the server edition starts without a bots channel (bots come with the repack updates)', () => {
+  const { loadConfig } = require('../src/config.cjs');
+  const { BotsPackage } = require('../src/bots.cjs');
+  const config = loadConfig(require('node:path').join(__dirname, '../editions/server/launcher.config.json'));
+  assert.equal(config.server.bots.manifestUrl, '');
+  const bots = new BotsPackage({ bots: { ...config.server.bots, channelUrl: '' }, key: config.keys.bots });
+  assert.equal(bots.updater.busy, false);
+});

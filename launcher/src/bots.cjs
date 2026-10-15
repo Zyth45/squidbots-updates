@@ -14,7 +14,16 @@ class BotsPackage {
   constructor({ bots, key, notify = () => {}, onLine = () => {}, fetchImpl }) {
     this.bots = bots;
     this.onLine = onLine;
-    this.updater = new ClientUpdater({ manifestUrl: bots.channelUrl || bots.manifestUrl, requiredExecutable: bots.requiredExecutable, publicKey: key, rules: 'server', area: 'bots', notify, ...(fetchImpl ? { fetchImpl } : {}) });
+    // No channel of their own (the bots come inside the repack updates): an updater that never downloads.
+    const url = bots.channelUrl || bots.manifestUrl;
+    this.updater = url ? new ClientUpdater({ manifestUrl: url, requiredExecutable: bots.requiredExecutable, publicKey: key, rules: 'server', area: 'bots', notify, ...(fetchImpl ? { fetchImpl } : {}) }) : {
+      status: { phase: 'idle' }, busy: false,
+      installedVersion: async () => '', installedState: async () => null,
+      check: async () => ({ needsUpdate: false, files: 0, bytes: 0 }),
+      peek: async () => { throw new Error('The bots are updated with the repack.'); },
+      update: async () => { throw new Error('The bots are updated with the repack.'); },
+      cancel() {},
+    };
     this.child = null;
   }
 

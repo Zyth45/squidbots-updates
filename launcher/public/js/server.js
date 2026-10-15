@@ -534,7 +534,7 @@ Object.assign(App.actions, {
     const running = worldRunning(App.state.server);
     if (!await confirmDialog({
       title: b.installed ? t('bots.reinstallTitle', 'Update the bots?') : t('bots.installTitle', 'Install {name}?', { name: b.name }),
-      body: esc(running ? t('bots.installRunning', 'The server is running: it is stopped first, the bots are updated, then the server starts again. Players online are disconnected for a few minutes. Your bot settings are kept.') : t('bots.installBody', 'The package is downloaded and verified, then its installer prepares the bot database. The worldserver must be stopped. Your bot settings are kept.')),
+      body: esc(running ? t('bots.installRunning', 'The server is running: it is stopped first, the bots are updated, then the server starts again. Players online are disconnected for a few minutes. Your bot settings are kept.') : t('bots.installBody2', 'The installer of the bots shipped with the repack prepares the bot database. The worldserver must be stopped. Your bot settings are kept.')),
       confirm: running ? t('bots.stopAndGo', 'Stop the server and update') : t('bots.go', 'Go'),
     })) return;
     if (running) {

@@ -43,7 +43,6 @@
   "bots.done": "Les bots sont prêts. Démarrez le serveur pour les rencontrer.",
   "bots.go": "Lancer",
   "bots.install": "Installer les bots",
-  "bots.installBody": "Le paquet est téléchargé et vérifié, puis son installateur prépare la base des bots. Le worldserver doit être arrêté. Vos réglages de bots sont gardés.",
   "bots.installTitle": "Installer {name} ?",
   "bots.installed": "Installés",
   "bots.installing": "L'installateur des bots prépare la base de données…",
@@ -853,5 +852,6 @@
   "settings.launcherFound": "Un nouveau launcher est en cours de téléchargement : l'accueil vous dira quand il est prêt.",
   "settings.launcherUpToDate": "Votre launcher est à jour.",
   "feed.copied": "Le navigateur n'a pas pu s'ouvrir : le lien est copié, collez-le dans votre navigateur.",
-  "feed.opened": "Ouvert dans votre navigateur."
+  "feed.opened": "Ouvert dans votre navigateur.",
+  "bots.installBody2": "L’installeur des bots fourni avec le repack prépare la base des bots. Le worldserver doit être arrêté. Vos réglages des bots sont gardés."
 }

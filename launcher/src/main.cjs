@@ -445,7 +445,8 @@ function registerIpc() {
   handle('updates:peek', () => (config.server ? peekUpdates({ folder: serverPath(), repack: repackUpdater, bots }) : { core: null, bots: null }));
   handle('repack:choose', async () => {
     requireServer();
-    const result = await dialog.showOpenDialog(window, { title: 'Choose the folder of your server (repack)', properties: ['openDirectory', 'createDirectory'], defaultPath: serverPath() || 'C:\\' });
+    const result = smokeDir && process.env.COA_SMOKE_SERVER_DIR ? { filePaths: [process.env.COA_SMOKE_SERVER_DIR] }
+      : await dialog.showOpenDialog(window, { title: 'Choose the folder of your server (repack)', properties: ['openDirectory', 'createDirectory'], defaultPath: serverPath() || 'C:\\' });
     if (result.canceled || !result.filePaths[0]) return null;
     let folder = path.resolve(result.filePaths[0]);
     // The folder the zip was unpacked into often holds the repack one level down (CoA-Repack-Bots-2.0\…).
