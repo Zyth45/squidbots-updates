@@ -80,6 +80,8 @@ function subscribe() {
 // Screenshot tour driven by the main process: tab names, click:<selector>, lang:<code>, dialog:settings, wait.
 App.smoke = step => {
   if (step === 'wait') return;
+  // Screenshot tours: show the launcher-update bar as if a new launcher were downloading / ready.
+  if (step.startsWith('launcher:')) { App.state.launcherUpdate = { phase: step.slice(9), version: '9.9.9', percent: 56 }; const bar = $('#launcher-banner'); if (bar) bar.innerHTML = launcherBanner(); return; }
   if (step.startsWith('click:')) { $(step.slice(6))?.click(); return; }
   if (step.startsWith('fill:')) {
     const [selector, value] = step.slice(5).split('::');
