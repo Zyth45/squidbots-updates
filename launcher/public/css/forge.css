@@ -1,0 +1,74 @@
+/* CoA Launcher Lite — "Forge": dark leather and smoke, ember orange, old gold titles.
+   Warm-dark like the classic private-server launchers, drawn only with CSS gradients: no image or
+   texture taken from any other launcher. The octopus stays, in bronze, and the motes become embers. */
+:root:is([data-theme="forge"], [data-theme="classic"]) {
+  --bg0: #0c0806;
+  --bg1: #24160d;
+  --panel: rgba(22, 15, 10, 0.8);
+  --panel-solid: #1c130c;
+  --panel-2: rgba(52, 34, 20, 0.55);
+  --line: rgba(236, 170, 100, 0.13);
+  --line-strong: rgba(236, 170, 100, 0.26);
+  --text: #f3e7d7;
+  --muted: #bba68d;
+  --faint: #7f6c58;
+  --accent: #f08a3c;
+  --accent-deep: #8c3d12;
+  --gold: #e2b25c;
+  --gold-deep: #9b6a24;
+  --ok: #7fd48a;
+  --warn: #f2b554;
+  --bad: #ff6a5a;
+  --info: #9cc8ff;
+  --squid-deep: #2a130a;
+  --squid-tip: #93461c;
+  --squid-sucker: #f0b27a;
+  --mote: #ffb35c;
+  --surface-light: rgba(255, 140, 60, 0.14);
+  --accent-ink: #2a1004;
+  --accent-soft: rgba(240, 138, 60, .16);
+  --accent-glow: rgba(240, 138, 60, .38);
+  --tint: rgba(255, 190, 130, .06);
+  --tint-strong: rgba(255, 190, 130, .12);
+  --well: rgba(14, 9, 6, .62);
+  --row: rgba(30, 20, 13, .6);
+  --input: rgba(10, 7, 5, .75);
+  --topbar: linear-gradient(180deg, rgba(10, 6, 4, .92), rgba(16, 10, 6, .7));
+  --hero: linear-gradient(100deg, rgba(14, 9, 6, .88) 0%, rgba(22, 14, 9, .62) 60%, rgba(22, 14, 9, .2) 100%);
+  --cta: linear-gradient(180deg, #ffb066 0%, #f07a2c 45%, #c4531a 100%);
+  --cta-ink: #fff4e8;
+  --cta-edge: rgba(255, 214, 170, .5);
+  --cta-glow: rgba(240, 110, 40, .38);
+  --log-bg: rgba(8, 5, 3, .88);
+  --log-text: #ead3b8;
+  --backdrop: rgba(6, 3, 2, .72);
+  --badge: #ff3d3d;
+}
+
+/* Warm light from the top, a vignette at the edges. */
+:root:is([data-theme="forge"], [data-theme="classic"]) body { background: radial-gradient(90% 70% at 35% 0%, #3a2413, var(--bg0) 72%); }
+:root:is([data-theme="forge"], [data-theme="classic"]) .app::before { content: ''; position: fixed; inset: 0; pointer-events: none; background: radial-gradient(120% 90% at 50% 40%, transparent 55%, rgba(0, 0, 0, .55)); }
+
+/* Top bar: a thin gold line under it, the tabs as a text menu with an ember underline. */
+:root:is([data-theme="forge"], [data-theme="classic"]) .topbar { border-bottom: 1px solid rgba(226, 178, 92, .22); box-shadow: 0 1px 0 rgba(0, 0, 0, .6); }
+:root:is([data-theme="forge"], [data-theme="classic"]) .crest { background: radial-gradient(circle at 35% 30%, #ffcf8a, #c4531a 70%); box-shadow: 0 0 0 1px rgba(255, 214, 170, .45) inset, 0 0 18px rgba(240, 110, 40, .35); }
+:root:is([data-theme="forge"], [data-theme="classic"]) .brand strong { color: var(--gold); text-transform: uppercase; letter-spacing: .12em; }
+:root:is([data-theme="forge"], [data-theme="classic"]) .tabs { background: none; border: 0; padding: 0; gap: 6px; }
+:root:is([data-theme="forge"], [data-theme="classic"]) .tab { border-radius: 0; padding: 9px 14px; text-transform: uppercase; letter-spacing: .08em; font-size: 12.5px; border-bottom: 2px solid transparent; }
+:root:is([data-theme="forge"], [data-theme="classic"]) .tab.active { background: none; box-shadow: none; color: var(--text); border-bottom-color: var(--accent); text-shadow: 0 0 14px rgba(240, 138, 60, .55); }
+:root:is([data-theme="forge"], [data-theme="classic"]) .tab.active .icon { color: var(--accent); }
+
+/* Hero: gold serif title, uppercase, sitting on a smoky band. */
+:root:is([data-theme="forge"], [data-theme="classic"]) .hero { border-radius: 16px; border-color: rgba(226, 178, 92, .16); box-shadow: 0 20px 60px rgba(0, 0, 0, .45); }
+:root:is([data-theme="forge"], [data-theme="classic"]) .hero h1 { text-transform: uppercase; color: #f6ead6; text-shadow: 0 2px 0 rgba(0, 0, 0, .6), 0 0 30px rgba(240, 138, 60, .25); }
+:root:is([data-theme="forge"], [data-theme="classic"]) .eyebrow { color: var(--gold); }
+:root:is([data-theme="forge"], [data-theme="classic"]) .big-button { border-radius: 10px; text-shadow: 0 1px 0 rgba(90, 30, 5, .7); }
+:root:is([data-theme="forge"], [data-theme="classic"]) .big-button.busy { background: linear-gradient(180deg, #5a3419, #3a200f); color: var(--text); }
+
+/* Panels and buttons. */
+:root:is([data-theme="forge"], [data-theme="classic"]) .panel { border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, .35); }
+:root:is([data-theme="forge"], [data-theme="classic"]) .panel h2 { color: #f1dfc4; }
+:root:is([data-theme="forge"], [data-theme="classic"]) .button.primary { background: linear-gradient(180deg, #f59a4f, #d9611f); border-color: #f08a3c; color: #fff4e8; }
+:root:is([data-theme="forge"], [data-theme="classic"]) .progress span { background: linear-gradient(90deg, #8c3d12, #f08a3c, #ffc27a); box-shadow: 0 0 12px rgba(240, 138, 60, .7); }
+:root:is([data-theme="forge"], [data-theme="classic"]) .subtab.active { color: var(--accent); }
+:root:is([data-theme="forge"], [data-theme="classic"]) code { color: var(--gold); }

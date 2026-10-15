@@ -1,0 +1,11 @@
+{
+  "appId": "org.squidbots.server",
+  "productName": "SquidBots Server",
+  "artifactName": "SquidBots-Server-Setup-${version}.${ext}",
+  "publish": [
+    {
+      "provider": "generic",
+      "url": "https://github.com/Zyth45/squidbots-updates/releases/download/launcher/"
+    }
+  ]
+}

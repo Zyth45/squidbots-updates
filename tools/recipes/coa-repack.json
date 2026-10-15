@@ -1,0 +1,22 @@
+{
+  "_comment": "Publishing recipe for the CoA repack (Jealous layout, Scripts/manage.py). Use with: node tools/publish-client.mjs <repack> <out> --profile server --require Core/worldserver.exe --components tools/recipes/coa-repack.json --copy",
+  "components": [],
+  "rules": [],
+  "preserve": [
+    "^mysql/data/",
+    "^Settings/database[.]json$",
+    "^Settings/repack[.]json$",
+    "^Core/configs/",
+    "^mysql/my[.]ini$",
+    "^mysql/admin-client[.]ini$"
+  ],
+  "exclude": [
+    "^[.]state/",
+    "^Core/Logs/",
+    "^mysql/logs/",
+    "^BugReport/(reports|Logs)/",
+    "^Database-Backups/",
+    "(^|/)__pycache__/",
+    "[.]pyc$"
+  ]
+}

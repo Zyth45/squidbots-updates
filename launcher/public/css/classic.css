@@ -1,0 +1,294 @@
+/* CoA Launcher Lite — "Classic": the layout of the classic private-server launchers (menu around a centred
+   crest, big title and play button, server and community cards, latest news), with the Forge colours.
+   Our own art only: CSS shapes and gradients, the SquidBots crest and the octopus. No image of any other launcher. */
+
+/* ---------- top bar: menu on the left, the crest in the middle, settings on the right ---------- */
+:root[data-theme="classic"] .topbar { display: grid; grid-template-columns: 1fr auto 1fr auto auto; align-items: center; height: 58px; padding: 0 12px 0 22px; overflow: visible; }
+:root[data-theme="classic"] .tabs { order: 1; justify-self: start; }
+:root[data-theme="classic"] .brand { order: 2; position: relative; z-index: 3; flex-direction: column; gap: 0; margin-bottom: -38px; }
+:root[data-theme="classic"] .spacer { order: 3; }
+:root[data-theme="classic"] #settings-button { order: 4; }
+:root[data-theme="classic"] .window-buttons { order: 5; }
+/* The crest: a gold-rimmed shield with the squid, the name on a banner under it. */
+:root[data-theme="classic"] .crest { width: 64px; height: 70px; border-radius: 0; font-size: 34px; clip-path: polygon(50% 0, 100% 14%, 100% 62%, 50% 100%, 0 62%, 0 14%); background: radial-gradient(circle at 50% 35%, #5a2c14, #1c0e07 72%); box-shadow: none; position: relative; }
+:root[data-theme="classic"] .crest::before { content: ''; position: absolute; inset: 0; clip-path: inherit; background: linear-gradient(160deg, #ffe0a0, #b5782c 45%, #6d4212); z-index: -1; }
+:root[data-theme="classic"] .crest { outline: 3px solid transparent; filter: drop-shadow(0 0 1px #f0c36a) drop-shadow(0 6px 14px rgba(0, 0, 0, .7)); }
+:root[data-theme="classic"] .brand strong { margin-top: -10px; padding: 3px 16px; font: 700 12px var(--display); letter-spacing: .14em; text-transform: uppercase; color: #fff1d6; background: linear-gradient(180deg, #8c3d12, #52210a); border: 1px solid rgba(240, 195, 106, .7); clip-path: polygon(6% 0, 94% 0, 100% 50%, 94% 100%, 6% 100%, 0 50%); text-shadow: 0 1px 0 #000; }
+
+/* ---------- play page ---------- */
+:root[data-theme="classic"] #view { padding: 34px 32px 26px; }
+.page.classic { max-width: 1180px; margin: 0 auto; display: grid; gap: 26px; }
+.classic-hero { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 28px; align-items: end; padding: 38px 34px 30px; min-height: 330px; background: linear-gradient(95deg, rgba(10, 6, 4, .9) 0%, rgba(14, 9, 6, .55) 55%, rgba(14, 9, 6, .15) 100%) !important; }
+.classic-main { display: grid; gap: 14px; align-content: end; }
+.classic-main h1 { font: 700 clamp(34px, 4.4vw, 52px)/1.05 var(--display) !important; text-transform: uppercase; letter-spacing: .04em; }
+.classic-main .status-line { font-size: 15px; max-width: 52ch; color: #e6d6c0; }
+.classic-folder { width: fit-content; }
+
+/* The split button: the action, and a chevron with the other options. */
+.split-button { position: relative; display: inline-flex; width: fit-content; border-radius: 12px; box-shadow: 0 12px 34px var(--cta-glow), 0 0 0 1px var(--cta-edge) inset; background: var(--cta); }
+.split-button button { color: var(--cta-ink); }
+.split-main { display: flex; align-items: center; gap: 14px; min-width: 300px; padding: 14px 22px; text-align: left; }
+.split-main .icon { width: 30px; height: 30px; stroke-width: 2.2; }
+.split-main span { display: grid; }
+.split-main strong { font: 700 21px/1.1 var(--display); letter-spacing: .06em; text-transform: uppercase; text-shadow: 0 1px 0 rgba(90, 30, 5, .7); }
+.split-main small { font-size: 12.5px; font-weight: 600; opacity: .9; }
+.split-more { width: 50px; display: grid; place-items: center; border-left: 1px solid rgba(90, 30, 5, .35); }
+.split-more .icon { width: 20px; height: 20px; stroke-width: 2.4; }
+.split-button button:hover:not(:disabled) { background: rgba(255, 255, 255, .08); }
+.split-button.busy { background: linear-gradient(180deg, #5a3419, #3a200f); box-shadow: none; }
+.split-button.busy button { color: var(--text); }
+.split-menu { position: absolute; top: calc(100% + 6px); right: 0; z-index: 5; min-width: 240px; display: grid; padding: 6px; border-radius: 12px; background: var(--panel-solid); border: 1px solid var(--line-strong); box-shadow: 0 16px 40px rgba(0, 0, 0, .55); }
+.split-menu button { text-align: left; padding: 9px 12px; border-radius: 8px; color: var(--text) !important; font-size: 13.5px; }
+.split-menu button:hover { background: var(--tint-strong) !important; }
+
+/* Right column: the realm, the local server, Discord. */
+.classic-side { display: grid; gap: 10px; }
+.classic-side .realm-badge, .side-card { width: 100%; display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(226, 178, 92, .22); background: rgba(12, 8, 5, .72); backdrop-filter: blur(6px); text-align: left; }
+.side-card > .icon:first-child { width: 26px; height: 26px; color: var(--gold); }
+.side-card span { flex: 1; display: grid; min-width: 0; }
+.side-card small { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.side-card:hover, .classic-side .realm-badge:hover { border-color: rgba(240, 138, 60, .6); }
+.side-card.discord > .icon:first-child { color: #8f9cff; }
+.side-card .dot { position: static; }
+
+/* Latest news: one card per part (game, server, bots), art drawn in CSS. */
+.news-row { display: grid; gap: 12px; }
+.news-row h2 { font: 700 14px var(--display); letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
+.news-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.news-card { display: grid; grid-template-rows: 110px auto; border-radius: 12px; overflow: hidden; border: 1px solid rgba(226, 178, 92, .2); background: rgba(14, 9, 6, .85); }
+.news-art { display: grid; place-items: center; background: radial-gradient(circle at 30% 30%, rgba(255, 160, 80, .35), transparent 60%), linear-gradient(135deg, #3a1d0c, #120904); }
+.news-card.server .news-art { background: radial-gradient(circle at 70% 30%, rgba(255, 200, 110, .3), transparent 60%), linear-gradient(135deg, #2a2412, #0e0b05); }
+.news-card.bots .news-art { background: radial-gradient(circle at 40% 70%, rgba(200, 120, 255, .28), transparent 60%), linear-gradient(135deg, #24122e, #0c0610); }
+.news-art .icon { width: 46px; height: 46px; color: rgba(255, 230, 190, .85); stroke-width: 1.4; filter: drop-shadow(0 0 12px rgba(255, 170, 90, .5)); }
+.news-text { display: grid; gap: 4px; padding: 12px 14px 14px; }
+.news-text small { color: var(--faint); font-size: 11.5px; }
+.news-text strong { font-size: 14px; }
+.news-text p { color: var(--muted); font-size: 12.5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* The Addons tab of the classic skin: the panel on the whole width. */
+.addons-page { max-width: 1180px; margin: 0 auto; }
+.addons-page .addons-panel { max-height: calc(100vh - 150px); }
+
+@media (max-width: 1080px) {
+  .classic-hero { grid-template-columns: 1fr; }
+}
+
+/* The play menu opens above the news cards; tab labels stay on one line. */
+.classic-hero { position: relative; z-index: 2; }
+.news-row { position: relative; z-index: 1; }
+:root[data-theme="classic"] .tab { white-space: nowrap; }
+
+/* ---------- the SquidBots emblem (js/logo.js), shown by the classic skin in place of the small crest ---------- */
+.brand .logo { display: none; }
+:root[data-theme="classic"] .brand .crest, :root[data-theme="classic"] .brand strong { display: none; }
+:root[data-theme="classic"] .brand .logo { display: block; width: 250px; height: auto; margin: 10px 0 -34px; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .75)) drop-shadow(0 0 16px rgba(240, 150, 60, .25)); }
+.logo .lg-arm { fill: none; stroke: url(#lg-arm); stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; }
+.logo .lg-back .lg-arm { stroke-width: 9; }
+.logo .lg-sucker { fill: #fff0c8; opacity: .75; }
+.logo .lg-plate { fill: url(#lg-plate); stroke: url(#lg-gold); stroke-width: 3.5; stroke-linejoin: round; }
+.logo .lg-plate-line { fill: none; stroke: #d9a24c; stroke-width: 1; opacity: .55; }
+.logo .lg-gem { fill: #c8321e; stroke: url(#lg-gold); stroke-width: 1.6; }
+.logo .lg-head { fill: url(#lg-head); stroke: #5a3208; stroke-width: 2.2; }
+.logo .lg-shine { fill: none; stroke: #fff6da; stroke-width: 3; stroke-linecap: round; opacity: .7; }
+.logo .lg-eye ellipse { fill: #1b0c04; stroke: #6a3a0c; stroke-width: 1.4; }
+.logo .lg-eye .lg-pupil { fill: #ffcf5a; stroke: none; }
+.logo .lg-name { font: 700 30px var(--display); letter-spacing: 4px; fill: url(#lg-gold); stroke: #2a1204; stroke-width: .9; paint-order: stroke; }
+:root[data-theme="classic"] .topbar { position: relative; z-index: 6; }
+:root[data-theme="classic"] #view { padding-top: 64px; }
+.logo .lg-rim { fill: none; stroke: #3a1d06; stroke-width: 12; stroke-linecap: round; stroke-linejoin: round; }
+.logo .lg-back .lg-rim { stroke-width: 13; }
+.logo .lg-rays { fill: url(#lg-gold); opacity: .9; }
+.logo .lg-spots ellipse { fill: #9a5a1c; opacity: .55; }
+.logo .lg-brow { fill: none; stroke: #4a2606; stroke-width: 3; stroke-linecap: round; }
+.logo .lg-eye .lg-socket { fill: #1b0c04; stroke: #5a3208; stroke-width: 1.2; }
+.logo .lg-eye .lg-iris { fill: url(#lg-iris); stroke: none; }
+.logo .lg-eye .lg-pupil { fill: #170802; }
+.logo .lg-eye .lg-glint { fill: #fffbe8; }
+:root[data-theme="classic"] #view { padding-top: 58px; padding-bottom: 18px; }
+.classic-hero { min-height: 280px; padding-top: 30px; padding-bottom: 26px; }
+.news-card { grid-template-rows: 92px auto; }
+
+/* News cards open the patch note. */
+.news-card { cursor: pointer; transition: transform .15s, border-color .15s; }
+.news-card:hover, .news-card:focus-visible { transform: translateY(-2px); border-color: rgba(240, 138, 60, .6); }
+.patch-notes h3 { font: 700 15px var(--display); letter-spacing: .04em; color: var(--gold); margin-top: 6px; }
+.patch-notes h4 { font-size: 13.5px; margin-top: 8px; color: var(--text); }
+.patch-notes ul { margin: 0; padding-left: 20px; display: grid; gap: 5px; color: var(--muted); }
+.patch-notes li strong { color: var(--text); }
+.patch-notes p { color: var(--muted); }
+.patch-notes .changelog { display: grid; gap: 8px; margin-top: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
+
+/* News beside the Discord panel. */
+.news-layout { display: grid; gap: 14px; }
+.news-layout.with-discord { grid-template-columns: minmax(0, 1fr) 300px; align-items: stretch; }
+@media (max-width: 860px) { .news-layout.with-discord { grid-template-columns: 1fr; } }
+.discord-card { display: grid; align-content: start; gap: 12px; padding: 16px; border-radius: 12px; border: 1px solid rgba(120, 130, 255, .35);
+  background: radial-gradient(circle at 80% 0%, rgba(88, 101, 242, .35), transparent 60%), rgba(14, 9, 6, .88); }
+.discord-card header { display: flex; align-items: center; gap: 12px; }
+.discord-card header .icon { width: 38px; height: 38px; padding: 7px; border-radius: 10px; background: #5865f2; color: #fff; }
+.discord-card header div { display: grid; gap: 2px; }
+.discord-card header strong { font-size: 15px; }
+.discord-card small { color: var(--muted); font-size: 12px; display: flex; align-items: center; gap: 6px; }
+.discord-card p { color: var(--muted); font-size: 13px; line-height: 1.45; }
+.discord-card .button { justify-content: center; background: #5865f2; border-color: #5865f2; color: #fff; }
+.discord-card .button:hover { background: #4752c4; }
+.discord-members { list-style: none; display: grid; gap: 6px; font-size: 13px; }
+.discord-members li { display: flex; align-items: center; gap: 8px; }
+.presence { width: 8px; height: 8px; border-radius: 50%; background: #23a55a; flex: none; }
+.presence.idle { background: #f0b232; }
+.presence.dnd { background: #f23f43; }
+
+/* Installed server: the status cards fill the space beside the start button, two per row, so the whole
+   home page fits without scrolling. */
+.classic-hero.server-hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); align-items: center; min-height: 0; padding: 26px 30px 24px; }
+.server-hero .classic-side { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.server-hero .side-card { padding: 11px 13px; }
+.server-hero .side-card:last-child:nth-child(odd) { grid-column: 1 / -1; }
+@media (max-width: 900px) { .classic-hero.server-hero { grid-template-columns: 1fr; } }
+.news-card { grid-template-rows: 74px auto; }
+
+/* When a small window does need to scroll: a thin bar in the colours of the skin. */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(226, 178, 92, .28); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(240, 138, 60, .55); }
+
+/* Update of the repack: the banner states, the steps, the result. */
+.update-banner .icon { width: 20px; height: 20px; color: var(--warn); flex: none; }
+.update-banner.bad { border-color: color-mix(in srgb, var(--bad) 55%, transparent); background: color-mix(in srgb, var(--bad) 12%, var(--panel)); }
+.update-banner.bad .icon { color: var(--bad); }
+.update-banner.info { border-color: var(--line-strong); background: var(--panel); }
+.dialog-content.update { display: grid; gap: 14px; }
+.update-steps { list-style: none; display: grid; gap: 8px; }
+.update-steps li { display: flex; align-items: center; gap: 10px; color: var(--faint); font-size: 14px; }
+.update-steps li .icon { width: 20px; height: 20px; }
+.update-steps li.done { color: var(--muted); }
+.update-steps li.done .icon { color: var(--ok); }
+.update-steps li.active { color: var(--text); font-weight: 600; }
+.update-steps li.active .icon { color: var(--accent); animation: update-pulse 1.4s ease-in-out infinite; }
+@keyframes update-pulse { 50% { opacity: .35; } }
+.update-line { min-height: 1.4em; font: 12px var(--mono); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.update-result { display: flex; gap: 14px; align-items: flex-start; padding: 14px; border-radius: 12px; border: 1px solid var(--line-strong); }
+.update-result > .icon { width: 28px; height: 28px; flex: none; }
+.update-result > div { display: grid; gap: 8px; min-width: 0; }
+.update-result.ok > .icon { color: var(--ok); }
+.update-result.bad { border-color: color-mix(in srgb, var(--bad) 50%, transparent); }
+.update-result.bad > .icon { color: var(--bad); }
+.update-result small { color: var(--muted); }
+.update-result pre { max-height: 180px; overflow: auto; padding: 10px; border-radius: 8px; background: var(--log-bg, rgba(0, 0, 0, .4)); font: 12px/1.45 var(--mono); white-space: pre-wrap; }
+.update-result summary, .update-notes summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+.update-notes .patch-notes { max-height: 260px; overflow: auto; margin-top: 8px; }
+.update-card { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; padding: 11px 13px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent); background: color-mix(in srgb, var(--accent) 12%, rgba(12, 8, 5, .72)); }
+.update-card > .icon { width: 26px; height: 26px; color: var(--accent); flex: none; }
+.update-card > span { flex: 1; display: grid; min-width: 0; }
+.update-card small { color: var(--muted); font-size: 12px; }
+.update-card.bad { border-color: color-mix(in srgb, var(--bad) 55%, transparent); background: color-mix(in srgb, var(--bad) 12%, rgba(12, 8, 5, .72)); }
+.update-card.bad > .icon { color: var(--bad); }
+.update-card.info > .icon { animation: update-pulse 1.4s ease-in-out infinite; }
+.update-card .button .dot { position: static; margin-right: 2px; }
+.update-card-actions { display: flex; gap: 6px; flex: none; }
+.update-steps { padding: 0; }
+
+/* Patch notes: three cards, the Discord as a link beside the title. */
+.news-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.news-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 860px) { .news-grid.three { grid-template-columns: 1fr; } }
+.link-button { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 8px; color: var(--muted); font-size: 12.5px; }
+.link-button .icon { width: 16px; height: 16px; }
+.link-button:hover { color: var(--text); background: var(--tint); }
+
+/* Server settings: the most used actions above the settings. */
+.conf-tools { display: grid; gap: 8px; margin-bottom: 14px; }
+.purge-stop { flex: none; font-size: 12px; }
+
+/* The crest in the exact middle of the bar, whatever the width of the tabs on its left. */
+:root[data-theme="classic"] .topbar > .brand { position: absolute; left: 50%; top: 0; transform: translateX(-50%); }
+:root[data-theme="classic"] .topbar { grid-template-columns: 1fr auto auto; }
+:root[data-theme="classic"] .topbar > .spacer { display: none; }
+:root[data-theme="classic"] .brand .logo { width: 230px; }
+/* Tab icons in the crest's gold, a soft glow on the active one; hidden only in a very narrow window. */
+:root[data-theme="classic"] .tab .icon { width: 17px; height: 17px; color: var(--gold); opacity: .75; stroke-width: 1.9; transition: opacity .15s, filter .15s; }
+:root[data-theme="classic"] .tab:hover .icon { opacity: 1; }
+:root[data-theme="classic"] .tab.active .icon { opacity: 1; color: var(--gold); filter: drop-shadow(0 0 6px rgba(232, 176, 74, .65)); }
+@media (max-width: 1040px) { :root[data-theme="classic"] .tab .icon { display: none; } }
+
+/* Last patch note beside the live state of the server. */
+.news-live { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 14px; }
+@media (max-width: 860px) { .news-live { grid-template-columns: 1fr; } }
+.news-grid.one { grid-template-columns: 1fr; }
+.live { display: grid; align-content: start; gap: 10px; padding: 14px; border-radius: 12px; border: 1px solid var(--line-strong); background: var(--panel); }
+.live h3 { display: flex; align-items: center; justify-content: space-between; font: 700 13px var(--display); letter-spacing: .12em; text-transform: uppercase; color: var(--gold); }
+.live-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 8px; }
+.live-tile { display: flex; gap: 10px; align-items: center; padding: 10px; border-radius: 10px; background: var(--tint); }
+.live-tile > .icon { width: 22px; height: 22px; color: var(--accent); flex: none; }
+.live-tile span { display: grid; min-width: 0; }
+.live-tile small { color: var(--muted); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.live-tile strong { font-size: 18px; }
+.live-tile em { font-style: normal; color: var(--faint); font-size: 11px; }
+/* The Console tab sits alone on the right; the console itself. */
+:root[data-theme="classic"] .topbar { grid-template-columns: 1fr auto auto auto; }
+:root[data-theme="classic"] .tabs-right { order: 3; justify-self: end; margin-right: 8px; }
+.console-panel { display: grid; gap: 10px; }
+.console-panel header { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.console-log { height: 420px; overflow: auto; padding: 12px; border-radius: 10px; background: var(--log-bg, rgba(0, 0, 0, .45)); font: 12.5px/1.5 var(--mono); }
+.console-entry + .console-entry { margin-top: 10px; }
+.console-cmd { color: var(--accent); }
+.console-log pre { white-space: pre-wrap; color: var(--log-text, var(--text)); }
+.console-log pre.bad { color: var(--bad); }
+.console-form { display: flex; gap: 8px; align-items: center; font: 13px var(--mono); }
+.console-form span { color: var(--accent); }
+.console-form input { flex: 1; font: 13px var(--mono); }
+/* The play button and, right of it, the gear to the server settings. */
+/* The gear stays on the button's line whatever its text ("Starting the server…" is wider): the button shrinks. */
+.play-row { display: flex; flex-wrap: nowrap; align-items: center; gap: 12px; margin-top: 0; }
+.play-row .split-button { min-width: 0; flex: 0 1 auto; }
+.play-row .split-main { min-width: 0; }
+.play-row .split-main strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.play-row .gear-settings { flex: none; width: 52px; height: 52px; border-radius: 12px; border: 1px solid var(--line-strong); background: var(--panel); }
+.play-row .gear-settings .icon { width: 24px; height: 24px; }
+.play-row .gear-settings:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Bring players over: under the server and bots cards of the Installation tab. */
+.grid-2.bring-players { margin-top: 18px; }
+/* The "CoA Repack" title, a size smaller than the page titles. */
+.server-hero .classic-main h1 { font-size: 40px !important; }
+
+/* Modules: a card per module with its switch. */
+.module-card header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.module-card .small { margin-top: 6px; }
+.module-facts { list-style: none; display: grid; gap: 6px; margin: 10px 0 4px; font-size: 13px; }
+.module-facts li { display: flex; align-items: center; gap: 8px; }
+.module-facts li span { flex: 1; }
+.module-facts li .icon { width: 16px; height: 16px; flex: none; }
+.module-facts li.ok .icon { color: var(--ok); }
+.module-facts li.bad .icon { color: var(--bad); }
+.module-facts li.warn .icon { color: var(--warn); }
+.switch { position: relative; width: 46px; height: 26px; border-radius: 13px; border: 1px solid var(--line-strong); background: var(--tint-strong, rgba(255, 255, 255, .1)); flex: none; padding: 0; }
+.switch span { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--muted); transition: transform .15s, background .15s; }
+.switch.on { background: color-mix(in srgb, var(--accent) 45%, transparent); border-color: var(--accent); }
+.switch.on span { transform: translateX(20px); background: var(--accent); }
+.switch:disabled { opacity: .45; cursor: not-allowed; }
+.module-facts { padding: 0; }
+
+.module-card.soon { opacity: .6; }
+.grid-2.modules { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+
+/* Four tabs on the left of the centred crest: a little tighter so they never run under it. */
+:root[data-theme="classic"] .tabs { gap: 2px; }
+:root[data-theme="classic"] .tab { padding: 9px 10px; letter-spacing: .05em; }
+
+/* Module credits and the launcher's source link. */
+.module-card { display: flex; flex-direction: column; }
+.module-credit { margin-top: auto; padding-top: 12px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; color: var(--faint); font-size: 12px; }
+.module-card.soon .module-credit { opacity: 1; }
+.modules-foot { margin-top: 14px; display: flex; align-items: center; gap: 4px; color: var(--faint); font-size: 12px; }
+/* The main view scrolls only in a small window, and without a visible bar. */
+#view { scrollbar-width: none; }
+#view::-webkit-scrollbar { width: 0; height: 0; }
+/* No server yet: a more compact hero, so the page fits the window. */
+.classic-hero:not(.server-hero) { min-height: 0; padding-top: 26px; padding-bottom: 24px; }
+.classic-hero:not(.server-hero) .classic-main h1 { font-size: 40px !important; }
+/* The live line of the update wraps instead of running off the dialog. */
+.dialog-content.update { overflow-x: hidden; min-width: 0; }
+.dialog-content.update > * { min-width: 0; }
+.update-line { white-space: normal; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }

@@ -1,0 +1,47 @@
+{
+  "_comment": "Publishing recipe for the CoA client patch (updates only, laid over the base client from Jealous). retire: addon folders of the base client moved to Retired addons, once. Use with: node tools/publish-client.mjs <patch folder> <out> --require Ascension.exe --components tools/recipes/coa-client.json",
+  "components": [],
+  "rules": [],
+  "preserve": [],
+  "exclude": [],
+  "retire": [
+    "Interface/AddOns/AtlasLoot",
+    "Interface/AddOns/AtlasLoot_BurningCrusade",
+    "Interface/AddOns/AtlasLoot_Cache",
+    "Interface/AddOns/AtlasLoot_Crafting_OriginalWoW",
+    "Interface/AddOns/AtlasLoot_Crafting_TBC",
+    "Interface/AddOns/AtlasLoot_Crafting_Wrath",
+    "Interface/AddOns/AtlasLoot_OriginalWoW",
+    "Interface/AddOns/AtlasLoot_Vanity",
+    "Interface/AddOns/AtlasLoot_WorldEvents",
+    "Interface/AddOns/AtlasLoot_WrathoftheLichKing",
+    "Interface/AddOns/Auctionator",
+    "Interface/AddOns/Auctionator_Price_Database",
+    "Interface/AddOns/Auctionator_Pricing_History",
+    "Interface/AddOns/Blizzard_AchievementUI",
+    "Interface/AddOns/Blizzard_AuctionUI",
+    "Interface/AddOns/Blizzard_BindingUI",
+    "Interface/AddOns/Blizzard_CombatLog",
+    "Interface/AddOns/Blizzard_CombatText",
+    "Interface/AddOns/Blizzard_DebugTools",
+    "Interface/AddOns/Blizzard_GMChatUI",
+    "Interface/AddOns/Blizzard_GuildBankUI",
+    "Interface/AddOns/Blizzard_InspectUI",
+    "Interface/AddOns/Blizzard_ItemSocketingUI",
+    "Interface/AddOns/Blizzard_MacroUI",
+    "Interface/AddOns/Blizzard_RaidUI",
+    "Interface/AddOns/Blizzard_TalentUI",
+    "Interface/AddOns/ElvUI",
+    "Interface/AddOns/ElvUI_AddOnSkins",
+    "Interface/AddOns/ElvUI_Enhanced",
+    "Interface/AddOns/ElvUI_EnhancedFriendsList",
+    "Interface/AddOns/ElvUI_ExtraActionBars",
+    "Interface/AddOns/ElvUI_OptionsUI",
+    "Interface/AddOns/Recount"
+  ],
+  "alternates": {
+    "Data/patch-WB1.MPQ": [
+      "Data/patch-WB1.MPQ.DISABLED"
+    ]
+  }
+}

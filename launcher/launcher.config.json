@@ -1,0 +1,150 @@
+{
+  "appName": "CoA Launcher Lite",
+  "launcherUpdateUrl": "http://127.0.0.1:5082/downloads/launcher-lite/",
+  "launcherUpdateKey": "8QP9Z3PebRJhEPqw6c3f7FQnXEG+ppAluXRtUXWrdy0=",
+  "discordUrl": "https://discord.gg/UV4engmU96",
+  "trustedLocalHosts": [
+    "127.0.0.1",
+    "localhost"
+  ],
+  "game": {
+    "name": "Conquest of Azeroth",
+    "clientExecutable": "Ascension.exe",
+    "processNames": [
+      "Ascension.exe",
+      "Wow.exe"
+    ],
+    "manifestUrl": "http://127.0.0.1:5082/downloads/client/latest.json",
+    "addonCatalogUrl": "http://127.0.0.1:5082/downloads/addons/catalog.json",
+    "releaseKey": "8QP9Z3PebRJhEPqw6c3f7FQnXEG+ppAluXRtUXWrdy0=",
+    "realmlists": [
+      {
+        "name": "Mon serveur local",
+        "address": "127.0.0.1"
+      }
+    ],
+    "testManifestUrl": "http://127.0.0.1:5082/downloads/test/client/latest.json"
+  },
+  "server": {
+    "description": {
+      "en": "The CoA repack by Jealous: core, maps and a ready database.",
+      "fr": "Le repack CoA de Jealous : cœur, cartes et base de données prête.",
+      "ru": "Репак CoA от Jealous: ядро, карты и готовая база данных."
+    },
+    "manifestUrl": "http://127.0.0.1:5082/downloads/repack/latest.json",
+    "releaseKey": "8QP9Z3PebRJhEPqw6c3f7FQnXEG+ppAluXRtUXWrdy0=",
+    "requiredExecutable": "Core/worldserver.exe",
+    "services": [
+      {
+        "id": "mysql",
+        "name": "MySQL",
+        "port": 3307,
+        "start": {
+          "exe": "Runtime/python/python.exe",
+          "args": [
+            "-B",
+            "Scripts/manage.py",
+            "start-mysql"
+          ],
+          "timeout": 120
+        }
+      },
+      {
+        "id": "auth",
+        "name": "Authserver",
+        "port": 3724,
+        "start": {
+          "exe": "Runtime/python/python.exe",
+          "args": [
+            "-B",
+            "Scripts/manage.py",
+            "start-auth"
+          ],
+          "timeout": 120
+        }
+      },
+      {
+        "id": "world",
+        "name": "Worldserver",
+        "port": 8085,
+        "startTimeout": 600,
+        "start": {
+          "exe": "Runtime/python/python.exe",
+          "args": [
+            "-B",
+            "Scripts/manage.py",
+            "start-world"
+          ],
+          "timeout": 600
+        },
+        "alternatives": [
+          {
+            "exists": "CoA-Bots/coa_bots.py",
+            "label": "CoA Bots",
+            "start": {
+              "exe": "Runtime/python/python.exe",
+              "args": [
+                "-B",
+                "CoA-Bots/coa_bots.py",
+                "start-world"
+              ],
+              "timeout": 600
+            }
+          }
+        ]
+      }
+    ],
+    "stopAll": {
+      "exe": "Runtime/python/python.exe",
+      "args": [
+        "-B",
+        "Scripts/manage.py",
+        "stop-all"
+      ],
+      "timeout": 240
+    },
+    "console": {
+      "exe": "Runtime/python/python.exe",
+      "args": [
+        "-B",
+        "Scripts/manage.py",
+        "console"
+      ],
+      "timeout": 60
+    },
+    "purgeBots": {
+      "exe": "Runtime/python/python.exe",
+      "args": [
+        "-B",
+        "CoA-Bots/coa_bots.py",
+        "purge-bots"
+      ],
+      "timeout": 600
+    },
+    "bots": {
+      "name": "CoA Bots",
+      "description": {
+        "en": "Playerbots for Conquest of Azeroth: a bot-enabled worldserver, its database and the SquidBots settings.",
+        "fr": "Les bots de Conquest of Azeroth : un worldserver avec bots, leur base de données et les réglages SquidBots.",
+        "ru": "Боты для Conquest of Azeroth: worldserver с ботами, их база данных и настройки SquidBots."
+      },
+      "folder": "CoA-Bots",
+      "manifestUrl": "http://127.0.0.1:5082/downloads/bots/latest.json",
+      "releaseKey": "8QP9Z3PebRJhEPqw6c3f7FQnXEG+ppAluXRtUXWrdy0=",
+      "requiredExecutable": "Core/worldserver.exe",
+      "install": {
+        "script": "Installer-Bots.ps1",
+        "args": [
+          "-Repack",
+          "{root}",
+          "-NoAddon",
+          "-NoDashboard"
+        ],
+        "timeout": 1200
+      },
+      "addon": "squidbots-lite",
+      "testManifestUrl": "http://127.0.0.1:5082/downloads/test/bots/latest.json"
+    },
+    "testManifestUrl": "http://127.0.0.1:5082/downloads/test/repack/latest.json"
+  }
+}

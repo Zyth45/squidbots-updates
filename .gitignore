@@ -1,0 +1,7 @@
+﻿node_modules/
+launcher/dist/
+launcher/public/assets/fonts/
+keys/
+*.private.pem
+*.bak*
+

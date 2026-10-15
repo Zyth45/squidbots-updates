@@ -1,0 +1,26 @@
+{
+  "families": {
+    "DBM-": "DBM-Core",
+    "WeakAuras": "WeakAuras",
+    "ShadowedUF_": "ShadowedUnitFrames",
+    "TradeSkillMaster": "TradeSkillMaster",
+    "Kui_Nameplates": "Kui_Nameplates"
+  },
+  "ids": {
+    "DBM-Core": "dbm",
+    "ShadowedUnitFrames": "shadowed-unit-frames",
+    "SquidBotsLite": "squidbots-lite"
+  },
+  "packages": {
+    "squidbots-lite": { "name": "SquidBots Lite", "category": "Playerbots", "recommended": true, "description": "Invite, command and follow your playerbots from one small panel.", "website": "https://github.com/Zyth45/squidbots-addon" },
+    "dbm": { "name": "Deadly Boss Mods", "category": "Combat & Raids", "description": "Timers and warnings for every boss, dungeon and raid." },
+    "details": { "name": "Details! Damage Meter", "category": "Combat & Raids" },
+    "elvui": { "name": "ElvUI", "category": "Interface" },
+    "weakauras": { "name": "WeakAuras", "category": "Interface" },
+    "tradeskillmaster": { "name": "TradeSkillMaster", "category": "Economy" },
+    "datastore": { "name": "DataStore", "category": "Characters & Inventory", "description": "Shared character database used by Altoholic." },
+    "altoholic": { "category": "Characters & Inventory" },
+    "atlasloot": { "category": "Items & Gear" },
+    "apidocumentation": { "category": "Developer" }
+  }
+}

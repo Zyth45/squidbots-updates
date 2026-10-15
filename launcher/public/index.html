@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>CoA Launcher Lite</title>
+  <link rel="stylesheet" href="css/fonts.css">
+  <link rel="stylesheet" href="css/lite.css">
+  <link rel="stylesheet" href="css/forge.css">
+  <link rel="stylesheet" href="css/classic.css">
+  <link rel="stylesheet" href="css/abyss.css">
+</head>
+<body>
+  <canvas id="ocean" aria-hidden="true"></canvas>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand"><span class="crest" aria-hidden="true"><span>🦑</span></span><strong id="app-name">CoA Launcher Lite</strong></div>
+      <nav class="tabs" id="tabs"></nav>
+      <span class="spacer"></span>
+      <nav class="tabs tabs-right" id="tabs-right"></nav>
+      <button class="icon-button gear" data-action="settings" id="settings-button"></button>
+      <div class="window-buttons">
+        <button class="icon-button" data-window="minimize" id="win-min"></button>
+        <button class="icon-button" data-window="maximize" id="win-max"></button>
+        <button class="icon-button close" data-window="close" id="win-close"></button>
+      </div>
+    </header>
+    <main id="view"></main>
+  </div>
+  <dialog id="dialog"><div id="dialog-body"></div></dialog>
+  <div id="toast" class="toast" hidden></div>
+  <script src="js/i18n.js"></script>
+  <script src="js/icons.js"></script>
+  <script src="js/logo.js"></script>
+  <script src="js/ocean.js"></script>
+  <script src="js/core.js"></script>
+  <script src="js/play.js"></script>
+  <script src="js/server.js"></script>
+  <script src="js/serverhome.js"></script>
+  <script src="js/update.js"></script>
+  <script src="js/boot.js"></script>
+</body>
+</html>

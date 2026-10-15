@@ -1,0 +1,1667 @@
+{
+  "schema": 1,
+  "groups": [
+    {
+      "id": "population",
+      "icon": "bot",
+      "label": {
+        "en": "Bot population",
+        "fr": "Population de bots",
+        "ru": "Количество ботов"
+      }
+    },
+    {
+      "id": "realm",
+      "icon": "globe",
+      "label": {
+        "en": "Realm",
+        "fr": "Royaume",
+        "ru": "Игровой мир"
+      }
+    },
+    {
+      "id": "rates",
+      "icon": "chart",
+      "label": {
+        "en": "Rates",
+        "fr": "Taux",
+        "ru": "Множители"
+      }
+    },
+    {
+      "id": "levels",
+      "icon": "trophy",
+      "label": {
+        "en": "Bot levels",
+        "fr": "Niveaux des bots",
+        "ru": "Уровни ботов"
+      }
+    },
+    {
+      "id": "behaviour",
+      "icon": "swords",
+      "label": {
+        "en": "Bot behaviour",
+        "fr": "Comportement des bots",
+        "ru": "Поведение ботов"
+      }
+    },
+    {
+      "id": "coa",
+      "icon": "shield",
+      "label": {
+        "en": "CoA Bots",
+        "fr": "CoA Bots",
+        "ru": "CoA Bots"
+      }
+    },
+    {
+      "id": "chat",
+      "icon": "news",
+      "label": {
+        "en": "Channels and chat",
+        "fr": "Canaux et discussion",
+        "ru": "Каналы и чат"
+      }
+    },
+    {
+      "id": "dashboard",
+      "icon": "map",
+      "label": {
+        "en": "Dashboard live view",
+        "fr": "Vue en direct du dashboard",
+        "ru": "Живой вид панели"
+      }
+    },
+    {
+      "id": "xp",
+      "icon": "star",
+      "label": {
+        "en": "Experience (Dynamic XP)",
+        "fr": "Expérience (Dynamic XP)",
+        "ru": "Опыт (Dynamic XP)"
+      }
+    },
+    {
+      "id": "llm",
+      "icon": "book",
+      "label": {
+        "en": "Bot chat (LLM)",
+        "fr": "Discussion des bots (IA)",
+        "ru": "Чат ботов (ИИ)"
+      }
+    }
+  ],
+  "when": {
+    "restart": {
+      "en": "At the next server start",
+      "fr": "Au prochain démarrage du serveur",
+      "ru": "При следующем запуске сервера"
+    },
+    "new-bots": {
+      "en": "For bots created from now on",
+      "fr": "Pour les bots créés à partir de maintenant",
+      "ru": "Для вновь созданных ботов"
+    },
+    "reload": {
+      "en": "At the next start or after .reload config",
+      "fr": "Au prochain démarrage ou après .reload config",
+      "ru": "При запуске или после .reload config"
+    }
+  },
+  "settings": [
+    {
+      "key": "MaxPlayerLevel",
+      "file": "worldserver.conf",
+      "group": "realm",
+      "kind": "int",
+      "when": "restart",
+      "label": {
+        "en": "Highest player level",
+        "fr": "Niveau maximum des joueurs",
+        "ru": "Максимальный уровень игрока"
+      },
+      "help": {
+        "en": "The level characters stop at. Conquest of Azeroth content is built for its own level cap: only lower it for a special realm.",
+        "fr": "Le niveau auquel les personnages s'arrêtent. Le contenu de Conquest of Azeroth est prévu pour son propre plafond : ne le baissez que pour un royaume spécial.",
+        "ru": "Уровень, на котором персонажи перестают расти. Контент Conquest of Azeroth рассчитан на свой предел: снижайте только для особого мира."
+      }
+    },
+    {
+      "key": "StartPlayerLevel",
+      "file": "worldserver.conf",
+      "group": "realm",
+      "kind": "int",
+      "when": "restart",
+      "label": {
+        "en": "Starting level",
+        "fr": "Niveau de départ",
+        "ru": "Начальный уровень"
+      },
+      "help": {
+        "en": "The level new characters are created at. 1 is the normal game.",
+        "fr": "Le niveau des nouveaux personnages. 1 correspond au jeu normal.",
+        "ru": "Уровень новых персонажей. 1 — обычная игра."
+      }
+    },
+    {
+      "key": "StartPlayerMoney",
+      "file": "worldserver.conf",
+      "group": "realm",
+      "kind": "int",
+      "when": "restart",
+      "label": {
+        "en": "Starting money (copper)",
+        "fr": "Argent de départ (en cuivre)",
+        "ru": "Стартовые деньги (в меди)"
+      },
+      "help": {
+        "en": "Money a new character starts with, in copper: 10000 is 1 gold.",
+        "fr": "L'argent d'un nouveau personnage, en pièces de cuivre : 10000 = 1 pièce d'or.",
+        "ru": "Деньги нового персонажа в меди: 10000 = 1 золотой."
+      }
+    },
+    {
+      "key": "SkipCinematics",
+      "file": "worldserver.conf",
+      "group": "realm",
+      "kind": "choice",
+      "when": "restart",
+      "choices": [
+        {
+          "value": "0",
+          "label": {
+            "en": "Always play them",
+            "fr": "Toujours les jouer",
+            "ru": "Всегда показывать"
+          }
+        },
+        {
+          "value": "1",
+          "label": {
+            "en": "Only for the first character of a race",
+            "fr": "Seulement pour le premier personnage d'une race",
+            "ru": "Только для первого персонажа расы"
+          }
+        },
+        {
+          "value": "2",
+          "label": {
+            "en": "Never",
+            "fr": "Jamais",
+            "ru": "Никогда"
+          }
+        }
+      ],
+      "label": {
+        "en": "Intro cinematics",
+        "fr": "Cinématiques d'introduction",
+        "ru": "Вступительные ролики"
+      },
+      "help": {
+        "en": "Whether the race introduction plays when a new character first logs in.",
+        "fr": "Si la cinématique de race se joue à la première connexion d'un personnage.",
+        "ru": "Показывать ли ролик расы при первом входе персонажа."
+      }
+    },
+    {
+      "key": "GameType",
+      "file": "worldserver.conf",
+      "group": "realm",
+      "kind": "choice",
+      "when": "restart",
+      "choices": [
+        {
+          "value": "0",
+          "label": {
+            "en": "Normal",
+            "fr": "Normal",
+            "ru": "Обычный"
+          }
+        },
+        {
+          "value": "1",
+          "label": {
+            "en": "PvP",
+            "fr": "JcJ (PvP)",
+            "ru": "PvP"
+          }
+        },
+        {
+          "value": "6",
+          "label": {
+            "en": "Role-play",
+            "fr": "Jeu de rôle",
+            "ru": "Ролевой"
+          }
+        },
+        {
+          "value": "8",
+          "label": {
+            "en": "Role-play PvP",
+            "fr": "Jeu de rôle JcJ",
+            "ru": "Ролевой PvP"
+          }
+        }
+      ],
+      "label": {
+        "en": "Realm type",
+        "fr": "Type de royaume",
+        "ru": "Тип мира"
+      },
+      "help": {
+        "en": "PvP realms flag players for combat in contested zones.",
+        "fr": "Sur un royaume JcJ, les joueurs sont attaquables dans les zones contestées.",
+        "ru": "В PvP-мире игроки уязвимы в спорных зонах."
+      }
+    },
+    {
+      "key": "PlayerLimit",
+      "file": "worldserver.conf",
+      "group": "realm",
+      "kind": "int",
+      "when": "restart",
+      "label": {
+        "en": "Most players online",
+        "fr": "Nombre maximum de joueurs connectés",
+        "ru": "Максимум игроков онлайн"
+      },
+      "help": {
+        "en": "Real players only: bots do not count. 0 removes the limit.",
+        "fr": "Les vrais joueurs uniquement : les bots ne comptent pas. 0 supprime la limite.",
+        "ru": "Только настоящие игроки, боты не считаются. 0 — без ограничения."
+      }
+    },
+    {
+      "key": "AllowTwoSide.Interaction.Group",
+      "file": "worldserver.conf",
+      "group": "realm",
+      "kind": "bool",
+      "when": "restart",
+      "label": {
+        "en": "Alliance and Horde group together",
+        "fr": "Groupes Alliance et Horde mélangés",
+        "ru": "Совместные группы Альянса и Орды"
+      },
+      "help": {
+        "en": "Lets players of both factions join the same group. Handy on a small realm or with bots of the other faction.",
+        "fr": "Permet aux deux factions de former un même groupe. Pratique sur un petit royaume ou avec des bots de l'autre faction.",
+        "ru": "Игроки обеих фракций могут быть в одной группе. Удобно на маленьком сервере или с ботами другой фракции."
+      }
+    },
+    {
+      "key": "AllowTwoSide.Interaction.Guild",
+      "file": "worldserver.conf",
+      "group": "realm",
+      "kind": "bool",
+      "when": "restart",
+      "label": {
+        "en": "Guilds of both factions",
+        "fr": "Guildes des deux factions",
+        "ru": "Гильдии обеих фракций"
+      },
+      "help": {
+        "en": "Lets a guild accept members from both factions.",
+        "fr": "Une guilde peut accueillir des membres des deux factions.",
+        "ru": "Гильдия может принимать игроков обеих фракций."
+      }
+    },
+    {
+      "key": "AllowTwoSide.Interaction.Chat",
+      "file": "worldserver.conf",
+      "group": "realm",
+      "kind": "bool",
+      "when": "restart",
+      "label": {
+        "en": "Chat between factions",
+        "fr": "Discussion entre factions",
+        "ru": "Чат между фракциями"
+      },
+      "help": {
+        "en": "Players can read the other faction in say, yell and channels.",
+        "fr": "Les joueurs comprennent l'autre faction en /dire, /crier et dans les canaux.",
+        "ru": "Игроки понимают другую фракцию в /сказать, /крик и каналах."
+      }
+    },
+    {
+      "key": "Instance.IgnoreLevel",
+      "file": "worldserver.conf",
+      "group": "realm",
+      "kind": "bool",
+      "when": "restart",
+      "label": {
+        "en": "Enter dungeons at any level",
+        "fr": "Donjons accessibles à tout niveau",
+        "ru": "Подземелья на любом уровне"
+      },
+      "help": {
+        "en": "Removes the minimum level of dungeons and raids.",
+        "fr": "Supprime le niveau minimum des donjons et raids.",
+        "ru": "Убирает минимальный уровень подземелий и рейдов."
+      }
+    },
+    {
+      "key": "Death.SicknessLevel",
+      "file": "worldserver.conf",
+      "group": "realm",
+      "kind": "int",
+      "when": "restart",
+      "label": {
+        "en": "Resurrection sickness from level",
+        "fr": "Mal de résurrection à partir du niveau",
+        "ru": "Слабость после воскрешения с уровня"
+      },
+      "help": {
+        "en": "Characters below this level never get resurrection sickness from the spirit healer.",
+        "fr": "En dessous de ce niveau, le gardien des âmes ne donne pas de mal de résurrection.",
+        "ru": "Ниже этого уровня целитель душ не накладывает слабость."
+      }
+    },
+    {
+      "key": "Rate.XP.Kill",
+      "file": "worldserver.conf",
+      "group": "rates",
+      "kind": "float",
+      "when": "restart",
+      "label": {
+        "en": "XP from kills",
+        "fr": "XP des monstres tués",
+        "ru": "Опыт за убийства"
+      },
+      "help": {
+        "en": "Multiplier: 1 is normal, 2 twice as fast.",
+        "fr": "Multiplicateur : 1 = normal, 2 = deux fois plus rapide.",
+        "ru": "Множитель: 1 — обычно, 2 — вдвое быстрее."
+      }
+    },
+    {
+      "key": "Rate.XP.Quest",
+      "file": "worldserver.conf",
+      "group": "rates",
+      "kind": "float",
+      "when": "restart",
+      "label": {
+        "en": "XP from quests",
+        "fr": "XP des quêtes",
+        "ru": "Опыт за задания"
+      },
+      "help": {
+        "en": "Multiplier: 1 is normal.",
+        "fr": "Multiplicateur : 1 = normal.",
+        "ru": "Множитель: 1 — обычно."
+      }
+    },
+    {
+      "key": "Rate.XP.Explore",
+      "file": "worldserver.conf",
+      "group": "rates",
+      "kind": "float",
+      "when": "restart",
+      "label": {
+        "en": "XP from exploration",
+        "fr": "XP d'exploration",
+        "ru": "Опыт за исследование"
+      },
+      "help": {
+        "en": "Multiplier for discovering new areas.",
+        "fr": "Multiplicateur pour la découverte de nouvelles zones.",
+        "ru": "Множитель за открытие новых областей."
+      }
+    },
+    {
+      "key": "Rate.Drop.Money",
+      "file": "worldserver.conf",
+      "group": "rates",
+      "kind": "float",
+      "when": "restart",
+      "label": {
+        "en": "Gold dropped",
+        "fr": "Or ramassé",
+        "ru": "Выпадение золота"
+      },
+      "help": {
+        "en": "Multiplier for money looted from creatures.",
+        "fr": "Multiplicateur de l'argent sur les monstres.",
+        "ru": "Множитель денег с существ."
+      }
+    },
+    {
+      "key": "Rate.Drop.Item.Epic",
+      "file": "worldserver.conf",
+      "group": "rates",
+      "kind": "float",
+      "when": "restart",
+      "label": {
+        "en": "Epic item drops",
+        "fr": "Butin épique",
+        "ru": "Выпадение эпических предметов"
+      },
+      "help": {
+        "en": "Multiplier for the chance of epic items.",
+        "fr": "Multiplicateur des chances d'objets épiques.",
+        "ru": "Множитель шанса эпических предметов."
+      }
+    },
+    {
+      "key": "Rate.Reputation.Gain",
+      "file": "worldserver.conf",
+      "group": "rates",
+      "kind": "float",
+      "when": "restart",
+      "label": {
+        "en": "Reputation gains",
+        "fr": "Gains de réputation",
+        "ru": "Получение репутации"
+      },
+      "help": {
+        "en": "Multiplier: 1 is normal.",
+        "fr": "Multiplicateur : 1 = normal.",
+        "ru": "Множитель: 1 — обычно."
+      }
+    },
+    {
+      "key": "Rate.Honor",
+      "file": "worldserver.conf",
+      "group": "rates",
+      "kind": "float",
+      "when": "restart",
+      "label": {
+        "en": "Honor gains",
+        "fr": "Gains d'honneur",
+        "ru": "Получение чести"
+      },
+      "help": {
+        "en": "Multiplier for honor points.",
+        "fr": "Multiplicateur des points d'honneur.",
+        "ru": "Множитель очков чести."
+      }
+    },
+    {
+      "key": "Rate.Rest.InGame",
+      "file": "worldserver.conf",
+      "group": "rates",
+      "kind": "float",
+      "when": "restart",
+      "label": {
+        "en": "Rested XP gained",
+        "fr": "Repos accumulé",
+        "ru": "Накопление отдыха"
+      },
+      "help": {
+        "en": "How fast rested experience builds up while logged in at an inn.",
+        "fr": "Vitesse d'accumulation de l'expérience reposée à l'auberge.",
+        "ru": "Скорость накопления отдыха в таверне."
+      }
+    },
+    {
+      "key": "AiPlayerbot.BotTextLocale",
+      "file": "playerbots.conf",
+      "group": "population",
+      "kind": "choice",
+      "when": "restart",
+      "choices": [
+        {
+          "value": "-1",
+          "label": {
+            "en": "The language of each player's game",
+            "fr": "La langue du jeu de chaque joueur",
+            "ru": "Язык игры каждого игрока"
+          }
+        },
+        {
+          "value": "0",
+          "label": {
+            "en": "English",
+            "fr": "Anglais",
+            "ru": "Английский"
+          }
+        },
+        {
+          "value": "2",
+          "label": {
+            "en": "French",
+            "fr": "Français",
+            "ru": "Французский"
+          }
+        },
+        {
+          "value": "3",
+          "label": {
+            "en": "German",
+            "fr": "Allemand",
+            "ru": "Немецкий"
+          }
+        },
+        {
+          "value": "6",
+          "label": {
+            "en": "Spanish",
+            "fr": "Espagnol",
+            "ru": "Испанский"
+          }
+        },
+        {
+          "value": "8",
+          "label": {
+            "en": "Russian",
+            "fr": "Russe",
+            "ru": "Русский"
+          }
+        },
+        {
+          "value": "4",
+          "label": {
+            "en": "Chinese (simplified)",
+            "fr": "Chinois (simplifié)",
+            "ru": "Китайский (упрощ.)"
+          }
+        },
+        {
+          "value": "1",
+          "label": {
+            "en": "Korean",
+            "fr": "Coréen",
+            "ru": "Корейский"
+          }
+        }
+      ],
+      "label": {
+        "en": "Language of the bots",
+        "fr": "Langue des bots",
+        "ru": "Язык ботов"
+      },
+      "help": {
+        "en": "What the bots say in chat. Choose a language when your game is in English but you want the bots in yours.",
+        "fr": "Ce que les bots disent dans le chat. Choisissez une langue si votre jeu est en anglais mais que vous voulez les bots dans la vôtre.",
+        "ru": "Что боты пишут в чат. Выберите язык, если игра на английском, а ботов хотите на своём."
+      }
+    },
+    {
+      "key": "AiPlayerbot.Enabled",
+      "file": "playerbots.conf",
+      "group": "population",
+      "kind": "bool",
+      "when": "restart",
+      "label": {
+        "en": "Bots enabled",
+        "fr": "Bots activés",
+        "ru": "Боты включены"
+      },
+      "help": {
+        "en": "Master switch for the bot system. Off means no bots at all, random or otherwise.",
+        "fr": "Interrupteur général du système de bots. Désactivé : aucun bot, ni aléatoire ni autre.",
+        "ru": "Главный переключатель ботов. Выключено — ботов нет совсем."
+      }
+    },
+    {
+      "key": "AiPlayerbot.RandomBotAutologin",
+      "file": "playerbots.conf",
+      "group": "population",
+      "kind": "bool",
+      "when": "restart",
+      "label": {
+        "en": "Random bots log in by themselves",
+        "fr": "Les bots aléatoires se connectent seuls",
+        "ru": "Случайные боты входят сами"
+      },
+      "help": {
+        "en": "Random bots log in on their own and live in the world. Off leaves only bots a player adds by hand.",
+        "fr": "Les bots aléatoires se connectent et vivent dans le monde. Désactivé : seuls les bots ajoutés à la main par un joueur restent.",
+        "ru": "Случайные боты сами входят и живут в мире. Выключено — только боты, добавленные игроком вручную."
+      }
+    },
+    {
+      "key": "AiPlayerbot.MinRandomBots",
+      "file": "playerbots.conf",
+      "group": "population",
+      "kind": "int",
+      "when": "restart",
+      "label": {
+        "en": "Fewest random bots online",
+        "fr": "Minimum de bots aléatoires en ligne",
+        "ru": "Минимум случайных ботов онлайн"
+      },
+      "help": {
+        "en": "The server keeps at least this many random bots in the world. About 16 GB of memory holds 200 bots comfortably; 1000 needs about 32 GB.",
+        "fr": "Le serveur garde au moins ce nombre de bots dans le monde. 16 Go de mémoire tiennent 200 bots confortablement ; 1000 bots demandent environ 32 Go.",
+        "ru": "Сервер держит в мире не меньше стольких ботов. 16 ГБ памяти хватает на 200 ботов; 1000 требуют около 32 ГБ."
+      }
+    },
+    {
+      "key": "AiPlayerbot.MaxRandomBots",
+      "file": "playerbots.conf",
+      "group": "population",
+      "kind": "int",
+      "when": "restart",
+      "label": {
+        "en": "Most random bots online",
+        "fr": "Maximum de bots aléatoires en ligne",
+        "ru": "Максимум случайных ботов онлайн"
+      },
+      "help": {
+        "en": "The server never runs more random bots than this. More bots means more server load.",
+        "fr": "Le serveur ne fait jamais tourner plus de bots que ce nombre. Plus de bots = plus de charge.",
+        "ru": "Сервер никогда не запускает больше ботов. Больше ботов — больше нагрузка."
+      }
+    },
+    {
+      "file": "playerbots.conf",
+      "key": "AiPlayerbot.RandomBotAccountCount",
+      "group": "population",
+      "kind": "int",
+      "when": "restart",
+      "min": 0,
+      "max": 2000,
+      "label": {
+        "en": "Bot accounts kept",
+        "fr": "Comptes de bots gardés",
+        "ru": "Сохраняемые аккаунты ботов"
+      },
+      "help": {
+        "en": "0 = as many as needed. Lowering the number of bots does not delete the accounts already made: purge the bots for that.",
+        "fr": "0 = autant que nécessaire. Baisser le nombre de bots ne supprime pas les comptes déjà créés : pour ça, purgez les bots.",
+        "ru": "0 = сколько нужно. Уменьшение числа ботов не удаляет созданные аккаунты: для этого очистите ботов."
+      }
+    },
+    {
+      "key": "AiPlayerbot.BotActiveAlone",
+      "file": "playerbots.conf",
+      "group": "population",
+      "kind": "int",
+      "when": "restart",
+      "min": 0,
+      "max": 100,
+      "label": {
+        "en": "Bots awake with no player near (%)",
+        "fr": "Bots actifs sans joueur à proximité (%)",
+        "ru": "Активные боты без игроков рядом (%)"
+      },
+      "help": {
+        "en": "Share of bots that keep playing when no real player is around. 100 keeps them all active, at the cost of server load. 60 is what a 1000-bot realm was measured to need.",
+        "fr": "Part des bots qui continuent de jouer sans vrai joueur autour. 100 : tous actifs, au prix de la charge serveur. 60 est la valeur mesurée pour un royaume de 1000 bots.",
+        "ru": "Доля ботов, которые играют без настоящих игроков рядом. 100 — все активны ценой нагрузки. 60 — измеренное значение для мира на 1000 ботов."
+      }
+    },
+    {
+      "file": "playerbots.conf",
+      "key": "AiPlayerbot.DisabledWithoutRealPlayer",
+      "group": "population",
+      "kind": "bool",
+      "when": "restart",
+      "label": {
+        "en": "No bots while no player is online",
+        "fr": "Pas de bots sans joueur connecté",
+        "ru": "Нет ботов без игроков"
+      },
+      "help": {
+        "en": "The bots log in only when a real player is online: less load on an empty server.",
+        "fr": "Les bots ne se connectent que si un vrai joueur est en ligne : moins de charge quand le serveur est vide.",
+        "ru": "Боты входят, только когда в сети есть игрок."
+      }
+    },
+    {
+      "key": "AiPlayerbot.RandomBotMinLevel",
+      "file": "playerbots.conf",
+      "group": "levels",
+      "kind": "int",
+      "when": "new-bots",
+      "label": {
+        "en": "Lowest level a bot is given",
+        "fr": "Niveau le plus bas donné à un bot",
+        "ru": "Минимальный уровень бота"
+      },
+      "help": {
+        "en": "The bottom of the range new bots are rolled into.",
+        "fr": "Le bas de la fourchette dans laquelle les nouveaux bots sont tirés.",
+        "ru": "Нижняя граница диапазона уровней новых ботов."
+      }
+    },
+    {
+      "key": "AiPlayerbot.RandomBotMaxLevel",
+      "file": "playerbots.conf",
+      "group": "levels",
+      "kind": "int",
+      "when": "new-bots",
+      "label": {
+        "en": "Highest level a bot is given",
+        "fr": "Niveau le plus haut donné à un bot",
+        "ru": "Максимальный уровень бота"
+      },
+      "help": {
+        "en": "The top of the range new bots are rolled into. Keep it at or above your own level, or no bot will ever join you.",
+        "fr": "Le haut de la fourchette des nouveaux bots. Gardez-le au moins à votre niveau, sinon aucun bot ne vous rejoindra jamais.",
+        "ru": "Верхняя граница диапазона уровней новых ботов. Не ниже вашего уровня, иначе боты к вам не присоединятся."
+      }
+    },
+    {
+      "key": "AiPlayerbot.DisableRandomLevels",
+      "file": "playerbots.conf",
+      "group": "levels",
+      "kind": "bool",
+      "when": "new-bots",
+      "label": {
+        "en": "Same starting level for every bot",
+        "fr": "Même niveau de départ pour tous les bots",
+        "ru": "Одинаковый начальный уровень"
+      },
+      "help": {
+        "en": "On: every new bot starts at the starting level below instead of a random one. Bots still level up by playing.",
+        "fr": "Activé : chaque nouveau bot commence au niveau ci-dessous au lieu d'un niveau aléatoire. Les bots progressent quand même en jouant.",
+        "ru": "Включено: каждый новый бот начинает с уровня ниже, а не со случайного. Боты всё равно растут, играя."
+      }
+    },
+    {
+      "key": "AiPlayerbot.RandombotStartingLevel",
+      "file": "playerbots.conf",
+      "group": "levels",
+      "kind": "int",
+      "when": "new-bots",
+      "label": {
+        "en": "Starting level",
+        "fr": "Niveau de départ",
+        "ru": "Начальный уровень"
+      },
+      "help": {
+        "en": "The level every new bot starts at, when the same starting level is on.",
+        "fr": "Le niveau de départ de chaque nouveau bot quand le niveau commun est activé.",
+        "ru": "Уровень новых ботов, если включён одинаковый начальный уровень."
+      }
+    },
+    {
+      "key": "AiPlayerbot.RandomBotMinLevelChance",
+      "file": "playerbots.conf",
+      "group": "levels",
+      "kind": "float",
+      "when": "new-bots",
+      "min": 0,
+      "max": 1,
+      "label": {
+        "en": "Odds a new bot starts at the lowest level",
+        "fr": "Probabilité qu'un bot commence au plus bas niveau",
+        "ru": "Шанс начать с минимального уровня"
+      },
+      "help": {
+        "en": "0 to 1. With random levels, this share of new bots start at the lowest level (1 means all of them).",
+        "fr": "De 0 à 1. Avec les niveaux aléatoires, cette part des nouveaux bots commence au niveau le plus bas (1 = tous).",
+        "ru": "От 0 до 1. Доля новых ботов, начинающих с минимального уровня (1 — все)."
+      }
+    },
+    {
+      "key": "AiPlayerbot.RandomBotMaxLevelChance",
+      "file": "playerbots.conf",
+      "group": "levels",
+      "kind": "float",
+      "when": "new-bots",
+      "min": 0,
+      "max": 1,
+      "label": {
+        "en": "Odds a new bot starts at the highest level",
+        "fr": "Probabilité qu'un bot commence au plus haut niveau",
+        "ru": "Шанс начать с максимального уровня"
+      },
+      "help": {
+        "en": "0 to 1. With random levels, this share of new bots start at the highest level. Checked before the lowest-level odds.",
+        "fr": "De 0 à 1. Cette part des nouveaux bots commence au niveau le plus haut. Vérifié avant la probabilité du plus bas niveau.",
+        "ru": "От 0 до 1. Доля новых ботов с максимальным уровнем. Проверяется раньше минимального."
+      }
+    },
+    {
+      "key": "AiPlayerbot.RandomBotFixedLevel",
+      "file": "playerbots.conf",
+      "group": "levels",
+      "kind": "bool",
+      "when": "restart",
+      "label": {
+        "en": "Bots never level up",
+        "fr": "Les bots ne montent jamais de niveau",
+        "ru": "Боты не растут в уровне"
+      },
+      "help": {
+        "en": "On: bots stay at the level they have. Off: they gain levels by questing and killing like players.",
+        "fr": "Activé : les bots restent à leur niveau. Désactivé : ils progressent en faisant des quêtes et en tuant comme les joueurs.",
+        "ru": "Включено: боты остаются на своём уровне. Выключено: растут, как игроки."
+      }
+    },
+    {
+      "key": "AiPlayerbot.LevelBrackets.Enabled",
+      "file": "playerbots.conf",
+      "group": "levels",
+      "kind": "bool",
+      "when": "reload",
+      "label": {
+        "en": "Level brackets (keep bots spread across levels)",
+        "fr": "Tranches de niveau (répartir les bots)",
+        "ru": "Диапазоны уровней (распределять ботов)"
+      },
+      "help": {
+        "en": "Every 5 minutes, moves bots between nine level ranges to keep every range populated, re-rolling a moved bot at its new level. While on, it overrides any starting level set here.",
+        "fr": "Toutes les 5 minutes, déplace des bots entre neuf tranches de niveau pour peupler chacune, en recréant le bot déplacé à son nouveau niveau. Tant que c'est activé, le niveau de départ réglé ici est ignoré.",
+        "ru": "Каждые 5 минут перемещает ботов между девятью диапазонами уровней, пересоздавая их. Пока включено, начальный уровень отсюда не действует."
+      }
+    },
+    {
+      "key": "AiPlayerbot.LevelBrackets.Dynamic.UseDynamicDistribution",
+      "file": "playerbots.conf",
+      "group": "levels",
+      "kind": "bool",
+      "when": "reload",
+      "label": {
+        "en": "Brackets follow real players",
+        "fr": "Les tranches suivent les vrais joueurs",
+        "ru": "Диапазоны следуют за игроками"
+      },
+      "help": {
+        "en": "With level brackets on, put more bots in the level ranges where real players are, instead of an even spread.",
+        "fr": "Avec les tranches activées, met plus de bots là où sont les vrais joueurs au lieu d'une répartition égale.",
+        "ru": "С диапазонами — больше ботов там, где настоящие игроки, а не поровну."
+      }
+    },
+    {
+      "file": "playerbots.conf",
+      "key": "AiPlayerbot.LevelBrackets.Dynamic.RealPlayerWeight",
+      "group": "levels",
+      "kind": "float",
+      "when": "reload",
+      "label": {
+        "en": "Weight of real players in the brackets",
+        "fr": "Poids des vrais joueurs dans les tranches",
+        "ru": "Вес игроков в диапазонах"
+      },
+      "help": {
+        "en": "With \"brackets follow real players\": 10 to 15 when you play alone, to have bots of your level.",
+        "fr": "Avec « les tranches suivent les vrais joueurs » : 10 à 15 en solo, pour avoir des bots de votre niveau.",
+        "ru": "С «диапазоны следуют за игроками»: 10–15 в соло, чтобы были боты вашего уровня."
+      }
+    },
+    {
+      "key": "AiPlayerbot.RandomBotTalk",
+      "file": "playerbots.conf",
+      "group": "behaviour",
+      "kind": "bool",
+      "when": "restart",
+      "label": {
+        "en": "Canned bot chatter",
+        "fr": "Phrases toutes faites des bots",
+        "ru": "Шаблонные реплики ботов"
+      },
+      "help": {
+        "en": "Playerbots' own built-in lines in say, yell, General and LFG. Kept off when the LLM chat is used.",
+        "fr": "Les phrases intégrées de Playerbots en /dire, /crier, Général et Recherche de groupe. Laissé désactivé si la discussion IA est utilisée.",
+        "ru": "Встроенные фразы Playerbots в /сказать, /крик, Общем и Поиске группы. Выключено при чате ИИ."
+      }
+    },
+    {
+      "key": "AiPlayerbot.InviteChat",
+      "file": "playerbots.conf",
+      "group": "behaviour",
+      "kind": "bool",
+      "when": "restart",
+      "label": {
+        "en": "Bots announce group invites",
+        "fr": "Les bots annoncent leurs invitations",
+        "ru": "Боты объявляют приглашения"
+      },
+      "help": {
+        "en": "Bots say something in say or guild chat when they invite another bot to a group, raid or guild.",
+        "fr": "Les bots parlent en /dire ou en guilde quand ils invitent un autre bot en groupe, raid ou guilde.",
+        "ru": "Боты говорят в /сказать или гильдии, приглашая другого бота."
+      }
+    },
+    {
+      "key": "AiPlayerbot.AutoPickTalents",
+      "file": "playerbots.conf",
+      "group": "behaviour",
+      "kind": "bool",
+      "when": "restart",
+      "label": {
+        "en": "Bots spend talent points",
+        "fr": "Les bots dépensent leurs talents",
+        "ru": "Боты распределяют таланты"
+      },
+      "help": {
+        "en": "Bots spend their talent points themselves when they level up.",
+        "fr": "Les bots dépensent eux-mêmes leurs points de talent en montant de niveau.",
+        "ru": "Боты сами тратят очки талантов при повышении уровня."
+      }
+    },
+    {
+      "file": "playerbots.conf",
+      "key": "AiPlayerbot.AutoGearQualityLimit",
+      "group": "behaviour",
+      "kind": "choice",
+      "when": "restart",
+      "choices": [
+        {
+          "value": "2",
+          "label": {
+            "en": "Green",
+            "fr": "Vert",
+            "ru": "Зелёное"
+          }
+        },
+        {
+          "value": "3",
+          "label": {
+            "en": "Blue",
+            "fr": "Bleu",
+            "ru": "Синее"
+          }
+        },
+        {
+          "value": "4",
+          "label": {
+            "en": "Epic",
+            "fr": "Épique",
+            "ru": "Эпическое"
+          }
+        }
+      ],
+      "label": {
+        "en": "Best gear quality of the bots",
+        "fr": "Qualité d'équipement maximale des bots",
+        "ru": "Макс. качество экипировки ботов"
+      },
+      "help": {
+        "en": "The gear the bots give themselves. Blue is the default.",
+        "fr": "L'équipement que les bots se donnent eux-mêmes. Bleu par défaut.",
+        "ru": "Экипировка, которую боты выдают себе. По умолчанию синяя."
+      }
+    },
+    {
+      "file": "playerbots.conf",
+      "key": "AiPlayerbot.AutoGearCommandAltBots",
+      "group": "behaviour",
+      "kind": "bool",
+      "when": "restart",
+      "label": {
+        "en": "Your own bots can gear themselves",
+        "fr": "Vos propres bots peuvent s'équiper seuls",
+        "ru": "Ваши боты могут экипироваться сами"
+      },
+      "help": {
+        "en": "Off for a \"loot only\" realm: your bots then wear what they find or what you give them.",
+        "fr": "Désactivé pour un royaume « butin seulement » : vos bots portent alors ce qu'ils trouvent ou ce que vous leur donnez.",
+        "ru": "Выключите для мира «только добыча»."
+      }
+    },
+    {
+      "file": "playerbots.conf",
+      "key": "AiPlayerbot.RandomBotJoinLfg",
+      "group": "behaviour",
+      "kind": "bool",
+      "when": "restart",
+      "label": {
+        "en": "Bots join the dungeon finder",
+        "fr": "Les bots rejoignent la recherche de donjon",
+        "ru": "Боты вступают в поиск подземелий"
+      },
+      "help": {
+        "en": "Random bots queue for dungeons and fill your groups.",
+        "fr": "Les bots aléatoires s'inscrivent aux donjons et complètent vos groupes.",
+        "ru": "Случайные боты встают в очередь подземелий."
+      }
+    },
+    {
+      "file": "playerbots.conf",
+      "key": "AiPlayerbot.RandomBotJoinBG",
+      "group": "behaviour",
+      "kind": "bool",
+      "when": "restart",
+      "label": {
+        "en": "Bots join battlegrounds",
+        "fr": "Les bots rejoignent les champs de bataille",
+        "ru": "Боты вступают на поля боя"
+      },
+      "help": {
+        "en": "Random bots queue for battlegrounds, so they can start.",
+        "fr": "Les bots aléatoires s'inscrivent aux champs de bataille pour qu'ils puissent démarrer.",
+        "ru": "Случайные боты встают в очередь полей боя."
+      }
+    },
+    {
+      "key": "AiPlayerbot.LimitTalentsExpansion",
+      "file": "playerbots.conf",
+      "group": "behaviour",
+      "kind": "bool",
+      "when": "restart",
+      "label": {
+        "en": "Hold talents to their expansion",
+        "fr": "Talents limités à leur extension",
+        "ru": "Таланты по дополнениям"
+      },
+      "help": {
+        "en": "Bots below 61 only use the talent rows Classic had, and below 71 the rows The Burning Crusade had.",
+        "fr": "Sous le niveau 61, les bots n'utilisent que les rangées de talents de Classic, et sous 71 celles de The Burning Crusade.",
+        "ru": "До 61 уровня боты используют только ряды талантов Classic, до 71 — The Burning Crusade."
+      }
+    },
+    {
+      "key": "AiPlayerbot.CoaSpecRotations",
+      "file": "playerbots.conf",
+      "group": "coa",
+      "kind": "bool",
+      "when": "restart",
+      "label": {
+        "en": "Written rotations for CoA specializations",
+        "fr": "Rotations écrites des spécialisations CoA",
+        "ru": "Ротации для специализаций CoA"
+      },
+      "help": {
+        "en": "Bots play each Conquest of Azeroth specialization with its own written rotation. Off: they fall back to generic behaviour.",
+        "fr": "Les bots jouent chaque spécialisation de Conquest of Azeroth avec sa rotation écrite. Désactivé : comportement générique.",
+        "ru": "Боты играют каждую специализацию Conquest of Azeroth по своей ротации. Выключено — общее поведение."
+      }
+    },
+    {
+      "key": "AiPlayerbot.CoaClassesOnly",
+      "file": "playerbots.conf",
+      "group": "coa",
+      "kind": "bool",
+      "when": "new-bots",
+      "label": {
+        "en": "Random bots use CoA classes only",
+        "fr": "Bots aléatoires en classes CoA uniquement",
+        "ru": "Случайные боты только классов CoA"
+      },
+      "help": {
+        "en": "New random bots are created in the Conquest of Azeroth classes only.",
+        "fr": "Les nouveaux bots aléatoires sont créés uniquement dans les classes de Conquest of Azeroth.",
+        "ru": "Новые случайные боты создаются только в классах Conquest of Azeroth."
+      }
+    },
+    {
+      "key": "AiPlayerbot.CoaSmartHeal",
+      "file": "playerbots.conf",
+      "group": "coa",
+      "kind": "bool",
+      "when": "restart",
+      "label": {
+        "en": "Smarter healers",
+        "fr": "Soigneurs plus malins",
+        "ru": "Умные лекари"
+      },
+      "help": {
+        "en": "CoA healers keep their mana for healing and pick who to heal by need.",
+        "fr": "Les soigneurs CoA gardent leur mana pour soigner et choisissent qui soigner selon le besoin.",
+        "ru": "Лекари CoA берегут ману и лечат тех, кому нужнее."
+      }
+    },
+    {
+      "key": "AiPlayerbot.CoaSmartTank",
+      "file": "playerbots.conf",
+      "group": "coa",
+      "kind": "bool",
+      "when": "restart",
+      "label": {
+        "en": "Damage dealers let the tank open",
+        "fr": "Les DPS laissent le tank engager",
+        "ru": "Бойцы ждут танка"
+      },
+      "help": {
+        "en": "In a group with a tank, CoA damage dealers wait for the tank to take the target first.",
+        "fr": "Dans un groupe avec un tank, les DPS CoA attendent que le tank prenne la cible.",
+        "ru": "В группе с танком бойцы CoA ждут, пока танк возьмёт цель."
+      }
+    },
+    {
+      "key": "AiPlayerbot.CoaTankOpenerSeconds",
+      "file": "playerbots.conf",
+      "group": "coa",
+      "kind": "int",
+      "when": "reload",
+      "label": {
+        "en": "Longest wait for the tank (seconds)",
+        "fr": "Attente maximum du tank (secondes)",
+        "ru": "Макс. ожидание танка (сек)"
+      },
+      "help": {
+        "en": "How long a damage dealer waits on a target no tank has touched, then goes all out. 0: no wait.",
+        "fr": "Durée pendant laquelle un DPS attend sur une cible que le tank n'a pas touchée, avant de tout donner. 0 : aucune attente.",
+        "ru": "Сколько боец ждёт на цели без танка, прежде чем атаковать. 0 — без ожидания."
+      }
+    },
+    {
+      "key": "AiPlayerbot.CoaExcludedSpecializations",
+      "file": "playerbots.conf",
+      "group": "coa",
+      "kind": "ids",
+      "when": "restart",
+      "label": {
+        "en": "Specializations bots never use",
+        "fr": "Spécialisations jamais utilisées par les bots",
+        "ru": "Специализации, которые боты не берут"
+      },
+      "help": {
+        "en": "Specialization numbers separated by commas. 99 (Bloodmage Eternal) is left out by default.",
+        "fr": "Numéros de spécialisation séparés par des virgules. 99 (Bloodmage Eternal) est exclu par défaut.",
+        "ru": "Номера специализаций через запятую. 99 (Bloodmage Eternal) исключена по умолчанию."
+      }
+    },
+    {
+      "key": "AiPlayerbot.CoaGroupTelemetry",
+      "file": "playerbots.conf",
+      "group": "coa",
+      "kind": "bool",
+      "when": "restart",
+      "label": {
+        "en": "Group fight report in CoaBots.log",
+        "fr": "Rapport de combat de groupe dans CoaBots.log",
+        "ru": "Отчёт о групповых боях в CoaBots.log"
+      },
+      "help": {
+        "en": "Writes a report at the end of every fight of a group with a real player in it. For measuring; off on a normal realm.",
+        "fr": "Écrit un rapport à la fin de chaque combat d'un groupe avec un vrai joueur. Pour mesurer ; désactivé sur un royaume normal.",
+        "ru": "Пишет отчёт после каждого боя группы с игроком. Для измерений; на обычном сервере выключено."
+      }
+    },
+    {
+      "key": "AiPlayerbot.CoaLfgBots",
+      "file": "playerbots.conf",
+      "group": "coa",
+      "kind": "bool",
+      "when": "reload",
+      "label": {
+        "en": "Bots answer \"lfg bot\" in chat",
+        "fr": "Les bots répondent à « lfg bot »",
+        "ru": "Боты отвечают на «lfg bot»"
+      },
+      "help": {
+        "en": "A player who says \"lfg bot heal\", \"lfg bot tank\" or \"lfg bot\" in a listened channel is whispered by free bots able to play those roles.",
+        "fr": "Un joueur qui écrit « lfg bot heal », « lfg bot tank » ou « lfg bot » dans un canal écouté reçoit un message des bots libres capables de tenir ce rôle.",
+        "ru": "Игроку, написавшему «lfg bot heal», «lfg bot tank» или «lfg bot», шепчут свободные боты с такой ролью."
+      }
+    },
+    {
+      "key": "AiPlayerbot.ZoneChannelId",
+      "file": "playerbots.conf",
+      "group": "chat",
+      "kind": "int",
+      "when": "restart",
+      "label": {
+        "en": "Zone channel number",
+        "fr": "Numéro du canal de zone",
+        "ru": "Номер канала зоны"
+      },
+      "help": {
+        "en": "The number of the Zone channel. Conquest of Azeroth uses 3, not the stock 1.",
+        "fr": "Le numéro du canal Zone. Conquest of Azeroth utilise 3, pas le 1 d'origine.",
+        "ru": "Номер канала зоны. В Conquest of Azeroth это 3, а не 1."
+      }
+    },
+    {
+      "key": "AiPlayerbot.BroadcastWorldChannelName",
+      "file": "playerbots.conf",
+      "group": "chat",
+      "kind": "quoted",
+      "when": "restart",
+      "label": {
+        "en": "Realm-wide channel name",
+        "fr": "Nom du canal global",
+        "ru": "Название общего канала"
+      },
+      "help": {
+        "en": "Conquest of Azeroth calls it Ascension. Until this matches, every broadcast meant for it is dropped.",
+        "fr": "Conquest of Azeroth l'appelle Ascension. Tant que ce nom ne correspond pas, les annonces destinées à ce canal sont perdues.",
+        "ru": "В Conquest of Azeroth он называется Ascension. Пока имя не совпадает, сообщения теряются."
+      }
+    },
+    {
+      "key": "AiPlayerbot.BroadcastToWorldGlobalChance",
+      "file": "playerbots.conf",
+      "group": "chat",
+      "kind": "int",
+      "when": "restart",
+      "min": 0,
+      "max": 30000,
+      "label": {
+        "en": "Bot chatter in the realm-wide channel",
+        "fr": "Bavardage des bots dans le canal global",
+        "ru": "Болтовня ботов в общем канале"
+      },
+      "help": {
+        "en": "0 to 30000; 0 keeps bots out of the realm-wide channel, which everybody reads.",
+        "fr": "De 0 à 30000 ; 0 garde les bots hors du canal global, que tout le monde lit.",
+        "ru": "От 0 до 30000; 0 — боты не пишут в общий канал."
+      }
+    },
+    {
+      "key": "AiPlayerbot.BotsWhisperPublic",
+      "file": "playerbots.conf",
+      "group": "chat",
+      "kind": "bool",
+      "when": "restart",
+      "label": {
+        "en": "Bots whisper unasked",
+        "fr": "Les bots chuchotent sans qu'on leur demande",
+        "ru": "Боты шепчут без спроса"
+      },
+      "help": {
+        "en": "On: bots whisper a player who writes in a channel, and tell their master every potion and buff. Off: no wall of whispers.",
+        "fr": "Activé : les bots chuchotent au joueur qui écrit dans un canal et signalent chaque potion et amélioration. Désactivé : plus d'avalanche de messages.",
+        "ru": "Включено: боты шепчут игроку, пишущему в канал, и сообщают о каждом зелье. Выключено — без потока сообщений."
+      }
+    },
+    {
+      "key": "AiPlayerbot.PublicReplyChance",
+      "file": "playerbots.conf",
+      "group": "chat",
+      "kind": "int",
+      "when": "restart",
+      "min": 0,
+      "max": 100,
+      "label": {
+        "en": "Bots answering a channel message (%)",
+        "fr": "Bots répondant à un message de canal (%)",
+        "ru": "Боты, отвечающие в канале (%)"
+      },
+      "help": {
+        "en": "How many of the bots that read a player's channel message may answer. A bot called by name always answers.",
+        "fr": "Part des bots lisant un message de canal qui peuvent répondre. Un bot appelé par son nom répond toujours.",
+        "ru": "Доля ботов, которые могут ответить. Бот, названный по имени, отвечает всегда."
+      }
+    },
+    {
+      "key": "AiPlayerbot.CoaStatusFile",
+      "file": "playerbots.conf",
+      "group": "dashboard",
+      "kind": "quoted",
+      "when": "reload",
+      "label": {
+        "en": "Live status file",
+        "fr": "Fichier d'état en direct",
+        "ru": "Файл живого состояния"
+      },
+      "help": {
+        "en": "Where the server writes each bot's health, power and action for the SquidBots dashboard map. Empty: not written.",
+        "fr": "Où le serveur écrit la vie, l'énergie et l'action de chaque bot pour la carte du dashboard SquidBots. Vide : rien n'est écrit.",
+        "ru": "Куда сервер пишет здоровье, ресурс и действие ботов для карты панели SquidBots. Пусто — не пишется."
+      }
+    },
+    {
+      "key": "AiPlayerbot.CoaStatusIntervalSeconds",
+      "file": "playerbots.conf",
+      "group": "dashboard",
+      "kind": "int",
+      "when": "reload",
+      "label": {
+        "en": "Refresh every (seconds)",
+        "fr": "Rafraîchir toutes les (secondes)",
+        "ru": "Обновлять каждые (сек)"
+      },
+      "help": {
+        "en": "How often the live status file is rewritten. Under a millisecond of server time per snapshot with 1000 bots.",
+        "fr": "Fréquence de réécriture du fichier d'état. Moins d'une milliseconde de temps serveur par écriture avec 1000 bots.",
+        "ru": "Как часто переписывается файл. Меньше миллисекунды на снимок при 1000 ботов."
+      }
+    },
+    {
+      "key": "Dynamic.XP.Preset",
+      "file": "dynamicxp.conf",
+      "group": "xp",
+      "kind": "choice",
+      "when": "reload",
+      "choices": [
+        {
+          "value": "0",
+          "label": {
+            "en": "Per-level curve",
+            "fr": "Courbe par niveau",
+            "ru": "Кривая по уровням"
+          }
+        },
+        {
+          "value": "1",
+          "label": {
+            "en": "Normal (x1)",
+            "fr": "Normal (x1)",
+            "ru": "Обычный (x1)"
+          }
+        },
+        {
+          "value": "3",
+          "label": {
+            "en": "x3",
+            "fr": "x3",
+            "ru": "x3"
+          }
+        },
+        {
+          "value": "5",
+          "label": {
+            "en": "x5",
+            "fr": "x5",
+            "ru": "x5"
+          }
+        },
+        {
+          "value": "7",
+          "label": {
+            "en": "x7",
+            "fr": "x7",
+            "ru": "x7"
+          }
+        }
+      ],
+      "label": {
+        "en": "Realm XP rate",
+        "fr": "Taux d'XP du royaume",
+        "ru": "Множитель опыта мира"
+      },
+      "help": {
+        "en": "XP multiplier for every character that has not picked its own.",
+        "fr": "Multiplicateur d'XP pour chaque personnage qui n'a pas choisi le sien.",
+        "ru": "Множитель опыта для персонажей, не выбравших свой."
+      }
+    },
+    {
+      "key": "Dynamic.XP.Preset.PlayerChoice",
+      "file": "dynamicxp.conf",
+      "group": "xp",
+      "kind": "bool",
+      "when": "reload",
+      "label": {
+        "en": "Players may pick their own rate",
+        "fr": "Les joueurs choisissent leur taux",
+        "ru": "Игроки выбирают свой множитель"
+      },
+      "help": {
+        "en": "Lets any player change their own rate with .xp 1, 3, 5, 7 or dynamic. Off: game masters only.",
+        "fr": "Tout joueur peut changer son taux avec .xp 1, 3, 5, 7 ou dynamic. Désactivé : maîtres du jeu seulement.",
+        "ru": "Любой игрок может менять множитель командой .xp 1, 3, 5, 7 или dynamic. Выключено — только ГМ."
+      }
+    },
+    {
+      "key": "Dynamic.XP.Rate",
+      "file": "dynamicxp.conf",
+      "group": "xp",
+      "kind": "bool",
+      "when": "reload",
+      "label": {
+        "en": "Per-level XP curve available",
+        "fr": "Courbe d'XP par niveau disponible",
+        "ru": "Кривая опыта по уровням"
+      },
+      "help": {
+        "en": "Turns on the per-level XP curve (faster at higher levels) that rate 0 and .xp dynamic use.",
+        "fr": "Active la courbe d'XP par niveau (plus rapide à haut niveau) utilisée par le taux 0 et .xp dynamic.",
+        "ru": "Включает кривую опыта (быстрее на высоких уровнях) для множителя 0 и .xp dynamic."
+      }
+    },
+    {
+      "key": "BotMinds.Enable",
+      "file": "mod_bot_minds.conf",
+      "group": "llm",
+      "kind": "bool",
+      "when": "restart",
+      "label": {
+        "en": "LLM chat on",
+        "fr": "Discussion IA activée",
+        "ru": "Чат ИИ включён"
+      },
+      "help": {
+        "en": "Bots write their own lines with the local language model.",
+        "fr": "Les bots écrivent leurs propres phrases avec le modèle de langage local.",
+        "ru": "Боты пишут свои фразы с помощью локальной языковой модели."
+      }
+    },
+    {
+      "key": "BotMinds.Model",
+      "file": "mod_bot_minds.conf",
+      "group": "llm",
+      "kind": "text",
+      "when": "restart",
+      "label": {
+        "en": "Language model",
+        "fr": "Modèle de langage",
+        "ru": "Языковая модель"
+      },
+      "help": {
+        "en": "The Ollama model that writes bot lines. It must support tool calls.",
+        "fr": "Le modèle Ollama qui écrit les phrases. Il doit gérer les appels d'outils.",
+        "ru": "Модель Ollama для реплик ботов. Должна поддерживать вызов инструментов."
+      }
+    },
+    {
+      "key": "BotMinds.ReplyChance.Say",
+      "file": "mod_bot_minds.conf",
+      "group": "llm",
+      "kind": "int",
+      "when": "restart",
+      "min": 0,
+      "max": 100,
+      "label": {
+        "en": "Chance to answer you nearby (%)",
+        "fr": "Chance de répondre à proximité (%)",
+        "ru": "Шанс ответа рядом (%)"
+      },
+      "help": {
+        "en": "Out of 100: how often a bot answers something said near it.",
+        "fr": "Sur 100 : à quelle fréquence un bot répond à ce qui est dit près de lui.",
+        "ru": "Из 100: как часто бот отвечает на сказанное рядом."
+      }
+    },
+    {
+      "key": "BotMinds.Ambient.Chance",
+      "file": "mod_bot_minds.conf",
+      "group": "llm",
+      "kind": "int",
+      "when": "restart",
+      "min": 0,
+      "max": 100,
+      "label": {
+        "en": "Idle chatter (%)",
+        "fr": "Bavardage spontané (%)",
+        "ru": "Спонтанная болтовня (%)"
+      },
+      "help": {
+        "en": "Out of 100: how often a bot near a real player says something unprompted.",
+        "fr": "Sur 100 : à quelle fréquence un bot près d'un joueur parle de lui-même.",
+        "ru": "Из 100: как часто бот рядом с игроком говорит сам."
+      }
+    }
+  ],
+  "overrides": [
+    {
+      "if": {
+        "AiPlayerbot.LevelBrackets.Enabled": "1"
+      },
+      "warn": [
+        "AiPlayerbot.RandomBotMinLevelChance",
+        "AiPlayerbot.RandomBotMaxLevelChance",
+        "AiPlayerbot.DisableRandomLevels",
+        "AiPlayerbot.RandombotStartingLevel"
+      ],
+      "text": {
+        "en": "Level brackets are on: every 5 minutes they move bots between level ranges, so starting levels do not last.",
+        "fr": "Les tranches de niveau sont activées : toutes les 5 minutes elles déplacent des bots, les niveaux de départ ne durent pas.",
+        "ru": "Диапазоны уровней включены: каждые 5 минут боты перемещаются, начальные уровни не сохраняются."
+      }
+    },
+    {
+      "if": {
+        "AiPlayerbot.DisableRandomLevels": "0"
+      },
+      "warn": [
+        "AiPlayerbot.RandombotStartingLevel"
+      ],
+      "text": {
+        "en": "Only used while \"Same starting level for every bot\" is on.",
+        "fr": "Utilisé seulement quand « Même niveau de départ » est activé.",
+        "ru": "Действует, только если включён одинаковый начальный уровень."
+      }
+    },
+    {
+      "if": {
+        "AiPlayerbot.DisableRandomLevels": "1"
+      },
+      "warn": [
+        "AiPlayerbot.RandomBotMinLevelChance",
+        "AiPlayerbot.RandomBotMaxLevelChance"
+      ],
+      "text": {
+        "en": "Ignored while \"Same starting level for every bot\" is on.",
+        "fr": "Ignoré tant que « Même niveau de départ » est activé.",
+        "ru": "Не действует при одинаковом начальном уровне."
+      }
+    },
+    {
+      "if": {
+        "AiPlayerbot.LevelBrackets.Enabled": "0"
+      },
+      "warn": [
+        "AiPlayerbot.LevelBrackets.Dynamic.UseDynamicDistribution"
+      ],
+      "text": {
+        "en": "Only used while level brackets are on.",
+        "fr": "Utilisé seulement quand les tranches de niveau sont activées.",
+        "ru": "Действует только с диапазонами уровней."
+      }
+    },
+    {
+      "if": {
+        "Dynamic.XP.Preset": "0",
+        "Dynamic.XP.Rate": "0"
+      },
+      "warn": [
+        "Dynamic.XP.Preset"
+      ],
+      "text": {
+        "en": "Rate 0 means the per-level curve, which is switched off below: this gives normal XP.",
+        "fr": "Le taux 0 utilise la courbe par niveau, désactivée plus bas : l'XP reste normale.",
+        "ru": "Множитель 0 — это кривая, которая выключена ниже: опыт будет обычным."
+      }
+    },
+    {
+      "if": {
+        "BotMinds.Enable": "0"
+      },
+      "warn": [
+        "BotMinds.Model",
+        "BotMinds.ReplyChance.Say",
+        "BotMinds.Ambient.Chance"
+      ],
+      "text": {
+        "en": "LLM chat is off, so this has no effect.",
+        "fr": "La discussion IA est désactivée : sans effet.",
+        "ru": "Чат ИИ выключен — не действует."
+      }
+    }
+  ],
+  "recipes": [
+    {
+      "id": "coa-recommended",
+      "title": {
+        "en": "CoA Bots: the recommended settings",
+        "fr": "CoA Bots : les réglages recommandés",
+        "ru": "CoA Bots: рекомендуемые настройки"
+      },
+      "summary": {
+        "en": "500 bots, 60% awake, Conquest of Azeroth's channel number and name, no whisper flood, the written rotations on.",
+        "fr": "500 bots, 60 % actifs, numéro et nom des canaux de Conquest of Azeroth, pas d'avalanche de chuchotements, rotations écrites activées.",
+        "ru": "500 ботов, 60% активны, каналы Conquest of Azeroth, без потока шёпота, ротации включены."
+      },
+      "changes": {
+        "AiPlayerbot.MinRandomBots": "500",
+        "AiPlayerbot.MaxRandomBots": "500",
+        "AiPlayerbot.BotActiveAlone": "60",
+        "AiPlayerbot.ZoneChannelId": "3",
+        "AiPlayerbot.BroadcastWorldChannelName": "Ascension",
+        "AiPlayerbot.BroadcastToWorldGlobalChance": "0",
+        "AiPlayerbot.BotsWhisperPublic": "0",
+        "AiPlayerbot.PublicReplyChance": "5",
+        "AiPlayerbot.CoaSpecRotations": "1",
+        "AiPlayerbot.CoaExcludedSpecializations": "99"
+      }
+    },
+    {
+      "id": "fresh-level-1",
+      "title": {
+        "en": "Fresh world: every bot starts at level 1",
+        "fr": "Monde neuf : tous les bots commencent niveau 1",
+        "ru": "Новый мир: все боты с 1 уровня"
+      },
+      "summary": {
+        "en": "New bots start at level 1 and level up by playing. Level brackets are turned off so nothing moves them afterwards.",
+        "fr": "Les nouveaux bots commencent niveau 1 et progressent en jouant. Les tranches de niveau sont désactivées pour que rien ne les déplace.",
+        "ru": "Новые боты начинают с 1 уровня и растут, играя. Диапазоны уровней выключены."
+      },
+      "changes": {
+        "AiPlayerbot.DisableRandomLevels": "1",
+        "AiPlayerbot.RandombotStartingLevel": "1",
+        "AiPlayerbot.LevelBrackets.Enabled": "0"
+      }
+    },
+    {
+      "id": "spread-levels",
+      "title": {
+        "en": "Mixed levels: bots spread from 1 to max",
+        "fr": "Niveaux mélangés : bots répartis de 1 au maximum",
+        "ru": "Смешанные уровни: боты от 1 до максимума"
+      },
+      "summary": {
+        "en": "Random starting levels, and level brackets keeping every range populated, weighted towards where real players are.",
+        "fr": "Niveaux de départ aléatoires et tranches de niveau qui peuplent chaque fourchette, en privilégiant celles des vrais joueurs.",
+        "ru": "Случайные уровни и диапазоны, заполненные с упором на уровни игроков."
+      },
+      "changes": {
+        "AiPlayerbot.DisableRandomLevels": "0",
+        "AiPlayerbot.LevelBrackets.Enabled": "1",
+        "AiPlayerbot.LevelBrackets.Dynamic.UseDynamicDistribution": "1"
+      }
+    },
+    {
+      "id": "solo-friendly",
+      "title": {
+        "en": "Solo-friendly realm",
+        "fr": "Royaume confortable en solo",
+        "ru": "Удобный мир для соло"
+      },
+      "summary": {
+        "en": "Twice the XP from kills and quests, dungeons at any level, groups with both factions.",
+        "fr": "XP doublée pour les monstres et les quêtes, donjons à tout niveau, groupes des deux factions.",
+        "ru": "Двойной опыт за убийства и задания, подземелья на любом уровне, смешанные группы."
+      },
+      "changes": {
+        "Rate.XP.Kill": "2",
+        "Rate.XP.Quest": "2",
+        "Instance.IgnoreLevel": "1",
+        "AllowTwoSide.Interaction.Group": "1"
+      }
+    }
+  ],
+  "managed": [
+    {
+      "file": "worldserver.conf",
+      "when": "CoA-Bots/coa_bots.py",
+      "keys": [
+        "CharacterCreating.Disabled.ClassMask",
+        "MapUpdate.Threads",
+        "Appender.CoaBots",
+        "Logger.playerbots.coa",
+        "Appender.Chat",
+        "Logger.playerbots.chat",
+        "Appender.BotLoot",
+        "Logger.playerbots.loot",
+        "Appender.Server",
+        "Appender.Errors"
+      ],
+      "reason": "CoA Bots sets this value at every start."
+    },
+    {
+      "file": "worldserver.conf",
+      "when": "Settings/worldserver.conf.template",
+      "keys": [
+        "DataDir",
+        "LogsDir",
+        "LoginDatabaseInfo",
+        "WorldDatabaseInfo",
+        "CharacterDatabaseInfo",
+        "WorldServerPort",
+        "Ra.Port",
+        "BindIP",
+        "Updates.EnableDatabases"
+      ],
+      "reason": "The repack fills this in at every start."
+    }
+  ]
+}

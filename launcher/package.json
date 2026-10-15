@@ -1,0 +1,54 @@
+{
+  "name": "coa-launcher-lite",
+  "productName": "CoA Launcher Lite",
+  "version": "0.3.8",
+  "description": "Open-source game launcher: signed client updates, addons, and a local server (repack + bots) with backups and upgrades.",
+  "license": "MIT",
+  "author": "CoA Launcher Lite contributors",
+  "main": "src/main.cjs",
+  "scripts": {
+    "start": "node scripts/copy-fonts.cjs && electron .",
+    "test": "node --test \"test/*.test.cjs\"",
+    "dist": "node scripts/copy-fonts.cjs && electron-builder --win nsis --publish never"
+  },
+  "build": {
+    "appId": "org.coa.launcher-lite",
+    "productName": "CoA Launcher Lite",
+    "artifactName": "CoA-Launcher-Lite-Setup-${version}.${ext}",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**",
+      "public/**",
+      "launcher.config.json",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false
+    },
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "http://127.0.0.1:5082/downloads/launcher-lite/"
+      }
+    ]
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
+  },
+  "devDependencies": {
+    "@fontsource/cinzel": "^5.3.0",
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/jetbrains-mono": "^5.3.0",
+    "electron": "^44.4.5",
+    "electron-builder": "^26.15.3"
+  }
+}

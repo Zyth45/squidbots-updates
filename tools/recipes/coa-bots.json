@@ -1,0 +1,17 @@
+{
+  "_comment": "Publishing recipe for the CoA Bots package (the CoA-Bots folder of a release). Use with: node tools/publish-client.mjs <CoA-Bots> <out> --profile server --require Core/worldserver.exe --components tools/recipes/coa-bots.json --copy",
+  "components": [],
+  "rules": [],
+  "preserve": [
+    "^Core/configs/.*[.]conf$",
+    "^Dashboard/dashboard[.]json$"
+  ],
+  "exclude": [
+    "^Client/",
+    "^Backup-",
+    "^Core/Logs/",
+    "(^|/)__pycache__/",
+    "[.]pyc$",
+    "[.]pdb$"
+  ]
+}
