@@ -87,11 +87,18 @@ function processStats(pid) {
   });
 }
 
+function botsTarget(root) {
+  try {
+    const conf = fs.readFileSync(path.join(root, 'CoA-Bots', 'Core', 'configs', 'modules', 'playerbots.conf'), 'utf8');
+    return Number(/^\s*AiPlayerbot\.MaxRandomBots\s*=\s*(\d+)/m.exec(conf)?.[1]) || null;
+  } catch { return null; }
+}
+
 function botsInGame(root) {
   const status = readJson(path.join(root, 'Core', 'Logs', 'bot-status.json'));
   if (!status || !Array.isArray(status.bots)) return null;
   const fresh = !status.at || Date.now() / 1000 - Number(status.at) < 300;
-  return fresh ? { count: status.bots.length, inCombat: status.bots.filter(bot => bot.combat).length } : null;
+  return fresh ? { count: status.bots.length, inCombat: status.bots.filter(bot => bot.combat).length, target: botsTarget(root) } : null;
 }
 
 async function stats(root) {

@@ -610,12 +610,13 @@ function registerIpc() {
     if (state.state !== 'available') throw new Error('No update to install for this server.');
     update.busy = true;
     const phase = (name, extra = {}) => { update.phase = name; send('update:event', { event: 'phase', phase: name, ...extra }); };
+    // A server that was running is started again once the update ended well (the tool stops it for the update).
+    const wasRunning = await serverControl()?.status().then(services => services.some(service => /world/i.test(service.id) && service.state === 'running')).catch(() => false);
     try {
       dashboard.stop();
       phase('download', { total: update.manifest.package.size });
       const controller = new AbortController();
-      let done = 0;
-      const zip = await repackUpdate.fetchPackage(update.manifest, path.join(app.getPath('userData'), 'updates'), { fetchImpl: netFetch, signal: controller.signal, onBytes: bytes => { done += bytes; send('update:event', { event: 'bytes', done, total: update.manifest.package.size }); } })
+      const zip = await repackUpdate.fetchPackage(update.manifest, path.join(app.getPath('userData'), 'updates'), { fetchImpl: netFetch, signal: controller.signal, onBytes: have => send('update:event', { event: 'bytes', done: have, total: update.manifest.package.size }) })
         .catch(error => { throw Object.assign(new Error(error.message), { launcherCode: 'download' }); });
       phase('unpack');
       await repackUpdate.unpack(zip, folder, update.manifest.package.folder).catch(error => { throw Object.assign(new Error(error.message), { launcherCode: 'unpack' }); });
@@ -632,7 +633,9 @@ function registerIpc() {
     } finally {
       update.busy = false;
       update.phase = null;
-     
+    }
+    if (wasRunning && update.last && !update.last.code && !update.last.error) {
+      network.applyNetwork(folder).catch(() => {}).then(() => requireControl().startAll()).catch(() => {});
     }
     const state2 = repackUpdateState();
     send('update:state', state2);

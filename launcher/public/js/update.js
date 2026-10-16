@@ -53,7 +53,7 @@ function onUpdateEvent(event) {
     if (event.phase === 'check') run.step = 'check';
     if (event.phase === 'undo') run.step = 'undo';
   } else if (event.event === 'bytes') Object.assign(run, { done: event.done, total: event.total });
-  else if (event.event === 'step') { const step = updateStepOf(event.text) || run.step; if (step !== run.step) Object.assign(run, { done: 0, total: 0 }); run.step = step; run.line = event.text; }
+  else if (event.event === 'step') { const step = updateStepOf(event.text) || run.step; if (step !== run.step) Object.assign(run, { done: 0, total: 0 }); run.step = step; run.line = event.text; if (step === 'test' && !run.testSince) run.testSince = Date.now(); }
   else if (event.event === 'progress') Object.assign(run, { done: event.done, total: event.total, line: event.text });
   else if (['info', 'installer', 'warn'].includes(event.event) && event.text) run.line = event.text;
   if ($('#dialog').open && $('#update-live')) { $('#update-live').innerHTML = updateLive(); applyBars($('#update-live')); }
@@ -68,8 +68,16 @@ function updateLive() {
     : UPDATE_STEPS.map(([id, iconName, label], index) => `<li class="${index < current ? 'done' : index === current ? 'active' : ''}">${icon(index < current ? 'check' : iconName)}<span>${esc(t(`update.step.${id}`, label))}</span></li>`).join('');
   return `<ol class="update-steps">${steps}</ol>
     ${pct !== null && ['download', 'files'].includes(run.step) ? `${progressBar({ total: 100, completed: pct }).html}<small class="muted">${run.step === 'download' ? esc(`${formatBytes(run.done)} / ${formatBytes(run.total)}`) : `${pct} %`}</small>` : ''}
-    <p class="update-line">${esc(run.line || '')}</p>`;
+    <p class="update-line">${esc(run.step === 'test' && run.testSince ? testLine(run.testSince) : run.line || '')}</p>`;
 }
+
+// The test start: what it does and how long it has been running, in the player's words (not the tool's line).
+function testLine(since) {
+  const seconds = Math.floor((Date.now() - since) / 1000);
+  const time = seconds < 60 ? `${seconds} s` : `${Math.floor(seconds / 60)} min ${String(seconds % 60).padStart(2, '0')} s`;
+  return t('update.testLine', 'The server starts once to check that everything works ({time} so far). The first start after an update takes 5 to 15 minutes; the server is then stopped cleanly.', { time });
+}
+setInterval(() => { if (App.state.update.run?.step === 'test' && $('#dialog').open && $('#update-live')) { $('#update-live').innerHTML = updateLive(); applyBars($('#update-live')); } }, 1000);
 
 function updateResultView() {
   const last = App.state.update.state?.last;

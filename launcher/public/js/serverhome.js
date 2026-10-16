@@ -337,10 +337,12 @@ function liveView() {
   if (!l?.running) return `<section class="live"><h3>${esc(t('live.title', 'Server live'))}</h3><p class="muted">${esc(t('live.stopped', 'The figures appear here while the server runs: players, bots, tick and memory.'))}</p></section>`;
   const dash = value => (value === null || value === undefined ? '—' : value);
   const tick = l.tickMean ?? l.tick;
-  return `<section class="live"><h3>${esc(t('live.title', 'Server live'))}</h3><div class="live-grid">
+  // Bots still logging in (fewer than the number set): the server is slower meanwhile, and that is expected.
+  const arriving = l.bots?.target && l.bots.count < Math.floor(l.bots.target * 0.95);
+  return `<section class="live"><h3>${esc(t('live.title', 'Server live'))}${arriving ? `<span class="live-arriving" title="${esc(t('live.arrivingHint', 'While they log in, the server is slower (high tick): this is normal. Wait a few minutes until all of them are there.'))}">${icon('bot')}${esc(t('live.arrivingTitle', 'The bots are arriving in your realm: {count} / {target}', { count: l.bots.count, target: l.bots.target }))}${progressBar({ total: l.bots.target, completed: l.bots.count }).html}</span>` : ''}</h3><div class="live-grid">
     ${tile('user', t('live.players', 'Players'), dash(l.players))}
     ${tile('bot', t('live.bots', 'Bots in game'), l.bots ? String(l.bots.count) : '—', l.bots ? t('live.inCombat', '{n} in combat', { n: l.bots.inCombat }) : '')}
-    ${tile('refresh', t('live.tick', 'Tick'), tick === null || tick === undefined ? '—' : `${tick} ms`, tick > 150 ? t('live.tickSlow', 'slow') : tick !== null && tick !== undefined ? t('live.tickOk', 'smooth') : '')}
+    ${tile('refresh', t('live.tick', 'Tick'), tick === null || tick === undefined ? '—' : `${tick} ms`, arriving && tick > 150 ? t('live.tickLoading', 'bots arriving') : tick > 150 ? t('live.tickSlow', 'slow') : tick !== null && tick !== undefined ? t('live.tickOk', 'smooth') : '')}
     ${tile('database', t('live.memory', 'Memory'), l.memory ? formatBytes(l.memory) : '—')}
   </div></section>`;
 }

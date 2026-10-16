@@ -307,3 +307,8 @@
 .play-row .split-main small { display: none; }
 .play-row .split-more { width: 42px; }
 .server-hero .classic-main h1 { font-size: 32px !important; }
+
+/* Home, server live: the bots still logging in after a start, on the title line (no extra height). */
+.live-arriving { display: inline-flex; align-items: center; gap: 8px; font: 600 12px var(--body, inherit); letter-spacing: 0; text-transform: none; color: var(--accent); cursor: help; }
+.live-arriving .icon { width: 16px; height: 16px; }
+.live-arriving .progress { flex: none; width: 90px; height: 6px; }

@@ -874,5 +874,9 @@
   "verify.running": "Vérification…",
   "verify.warn": "{n} point(s) à regarder",
   "verify.when": "Vérifié à {time}{deep}",
-  "verify.withFiles": ", fichiers compris"
+  "verify.withFiles": ", fichiers compris",
+  "update.testLine": "Le serveur démarre une fois pour vérifier que tout marche ({time} pour l'instant). Le premier démarrage après une mise à jour prend 5 à 15 minutes ; le serveur est ensuite arrêté proprement.",
+  "live.tickLoading": "bots en arrivée",
+  "live.arrivingTitle": "Les bots débarquent : {count} / {target}, patientez",
+  "live.arrivingHint": "Tant qu'ils se connectent, le serveur est plus lent (tick élevé) : c'est normal. Patientez quelques minutes, le temps qu'ils soient tous là."
 }
