@@ -43,7 +43,9 @@ async function databaseUpdates(root) {
     for (let i = lines.length - 1; i >= 0; i--) if (/Updating .* database|Applied \d+ quer/i.test(lines[i])) { start = i; break; }
     if (start < 0) continue;
     const from = lines.slice(0, start + 1).findLastIndex(line => /Updating .* database/i.test(line));
-    const block = lines.slice(Math.max(0, from - 200), start + 400);
+    // Never further back than this start's own banner: a failure of an earlier start is not this one's.
+    const banner = lines.slice(0, from + 1).findLastIndex(line => /AzerothCore rev\./.test(line));
+    const block = lines.slice(Math.max(0, from - 200, banner), start + 400);
     const failed = block.filter(line => /(failed|error).*(update|apply)|(update|apply).*(failed|error)|could not be applied/i.test(line)).slice(0, 5);
     const applied = block.map(line => line.match(/Applied (\d+) quer/i)).filter(Boolean).reduce((sum, match) => sum + Number(match[1]), 0);
     return { failed, applied, at: log.mtime };

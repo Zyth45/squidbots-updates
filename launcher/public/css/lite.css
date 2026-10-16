@@ -155,6 +155,7 @@ input:focus, select:focus { border-color: var(--accent); }
 .check { display: flex; gap: 9px; align-items: center; color: var(--muted); font-size: 13px; }
 .check input { accent-color: var(--accent); width: 16px; height: 16px; }
 .field { display: grid; gap: 6px; }
+.field-pair { display: grid; grid-template-columns: 3fr 2fr; gap: 14px; align-items: start; }
 .field > span { font-size: 12px; font-weight: 600; color: var(--muted); }
 .field small { color: var(--faint); font-size: 11.5px; }
 .field-inline, .realm-row { display: flex; gap: 8px; }
@@ -195,6 +196,7 @@ input:focus, select:focus { border-color: var(--accent); }
 .line-action { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 10px; background: var(--panel-2); font-size: 12.5px; color: var(--muted); }
 .line-action span { flex: 1; min-width: 0; word-break: break-word; }
 .line-action .icon { color: var(--accent); width: 16px; height: 16px; }
+.line-action code { display: inline-block; margin-left: 6px; padding: 3px 8px; border-radius: 6px; background: var(--panel); color: var(--text); font-size: 12.5px; user-select: all; } .dialog-content h3 { margin: 14px 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); } .dialog-content h3:first-child { margin-top: 0; }
 .folder-line { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
 .folder-line span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .folder-line .icon { width: 16px; height: 16px; }

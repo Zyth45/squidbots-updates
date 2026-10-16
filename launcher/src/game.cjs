@@ -60,6 +60,33 @@ async function configureRealmlist(root, realmlist) {
   }
 }
 
+// What the client reads today: Config.wtf (it wins when it has one) and every realmlist.wtf.
+async function readRealmlist(root) {
+  const found = [];
+  const read = async relative => {
+    const content = await fs.readFile(path.join(root, ...relative.split('/')), 'utf8').catch(() => null);
+    const value = content && /^\s*set\s+realmlist\s+"?([^"\r\n]*?)"?\s*$/im.exec(content)?.[1].trim();
+    if (value) found.push({ file: relative, value });
+  };
+  await read('WTF/Config.wtf');
+  for (const entry of await fs.readdir(path.join(root, 'Data'), { withFileTypes: true }).catch(() => [])) {
+    if (entry.isDirectory() && /^[a-z]{2}[A-Z]{2}$/.test(entry.name)) await read(`Data/${entry.name}/realmlist.wtf`);
+  }
+  await read('realmlist.wtf');
+  return found;
+}
+
+// The client points at this server when every realmlist it holds names one of our hosts with our login port.
+async function realmlistStatus(root, { hosts, port }) {
+  const files = await readRealmlist(root);
+  const expected = `127.0.0.1${port !== 3724 ? `:${port}` : ''}`;
+  const good = value => {
+    const [host, given] = value.toLowerCase().split(':');
+    return hosts.includes(host) && Number(given || 3724) === port;
+  };
+  return { state: !files.length ? 'missing' : files.every(item => good(item.value)) ? 'ok' : 'wrong', files, expected };
+}
+
 function launch(root, executable, onExit) {
   return new Promise((resolve, reject) => {
     const child = spawn(path.join(root, path.basename(executable)), [], { cwd: root, detached: true, stdio: 'ignore', windowsHide: false });
@@ -69,4 +96,4 @@ function launch(root, executable, onExit) {
   });
 }
 
-module.exports = { runningGames, requireGameClosed, configureRealmlist, launch, REALMLIST };
+module.exports = { runningGames, requireGameClosed, configureRealmlist, readRealmlist, realmlistStatus, launch, REALMLIST };

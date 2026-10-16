@@ -81,6 +81,7 @@ contextBridge.exposeInMainWorld('launcher', Object.freeze({
   consoleRun: command => call('console:run', command),
   addonSetup: useSuggested => call('addon:setup', useSuggested),
   addonInstall: () => call('addon:install'),
+  addonRealmlist: () => call('addon:realmlist'),
   addonAuto: () => call('addon:auto'),
   updateClearClient: () => call('update:clearClient'),
   updateOpenLog: () => call('update:openLog'),

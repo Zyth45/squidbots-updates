@@ -120,12 +120,15 @@ App.state.addon = null;
 function addonCard() {
   const a = App.state.addon;
   if (!a || a.state === 'none') return '';
+  const r = a.realmlist;
+  const realmBad = a.client && r && r.state !== 'ok';
   const text = a.state === 'noclient' ? t('addon.cardPick', 'Choose your game folder')
+    : realmBad ? t('game.cardRealm', 'Realmlist to fix')
     : a.state === 'missing' ? t('addon.cardMissing', 'Not in your game yet: install it')
     : a.state === 'outdated' ? t('addon.cardOutdated', 'Version {version} to install', { version: a.version })
-    : t('addon.cardCurrent', 'Version {version} · up to date', { version: a.installedVersion || a.version });
-  const dot = ['noclient', 'missing', 'outdated'].includes(a.state) ? '<i class="dot"></i>' : icon('next');
-  return `<button class="side-card" data-action="addon-card">${icon('addons')}<span><strong>${esc(t('addon.cardTitle', 'SquidBots addon'))}</strong><small>${esc(text)}</small></span>${dot}</button>`;
+    : t('game.cardOk', 'Addon {version} · realmlist OK', { version: a.installedVersion || a.version });
+  const dot = realmBad || ['noclient', 'missing', 'outdated'].includes(a.state) ? '<i class="dot"></i>' : icon('next');
+  return `<button class="side-card" data-action="addon-card">${icon('addons')}<span><strong>${esc(t('game.cardTitle', 'Your game'))}</strong><small>${esc(text)}</small></span>${dot}</button>`;
 }
 
 async function refreshAddon(auto = false) {
@@ -141,10 +144,15 @@ async function refreshAddon(auto = false) {
 
 function showAddon() {
   const a = App.state.addon || {};
+  const r = a.realmlist;
   const rows = (a.addons || []).map(addon => `<li><strong>${esc(addon.name)}</strong> · ${esc(addon.installed ? t('addon.installedIn', 'in your game: {version}', { version: addon.installed }) : t('addon.notInGame', 'not in your game'))} · ${esc(t('addon.inRepack', 'in the server: {version}', { version: addon.available }))}</li>`).join('');
-  dialog.open(`${dialog.header(t('addon.cardTitle', 'SquidBots addon'), a.client || '')}<div class="dialog-content">
+  const realm = !r ? '' : `<h3>${esc(t('game.realmTitle', 'Realmlist'))}</h3>
+    ${r.files.length ? `<ul class="notes">${r.files.map(item => `<li><code>${esc(item.file)}</code> · <strong>${esc(item.value)}</strong></li>`).join('')}</ul>` : `<p class="muted">${esc(t('game.realmNone', 'No realmlist found in this game.'))}</p>`}
+    <div class="line-action">${icon(r.state === 'ok' ? 'check' : 'warning')}<span>${esc(r.state === 'ok' ? t('game.realmOk', 'Your game points at this server.') : t('game.realmWrong', 'Your game does not point at this server: it should use {expected}. The launcher can set it (game closed); the replaced files are kept.', { expected: r.expected }))}</span><button class="button ${r.state === 'ok' ? 'ghost' : 'primary'} small" data-action="addon-realmlist">${esc(t('game.realmSet', 'Set the realmlist'))}</button></div>`;
+  dialog.open(`${dialog.header(t('game.cardTitle', 'Your game'), a.client || '')}<div class="dialog-content">
+    <h3>${esc(t('addon.cardTitle', 'SquidBots addon'))}</h3>
     <p>${esc(t('addon.what', 'The addon to command your bots in game. The launcher copies it into your game and updates it by itself when the server brings a new version (never while the game is open). What it saved in the game is kept.'))}</p>
-    <ul class="notes">${rows}</ul></div>
+    <ul class="notes">${rows}</ul>${realm}</div>
     <footer class="dialog-foot"><button class="button ghost" data-action="addon-change">${icon('folder')}${esc(t('addon.change', 'Another game folder'))}</button>${a.client ? `<button class="button primary" data-action="addon-install">${icon('download')}${esc(a.state === 'current' ? t('addon.reinstall', 'Install again') : t('addon.install', 'Install in my game'))}</button>` : ''}</footer>`);
 }
 
@@ -164,11 +172,19 @@ Object.assign(App.actions, {
       const yes = await confirmDialog({ title: t('addon.cardTitle', 'SquidBots addon'), body: esc(t('addon.useSuggested', 'Install it in {path} (the game used by the bots installer)?', { path: a.suggested })), confirm: t('addon.install', 'Install in my game') });
       addonDone(() => App.api.addonSetup(yes), button);
     } else if (a.state === 'noclient') addonDone(() => App.api.addonSetup(false), button);
+    else if (a.realmlist && a.realmlist.state !== 'ok') showAddon();
     else if (a.state === 'outdated' || a.state === 'missing') addonDone(() => App.api.addonInstall(), button);
     else showAddon();
   },
   'addon-change': button => addonDone(() => App.api.addonSetup(false), button),
   'addon-install': button => addonDone(() => App.api.addonInstall(), button),
+  'addon-realmlist': async button => {
+    const status = await guard(() => App.api.addonRealmlist(), button);
+    if (!status) return;
+    App.state.addon = status;
+    toast(t('game.realmDone', 'Realmlist set to {expected}: it is read at the next start of the game.', { expected: status.realmlist?.expected || '' }), 'success');
+    showAddon();
+  },
 });
 
 // The update card, first in the hero: a new version, an update running, cut, or stopped on an error.
@@ -205,7 +221,8 @@ async function runUpdate(call) {
   try { App.state.server = await App.api.serverInfo(); } catch {}
   App.api.notes().then(notes => { App.state.notes = notes; if (App.state.tab === 'home' && !$('#dialog').open) App.render(); }).catch(() => {});
   showUpdate();
-  App.render();
+  // Done: the result stays in its window, over the home page (where the new versions show).
+  if (App.state.update.state?.last?.error) App.render(); else App.go('home');
 }
 
 Object.assign(App.actions, {

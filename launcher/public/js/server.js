@@ -527,6 +527,7 @@ Object.assign(App.actions, {
       try { await installBotsNow(); }
       catch (error) { App.state.botsError = translateError(error.message); App.refresh('server'); throw error; }
     }
+    App.go('home');
     // Moving from an older server: its players can be brought over.
     if (before?.installed && before.path !== info.path) toast(t('import.bringPlayers', 'Your previous server is kept. To bring its players: Management > Installation > Bring players over from another repack.'));
   }, button),
@@ -551,6 +552,7 @@ Object.assign(App.actions, {
       App.refresh('server');
       toast(t('server.allGood', 'Everything is running'), 'success');
     }
+    App.go('home');
   }, button),
   'backup-create': button => guard(async () => { const meta = await App.api.createBackup({ includeWorld: $('#backup-world')?.checked === true }); App.state.task = null; toast(t('backup.done', 'Backup saved ({size}).', { size: formatBytes(meta.size) }), 'success'); await loadBackups(); }, button),
   'backup-restore': button => guard(async () => {

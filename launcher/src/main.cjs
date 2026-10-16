@@ -11,7 +11,7 @@ const { loadConfig } = require('./config.cjs');
 const { readSettings, writeSettings } = require('./settings.cjs');
 const { ClientUpdater } = require('./client-updater.cjs');
 const { AddonManager } = require('./addons.cjs');
-const { requireGameClosed, configureRealmlist, launch } = require('./game.cjs');
+const { requireGameClosed, configureRealmlist, realmlistStatus, launch } = require('./game.cjs');
 const { ServerControl } = require('./server-control.cjs');
 const { ServerConfig } = require('./server-config.cjs');
 const { ServerBackup } = require('./server-backup.cjs');
@@ -668,12 +668,31 @@ function registerIpc() {
     return folder;
   }
   handle('update:pickClient', async () => (await pickClient()) ?? (settings.installPaths.addon || ''));
-  const addonStatus = () => addonSync.status(serverPath(), settings.installPaths.addon);
+  // The game client also needs its realmlist on this server: 127.0.0.1 here, or the address given to the
+  // other PCs (and any address of this PC) when the server is open, always with the login port.
+  const clientRealmlist = async client => {
+    if (!client || !serverPath()) return null;
+    const net = await network.readNetwork(serverPath());
+    const hosts = ['127.0.0.1', 'localhost', ...network.lanAddresses(), ...(net.mode === 'open' ? [net.address.toLowerCase()] : [])];
+    return realmlistStatus(client, { hosts, port: inspectRepack(serverPath()).ports?.auth || 3724 }).catch(() => null);
+  };
+  const addonStatus = async () => {
+    const status = addonSync.status(serverPath(), settings.installPaths.addon);
+    return { ...status, realmlist: await clientRealmlist(status.client) };
+  };
   const addonInstall = async () => {
     const installed = await addonSync.install(serverPath(), settings.installPaths.addon, path.join(app.getPath('userData'), 'addon-backups'));
-    return { installed, status: addonStatus() };
+    return { installed, status: await addonStatus() };
   };
   handle('addon:status', () => addonStatus());
+  // Points the chosen game at this server (the files it replaces are kept once, in the game's .coa-launcher).
+  handle('addon:realmlist', async () => {
+    const status = await addonStatus();
+    if (!status.client || !status.realmlist) throw new Error('Choose your game folder first.');
+    if (await addonSync.gameRunning()) throw new Error('Close the game first: it reads its realmlist only at start.');
+    await configureRealmlist(status.client, status.realmlist.expected);
+    return addonStatus();
+  });
   // ---- the world console and the live state of the server
   // ---- modules: SquidBots (start with or without the bots) and Multirace (added races)
   const worldRunning = async () => {
@@ -755,18 +774,18 @@ function registerIpc() {
   });
   // First click: the game folder (the one the bots installer used is offered), then the addon is copied.
   handle('addon:setup', async useSuggested => {
-    const suggested = addonStatus().suggested;
+    const suggested = (await addonStatus()).suggested;
     if (useSuggested === true && suggested) await persist({ ...settings, installPaths: { ...settings.installPaths, addon: suggested } });
-    else if (!(await pickClient())) return { installed: [], status: addonStatus() };
+    else if (!(await pickClient())) return { installed: [], status: await addonStatus() };
     return addonInstall();
   });
   handle('addon:install', () => addonInstall());
   // At start and after an update: a newer addon in the repack goes into the game by itself (not while it runs).
   handle('addon:auto', async () => {
-    const state = addonStatus();
+    const state = await addonStatus();
     if (!['outdated', 'missing'].includes(state.state) || !state.client) return { installed: [], status: state };
     if (await addonSync.gameRunning()) return { installed: [], status: state, gameRunning: true };
-    return addonInstall().catch(() => ({ installed: [], status: addonStatus() }));
+    return addonInstall().catch(async () => ({ installed: [], status: await addonStatus() }));
   });
   handle('update:clearClient', async () => { const paths = { ...settings.installPaths }; delete paths.addon; await persist({ ...settings, installPaths: paths }); return ''; });
   handle('update:report', () => { clipboard.writeText(supportReport()); return true; });

@@ -562,18 +562,24 @@ Object.assign(App.actions, {
     dialog.open(`${dialog.header(t('net.title', 'Who can join'), t('net.subtitle', 'Kept by the launcher: written again after every update of the server'))}<div class="dialog-content">
       <label class="toggle-row"><input type="radio" name="net-mode" value="local" ${n.mode === 'local' ? 'checked' : ''}><span><strong>${esc(t('net.local', 'This PC only'))}</strong><small>${esc(t('net.localHint', 'The game on this PC connects to 127.0.0.1{suffix}. Nobody else can join.', { suffix }))}</small></span></label>
       <label class="toggle-row"><input type="radio" name="net-mode" value="open" ${n.mode === 'open' ? 'checked' : ''}><span><strong>${esc(t('net.open', 'Other PCs too (home network or Internet)'))}</strong><small>${esc(t('net.openHint', 'The server listens on every network card and gives the address below to the players.'))}</small></span></label>
-      <div class="field"><span>${esc(t('net.address', 'Address given to the players'))}</span><input id="net-address" value="${esc(n.address)}" spellcheck="false"><small>${esc(t('net.addressHint', 'Home network: the IP of this PC (below). Internet: your public IP or a domain name, and forward ports {auth} and {world} on your router to this PC.', { auth: authPort, world: worldPort }))}</small>${chips ? `<div class="button-row">${chips}</div>` : ''}</div>
-      <div class="field"><span>${esc(t('net.name', 'Realm name'))}</span><input id="net-name" value="${esc(n.name)}" maxlength="32"></div>
-      <div class="line-action">${icon('shield')}<span>${esc(t('net.firewall', 'Windows Firewall: allow ports {auth} and {world} and the servers (with or without bots). Windows asks for the administrator.', { auth: authPort, world: worldPort }))}</span><button class="button ghost small" data-action="network-firewall">${esc(t('net.firewallButton', 'Open the firewall'))}</button></div>
-      <p class="muted small">${esc(t('net.clientHint', 'Players put in their realmlist.wtf: set realmlist <address>{suffix}', { suffix }))}</p>
+      <div class="field-pair"><div class="field"><span>${esc(t('net.address', 'Address given to the players'))}</span><input id="net-address" value="${esc(n.address)}" spellcheck="false"><small>${esc(t('net.addressHint', 'Home: the IP of this PC. Internet: your public IP, ports {auth} and {world} forwarded to this PC.', { auth: authPort, world: worldPort }))}</small>${chips ? `<div class="button-row">${chips}</div>` : ''}</div>
+      <div class="field"><span>${esc(t('net.name', 'Realm name'))}</span><input id="net-name" value="${esc(n.name)}" maxlength="32"></div></div>
+      <div class="line-action">${icon('shield')}<span>${esc(t('net.firewall', 'Windows Firewall: open ports {auth} and {world} (administrator).', { auth: authPort, world: worldPort }))}</span><button class="button ghost small" data-action="network-firewall">${esc(t('net.firewallButton', 'Open the firewall'))}</button></div>
+      <div class="line-action" title="Data\\enUS\\realmlist.wtf">${icon('user')}<span>${esc(t('net.friends', 'Your friends, in their realmlist.wtf:'))}<code id="net-friends" data-suffix="${esc(suffix)}">set realmlist ${esc(n.address)}${esc(suffix)}</code></span><button class="button ghost small" data-action="network-copy">${icon('copy')}${esc(t('common.copy', 'Copy'))}</button></div>
     </div><footer class="dialog-foot"><button class="button ghost" data-action="dialog-close">${esc(t('common.cancel', 'Cancel'))}</button><button class="button primary" data-action="network-save">${esc(t('common.save', 'Save'))}</button></footer>`, 'wide');
   }, button),
-  'network-ip': button => { const input = $('#net-address'); if (input) input.value = button.dataset.ip; const open = $('input[name=net-mode][value=open]'); if (open) open.checked = true; },
+  'network-ip': button => { const input = $('#net-address'); if (input) input.value = button.dataset.ip; const open = $('input[name=net-mode][value=open]'); if (open) open.checked = true; friendsLine(); },
+  'network-copy': async () => {
+    const line = friendsLine();
+    try { await navigator.clipboard.writeText(line); toast(t('net.copied', 'Copied: {line}', { line }), 'success'); }
+    catch { toast(line); }
+  },
   'network-save': button => guard(async () => {
     const mode = $('input[name=net-mode]:checked')?.value || 'local';
     const result = await App.api.saveNetwork({ mode, address: $('#net-address')?.value || '', name: $('#net-name')?.value || '' });
     App.state.network = result.network;
     dialog.close();
+    refreshAddon();
     toast(result.running ? t('net.savedRestart', 'Saved. Restart the server for it to take effect.') : t('net.saved', 'Saved: the server uses it at its next start.'), 'success');
     App.render();
   }, button),
@@ -621,3 +627,12 @@ Object.assign(App.actions, {
   }, button),
   'instance-forget': button => guard(async () => { await App.api.forgetInstance(button.dataset.path); App.actions['instance-pick'](button); }, button),
 });
+
+// The line the friends put in their game: follows the address typed in "Who can join".
+function friendsLine() {
+  const code = $('#net-friends');
+  const line = `set realmlist ${($('#net-address')?.value || '').trim() || '127.0.0.1'}${code?.dataset.suffix || ''}`;
+  if (code) code.textContent = line;
+  return line;
+}
+document.addEventListener('input', event => { if (event.target.id === 'net-address') friendsLine(); });
