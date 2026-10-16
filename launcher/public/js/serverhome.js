@@ -57,7 +57,7 @@ const CHECK_TEXT = {
   },
   crashes: {
     ok: ['No crash this week', 'No crash report in the last 7 days.'],
-    warn: ['Crashes this week', '{count} crash report(s) in the last 7 days. The support report gathers them.'],
+    warn: ['Crashes this week', '{count} crash(es) in the last 7 days. "Put away" moves their reports to Crashes\\archive.'],
   },
   'backup.age': {
     ok: ['Recent backup', 'Last backup {days} day(s) ago.'],
@@ -149,6 +149,7 @@ const ACTIONS = {
   start: ['service-start-all', '', 'Start'],
   restart: ['srv-tab', 'services', 'Services'],
   backup: ['backup-create', '', 'Back up now'],
+  'crashes-archive': ['crashes-archive', '', 'Put away'],
 };
 
 function checkText(check) {
@@ -424,6 +425,8 @@ function launcherBanner() {
   const update = App.state.launcherUpdate;
   if (update?.phase === 'downloaded') return `<div class="update-banner"><i class="dot"></i><span>${esc(t('home.launcherReady', 'A new version of the launcher ({version}) is ready.', { version: update.version || '' }))}</span><button class="button primary small" data-action="launcher-install">${esc(t('home.launcherRestart', 'Restart and update'))}</button></div>`;
   if (update?.phase === 'downloading') return `<div class="update-banner"><i class="dot"></i><span>${esc(t('home.launcherDownloading', 'Downloading the new launcher… {percent}%', { percent: update.percent || 0 }))}</span></div>`;
+  // A failed launcher update says so (it used to leave the bar empty) and can be tried again.
+  if (update?.phase === 'error') return `<div class="update-banner bad">${icon('warning')}<span>${esc(t('home.launcherFailed', 'The new launcher could not be prepared: {message}', { message: update.message || '' }))}</span><button class="button ghost small" data-action="launcher-check">${esc(t('common.retry', 'Try again'))}</button></div>`;
   return '';
 }
 
@@ -494,6 +497,11 @@ Object.assign(App.actions, {
     App.render();
   }, button),
   // Settings > About: look for a new launcher now (the result also shows on the home page banner).
+  'crashes-archive': button => guard(async () => {
+    const moved = await App.api.archiveCrashes();
+    toast(t('verify.crashesArchived', '{n} crash file(s) put away in Crashes\\archive.', { n: moved }), 'success');
+    runVerify(false);
+  }, button),
   'launcher-check': button => guard(async () => {
     toast(t('settings.launcherChecking', 'Looking for a new launcher…'));
     const status = await App.api.checkLauncher();

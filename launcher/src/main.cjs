@@ -1054,6 +1054,7 @@ function registerIpc() {
   handle('link:baseClient', async () => { if (config.game.baseClient) await shell.openExternal(config.game.baseClient.url); });
 
   handle('launcher:check', () => launcherUpdates.check());
+  handle('verify:archiveCrashes', () => { if (!serverPath()) throw new Error('Choose the server folder first.'); return require('./verify.cjs').archiveCrashes(serverPath()); });
   handle('launcher:install', () => launcherUpdates.install());
 }
 

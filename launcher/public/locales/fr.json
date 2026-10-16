@@ -170,7 +170,7 @@
   "check.core.update.warn.title": "Nouveau cœur disponible",
   "check.crashes.ok.text": "Aucun rapport de crash ces 7 derniers jours.",
   "check.crashes.ok.title": "Aucun crash cette semaine",
-  "check.crashes.warn.text": "{count} rapport(s) de crash ces 7 derniers jours. Le rapport de support les rassemble.",
+  "check.crashes.warn.text": "{count} crash(s) ces 7 derniers jours. « Ranger » déplace leurs rapports dans Crashes\\archive.",
   "check.crashes.warn.title": "Crashs cette semaine",
   "check.data.maps.bad.text": "Vides ou absents : {missing}. Le monde ne peut pas démarrer sans eux : réparez le cœur.",
   "check.data.maps.bad.title": "Données du jeu manquantes",
@@ -878,5 +878,9 @@
   "update.testLine": "Le serveur démarre une fois pour vérifier que tout marche ({time} pour l'instant). Le premier démarrage après une mise à jour prend 5 à 15 minutes ; le serveur est ensuite arrêté proprement.",
   "live.tickLoading": "bots en arrivée",
   "live.arrivingTitle": "Les bots débarquent : {count} / {target}, patientez",
-  "live.arrivingHint": "Tant qu'ils se connectent, le serveur est plus lent (tick élevé) : c'est normal. Patientez quelques minutes, le temps qu'ils soient tous là."
+  "live.arrivingHint": "Tant qu'ils se connectent, le serveur est plus lent (tick élevé) : c'est normal. Patientez quelques minutes, le temps qu'ils soient tous là.",
+  "home.launcherFailed": "Le nouveau launcher n'a pas pu être préparé : {message}",
+  "common.retry": "Réessayer",
+  "verify.action.crashes-archive": "Ranger",
+  "verify.crashesArchived": "{n} fichier(s) de crash rangé(s) dans Crashes\\archive."
 }

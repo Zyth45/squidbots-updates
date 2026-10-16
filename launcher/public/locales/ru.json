@@ -170,7 +170,7 @@
   "check.core.update.warn.title": "Доступно новое ядро",
   "check.crashes.ok.text": "Отчётов о сбоях за 7 дней нет.",
   "check.crashes.ok.title": "Сбоев за неделю нет",
-  "check.crashes.warn.text": "Отчётов о сбоях за 7 дней: {count}. Отчёт поддержки их соберёт.",
+  "check.crashes.warn.text": "Сбоев за 7 дней: {count}. «Убрать» переносит их отчёты в Crashes\\archive.",
   "check.crashes.warn.title": "Сбои за неделю",
   "check.data.maps.bad.text": "Пусто или нет: {missing}. Мир без них не запустится: восстановите ядро.",
   "check.data.maps.bad.title": "Нет данных игры",
@@ -878,5 +878,9 @@
   "update.testLine": "Сервер запускается один раз, чтобы всё проверить ({time}). Первый запуск после обновления занимает 5–15 минут; затем сервер аккуратно останавливается.",
   "live.tickLoading": "боты входят",
   "live.arrivingTitle": "Боты прибывают: {count} / {target}, подождите",
-  "live.arrivingHint": "Пока они входят, сервер работает медленнее (высокий тик): это нормально. Подождите несколько минут, пока все не войдут."
+  "live.arrivingHint": "Пока они входят, сервер работает медленнее (высокий тик): это нормально. Подождите несколько минут, пока все не войдут.",
+  "home.launcherFailed": "Не удалось подготовить новый лаунчер: {message}",
+  "common.retry": "Повторить",
+  "verify.action.crashes-archive": "Убрать",
+  "verify.crashesArchived": "Файлов сбоев убрано в Crashes\\archive: {n}."
 }

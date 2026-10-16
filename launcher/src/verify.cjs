@@ -53,17 +53,37 @@ async function databaseUpdates(root) {
   return null;
 }
 
+const CRASH_FOLDERS = ['Core/Crashes', 'CoA-Bots/Core/Crashes', 'Crashes'];
+
+// One crash writes a .txt and a .dmp of the same name: it is counted once.
 async function crashes(root, days = 7) {
-  const found = [];
-  for (const folder of ['Core/Crashes', 'CoA-Bots/Core/Crashes', 'Crashes']) {
+  const found = new Map();
+  for (const folder of CRASH_FOLDERS) {
     const entries = await fsp.readdir(path.join(root, folder), { withFileTypes: true }).catch(() => []);
     for (const entry of entries) {
       if (!entry.isFile() || !/\.(txt|dmp)$/i.test(entry.name)) continue;
       const stat = await fsp.stat(path.join(root, folder, entry.name)).catch(() => null);
-      if (stat && Date.now() - stat.mtimeMs < days * DAY) found.push(stat.mtimeMs);
+      const key = `${folder}/${entry.name.replace(/\.(txt|dmp)$/i, '')}`;
+      if (stat && Date.now() - stat.mtimeMs < days * DAY) found.set(key, Math.max(found.get(key) || 0, stat.mtimeMs));
     }
   }
-  return found.sort((a, b) => b - a);
+  return [...found.values()].sort((a, b) => b - a);
+}
+
+// "Put away": the crash reports move to Crashes\archive (kept for the support, no longer counted).
+async function archiveCrashes(root) {
+  let moved = 0;
+  for (const folder of CRASH_FOLDERS) {
+    const dir = path.join(root, folder);
+    const entries = await fsp.readdir(dir, { withFileTypes: true }).catch(() => []);
+    for (const entry of entries) {
+      if (!entry.isFile() || !/\.(txt|dmp)$/i.test(entry.name)) continue;
+      await fsp.mkdir(path.join(dir, 'archive'), { recursive: true });
+      await fsp.rename(path.join(dir, entry.name), path.join(dir, 'archive', entry.name));
+      moved++;
+    }
+  }
+  return moved;
 }
 
 // updaters: { repack, bots } ClientUpdater-like; botsPackage: BotsPackage; control: ServerControl; backup: ServerBackup.
@@ -153,7 +173,7 @@ async function runChecks({ root, inspect, control, backup, repack, botsPackage, 
   const updates = await databaseUpdates(root);
   if (updates) add('health', 'db.updates', updates.failed.length ? 'bad' : 'ok', { applied: updates.applied, failed: updates.failed.join(' | '), at: updates.at });
   const crashList = await crashes(root);
-  add('health', 'crashes', crashList.length ? 'warn' : 'ok', { count: crashList.length, last: crashList[0] || 0 });
+  add('health', 'crashes', crashList.length ? 'warn' : 'ok', { count: crashList.length, last: crashList[0] || 0 }, crashList.length ? 'crashes-archive' : '');
   if (backup) {
     const list = await backup.list().catch(() => []);
     const last = list[0] ? Date.parse(list[0].createdAt) : 0;
@@ -174,4 +194,4 @@ const summary = checks => ({
   total: checks.length,
 });
 
-module.exports = { runChecks, summary, databaseUpdates, crashes };
+module.exports = { runChecks, summary, databaseUpdates, crashes, archiveCrashes };

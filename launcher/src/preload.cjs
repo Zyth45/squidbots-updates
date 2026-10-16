@@ -128,6 +128,7 @@ contextBridge.exposeInMainWorld('launcher', Object.freeze({
   openDiscord: () => call('link:discord'),
   openBaseClient: () => call('link:baseClient'),
   checkLauncher: () => call('launcher:check'),
+  archiveCrashes: () => call('verify:archiveCrashes'),
   installLauncher: () => call('launcher:install'),
   onClientProgress: on('client:progress'),
   onServerProgress: on('repack:progress'),
