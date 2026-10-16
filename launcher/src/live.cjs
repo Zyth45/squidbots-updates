@@ -17,21 +17,36 @@ function raSettings(root) {
 }
 
 // One command on the remote console: log in, send it, read until the next prompt.
+// The socket is never closed while the world may still write its answer: cores before CoA Bots 2.4 crash when
+// they write to a closed RA connection (RASession::Send throws). After the timeout the caller gets its error,
+// but the connection stays open until the answer and the next prompt came (10 minutes at most).
+const LINGER = 10 * 60 * 1000;
+const openOn = new Map();
+const raOpen = root => (openOn.get(root) || 0) > 0;
 function raCommand(root, command, timeout = 15000) {
   const { port, user, password } = raSettings(root);
   return new Promise((resolve, reject) => {
     const socket = net.connect({ host: '127.0.0.1', port });
+    openOn.set(root, (openOn.get(root) || 0) + 1);
+    let counted = true;
+    const uncount = () => { if (counted) { counted = false; openOn.set(root, openOn.get(root) - 1); } };
     let data = '';
     let step = 0;
-    const done = (error, value) => { clearTimeout(timer); socket.destroy(); error ? reject(error) : resolve(value); };
-    const timer = setTimeout(() => done(new Error('The world console did not answer in time.')), timeout);
+    let settled = false;
+    const settle = (error, value) => { if (settled) return; settled = true; clearTimeout(timer); error ? reject(error) : resolve(value); };
+    const close = () => { clearTimeout(timer); clearTimeout(linger); socket.destroy(); uncount(); };
+    const done = (error, value) => { settle(error, value); close(); };
+    // Logged in and the command sent: the world will answer, so the connection waits for it.
+    const timer = setTimeout(() => { if (step < 3) done(new Error('The world console did not answer in time.')); else settle(new Error('The world console did not answer in time.')); }, timeout);
+    const linger = setTimeout(close, Math.max(timeout, LINGER));
     socket.on('error', () => done(new Error('The world console is not reachable: start the worldserver first.')));
+    socket.on('close', () => { settle(new Error('The world console closed the connection.')); clearTimeout(linger); uncount(); });
     socket.on('data', chunk => {
       data += chunk.toString('utf8');
-      if (data.length > 262144) return done(new Error('The world console answer is too long.'));
+      if (data.length > 262144) data = data.slice(-4096);
       if (step === 0 && data.includes('Username:')) { step = 1; data = ''; socket.write(`${user}\r\n`); }
       else if (step === 1 && data.includes('Password:')) { step = 2; data = ''; socket.write(`${password}\r\n`); }
-      else if (step === 2 && /AC>\s*$/.test(data)) { step = 3; data = ''; socket.write(`${command}\r\n`); if (/^\.?server (shutdown|restart)/i.test(command)) done(null, 'Requested.'); }
+      else if (step === 2 && /AC>\s*$/.test(data)) { step = 3; data = ''; socket.write(`${command}\r\n`); if (/^\.?server (shutdown|restart)/i.test(command)) settle(null, 'Requested.'); }
       else if (step === 2 && /(failed|denied|wrong)/i.test(data)) done(new Error('The world console refused the repack account (Settings\\repack.json).'));
       else if (step === 3 && /AC>\s*$/.test(data)) done(null, data.replace(/AC>\s*$/, '').trim());
     });
@@ -83,7 +98,9 @@ async function stats(root) {
   const pid = worldPid(root);
   if (!pid) return { running: false };
   try { process.kill(pid, 0); } catch { return { running: false }; }
-  const [info, proc] = await Promise.all([raCommand(root, 'server info', 8000).then(parseInfo).catch(() => null), processStats(pid)]);
+  // A world still busy with the previous question is not asked again (its answer is awaited, see raCommand).
+  const asking = raOpen(root) ? Promise.resolve(null) : raCommand(root, 'server info', 8000).then(parseInfo).catch(() => null);
+  const [info, proc] = await Promise.all([asking, processStats(pid)]);
   // The world runs but its console does not answer: busy (bots created at a first start) or stuck (a shutdown
   // that never ends). How long it has been so tells them apart for the page.
   if (info) busySince.delete(root); else if (!busySince.has(root)) busySince.set(root, Date.now());

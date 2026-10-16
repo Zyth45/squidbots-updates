@@ -284,11 +284,11 @@ function homeView() {
   return `<div class="page classic">
     <section class="hero classic-hero server-hero">
       <div class="classic-main">
-        <h1>CoA Repack</h1>
+        <h1>JS CoA Repack</h1>
         <p class="status-line ${foreign ? 'bad' : ''}">${esc(status)}</p>
         <div class="mini-services">${lights}</div>
         <div class="play-row"><div class="split-button ${button[3]}">
-          <button class="split-main" data-action="${button[2]}" ${button[2] ? '' : 'disabled'}>${icon(button[0])}<span><strong>${esc(button[1])}</strong><small>${esc(info.bots?.installed ? t('home.withBots', 'Database, login, world and bots') : t('home.withoutBots', 'Database, login and world'))}</small></span></button>
+          <button class="split-main" data-action="${button[2]}" ${button[2] ? '' : 'disabled'} title="${esc(info.bots?.installed ? t('home.withBots', 'Database, login, world and bots') : t('home.withoutBots', 'Database, login and world'))}">${icon(button[0])}<span><strong>${esc(button[1])}</strong><small>${esc(info.bots?.installed ? t('home.withBots', 'Database, login, world and bots') : t('home.withoutBots', 'Database, login and world'))}</small></span></button>
           <button class="split-more" data-action="play-menu" aria-label="${esc(t('classic.more', 'More'))}">${icon('chevron')}</button>
           <div class="split-menu" id="play-menu" hidden>${menu.map(([action, id, label]) => `<button data-action="${action}" ${id ? `data-id="${id}"` : ''}>${esc(label)}</button>`).join('')}</div>
         </div>

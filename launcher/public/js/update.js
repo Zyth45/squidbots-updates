@@ -182,6 +182,7 @@ Object.assign(App.actions, {
     const status = await guard(() => App.api.addonRealmlist(), button);
     if (!status) return;
     App.state.addon = status;
+    App.render();
     toast(t('game.realmDone', 'Realmlist set to {expected}: it is read at the next start of the game.', { expected: status.realmlist?.expected || '' }), 'success');
     showAddon();
   },

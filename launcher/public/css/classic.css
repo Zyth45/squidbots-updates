@@ -298,3 +298,12 @@
 
 /* The launcher's own update (downloading, ready): a bar under the top bar, on every page, over the content. */
 #launcher-banner .update-banner { position: fixed; left: 50%; top: 66px; transform: translateX(-50%); z-index: 30; width: min(640px, calc(100% - 48px)); margin: 0; box-shadow: 0 12px 30px rgba(0, 0, 0, .5); background: var(--panel-solid, #0a2233); }
+
+/* Home: the start button as tall as the two square buttons beside it; what it starts is in its tooltip. */
+.play-row .split-button { height: 52px; box-shadow: 0 8px 22px var(--cta-glow), 0 0 0 1px var(--cta-edge) inset; }
+.play-row .split-main { gap: 10px; padding: 0 18px; }
+.play-row .split-main .icon { width: 22px; height: 22px; }
+.play-row .split-main strong { font-size: 16px; }
+.play-row .split-main small { display: none; }
+.play-row .split-more { width: 42px; }
+.server-hero .classic-main h1 { font-size: 32px !important; }

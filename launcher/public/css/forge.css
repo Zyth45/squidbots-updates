@@ -1,4 +1,4 @@
-/* CoA Launcher Lite — "Forge": dark leather and smoke, ember orange, old gold titles.
+﻿/* CoA Launcher Lite — "Forge": dark leather and smoke, ember orange, old gold titles.
    Warm-dark like the classic private-server launchers, drawn only with CSS gradients: no image or
    texture taken from any other launcher. The octopus stays, in bronze, and the motes become embers. */
 :root:is([data-theme="forge"], [data-theme="classic"]) {
@@ -60,7 +60,7 @@
 
 /* Hero: gold serif title, uppercase, sitting on a smoky band. */
 :root:is([data-theme="forge"], [data-theme="classic"]) .hero { border-radius: 16px; border-color: rgba(226, 178, 92, .16); box-shadow: 0 20px 60px rgba(0, 0, 0, .45); }
-:root:is([data-theme="forge"], [data-theme="classic"]) .hero h1 { text-transform: uppercase; color: #f6ead6; text-shadow: 0 2px 0 rgba(0, 0, 0, .6), 0 0 30px rgba(240, 138, 60, .25); }
+:root:is([data-theme="forge"], [data-theme="classic"]) .hero h1 { color: #f6ead6; text-shadow: 0 2px 0 rgba(0, 0, 0, .6), 0 0 30px rgba(240, 138, 60, .25); }
 :root:is([data-theme="forge"], [data-theme="classic"]) .eyebrow { color: var(--gold); }
 :root:is([data-theme="forge"], [data-theme="classic"]) .big-button { border-radius: 10px; text-shadow: 0 1px 0 rgba(90, 30, 5, .7); }
 :root:is([data-theme="forge"], [data-theme="classic"]) .big-button.busy { background: linear-gradient(180deg, #5a3419, #3a200f); color: var(--text); }
