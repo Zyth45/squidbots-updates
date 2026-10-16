@@ -12,7 +12,7 @@ import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { parseArgs, loadPrivateKey, writeSigned } from './lib.mjs';
 
-const args = parseArgs(process.argv.slice(2), {});
+const args = parseArgs(process.argv.slice(2), { 'allow-draft': 'bool' });
 const [source, out] = args._;
 if (!source || !out || !args.key) {
   console.log('Usage: node tools/publish-update.mjs <CoA-Update-2.x folder or zip> <out folder> --key <private.pem> [--notes file.md] [--repo owner/name]');
@@ -37,7 +37,8 @@ if (fs.statSync(source).isFile()) {
 const name = path.basename(path.resolve(folder));
 if (!/^CoA-Update-[0-9A-Za-z.-]{1,20}$/.test(name)) throw new Error(`The package folder must be named CoA-Update-<version> (found ${name}).`);
 const spec = JSON.parse(fs.readFileSync(path.join(folder, 'update', 'update.json'), 'utf8'));
-if (spec.draft) throw new Error('This package is a DRAFT (update.json "draft": true): it is not published.');
+// A draft is refused, except for a local test (--allow-draft with --url-base: it never reaches GitHub).
+if (spec.draft && !(args['allow-draft'] && args['url-base'])) throw new Error('This package is a DRAFT (update.json "draft": true): it is not published.');
 for (const key of ['version', 'targetRelease', 'fromReleases']) if (!spec[key]) throw new Error(`update.json has no ${key}.`);
 
 // The zip: the one given, or the folder packed (its own name at the top, like the manual zip).

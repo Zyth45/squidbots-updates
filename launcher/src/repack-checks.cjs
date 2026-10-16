@@ -106,13 +106,16 @@ async function repackChecks({ root, add, mysqlQuery, services }) {
   for (const folder of ['Core/Logs', 'CoA-Bots/Core/Logs']) {
     for (const name of await fsp.readdir(path.join(root, folder)).catch(() => [])) {
       const stat = await fsp.stat(path.join(root, folder, name)).catch(() => null);
-      if (stat?.isFile() && stat.size > 500 * 1024 ** 2) big.push(`${name} (${Math.round(stat.size / 1024 ** 2)} MB)`);
+      // An old log set aside by the start (world-console.log.1) is named as such: it can simply be deleted.
+      if (stat?.isFile() && stat.size > 500 * 1024 ** 2) big.push(`${name} (${Math.round(stat.size / 1024 ** 2)} MB${/\.\d+$/.test(name) ? ', old' : ''})`);
     }
   }
   const playerbotsLogger = confValue(worldTemplate, 'Logger.playerbots');
   add('health', 'logs.size', big.length ? 'warn' : 'ok', { files: big.join(', '), level: playerbotsLogger || '' });
   // S7 / entry 12: "Missing property" lines at the last start, the known harmless ones named as such.
-  const logText = ((await tailText(path.join(root, 'Core/Logs/world-console.log'))) || '') + ((await tailText(path.join(root, 'Core/Logs/Server.log'))) || '');
+  // Server.log keeps every start: only what follows the last one counts (an older core's lines are history).
+  const sinceLastStart = text => { const at = text.lastIndexOf('AzerothCore rev.'); return at < 0 ? text : text.slice(at); };
+  const logText = sinceLastStart((await tailText(path.join(root, 'Core/Logs/world-console.log'))) || '') + sinceLastStart((await tailText(path.join(root, 'Core/Logs/Server.log'))) || '');
   const missingProps = [...new Set([...logText.matchAll(/Missing property ([\w.]+)/g)].map(match => match[1]))];
   if (missingProps.length) {
     const harmless = missingProps.filter(key => /^(Spellbook\.Enable|DestinyWeaver\.|EtherealBazaar\.Enable|Dynamic\.XP\.)/.test(key));
