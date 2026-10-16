@@ -110,7 +110,8 @@ async function repackChecks({ root, add, mysqlQuery, services }) {
       if (stat?.isFile() && stat.size > 500 * 1024 ** 2) big.push(`${name} (${Math.round(stat.size / 1024 ** 2)} MB${/\.\d+$/.test(name) ? ', old' : ''})`);
     }
   }
-  const playerbotsLogger = confValue(worldTemplate, 'Logger.playerbots');
+  // The level that counts is the one of the bot server's own config (generated from the template, level lowered there).
+  const playerbotsLogger = confValue(await read(path.join(root, 'CoA-Bots/Core/configs/worldserver.conf')), 'Logger.playerbots') || confValue(worldTemplate, 'Logger.playerbots');
   add('health', 'logs.size', big.length ? 'warn' : 'ok', { files: big.join(', '), level: playerbotsLogger || '' });
   // S7 / entry 12: "Missing property" lines at the last start, the known harmless ones named as such.
   // Server.log keeps every start: only what follows the last one counts (an older core's lines are history).
