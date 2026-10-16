@@ -271,12 +271,12 @@ function modulesView() {
       <p class="small">${esc(m.squidbots.installed ? (m.squidbots.enabled ? t('modules.squidbotsOn', 'On: the server starts with the bots.') : t('modules.squidbotsOff', 'Off: the server starts without the bots.')) : t('modules.squidbotsMissing', 'CoA Bots is not installed in this server.'))}</p>${stopFirst}
       ${moduleCredit('squidbots', 'SquidBots (Zyth45)')}
     </section>
-    <section class="panel module-card"><header><h2>${icon('user')}Multirace</h2>${moduleSwitch('modules-multirace', r.enabled, m.worldRunning || (!r.enabled && (!r.core || r.dbc < r.dbcNeeded)))}</header>
+    ${App.state.config.hasMultirace ? `<section class="panel module-card"><header><h2>${icon('user')}Multirace</h2>${moduleSwitch('modules-multirace', r.enabled, m.worldRunning || (!r.enabled && (!r.core || r.dbc < r.dbcNeeded)))}</header>
       <p class="muted">${esc(t('modules.multiraceText', 'More playable races. Every player then needs the patched game client: a game without it crashes when it meets a character or a bot of an added race.'))}</p>
       <ul class="module-facts">${facts.map(([ok, text]) => `<li class="${ok ? 'ok' : 'bad'}">${icon(ok ? 'check' : 'warning')}<span>${esc(text)}</span></li>`).join('')}<li class="${r.client.state === 'yes' ? 'ok' : 'warn'}">${icon(r.client.state === 'yes' ? 'check' : 'info')}<span>${esc(client)}</span></li></ul>${clientAction || getClient ? `<div class="button-row module-actions">${clientAction}${getClient}</div>` : ''}
       <p class="small">${esc(r.enabled ? (r.bots ? t('modules.multiraceOnBots', 'On, bots included.') : t('modules.multiraceOn', 'On, players only.')) : t('modules.multiraceOff', 'Off.'))}</p>${stopFirst}
       ${moduleCredit('multirace', 'Ilusixn')}
-    </section>
+    </section>` : ''}
     <section class="panel module-card ${m.ahbot.available ? '' : 'soon'}"><header><h2>${icon('coin')}${esc(t('modules.ahbot', 'Auction house'))}</h2>${moduleSwitch('modules-ahbot', m.ahbot.enabled, m.worldRunning || !m.ahbot.available)}</header>
       <p class="muted">${esc(t('modules.ahbotText', 'An auctioneer fills the auction house with items to buy and buys what you sell. It has its own account, never removed when the bots are recreated.'))}</p>
       <p class="small">${esc(!m.ahbot.available ? t('modules.ahbotSoon', 'Available with CoA Bots 2.5.') : m.ahbot.enabled ? t('modules.ahbotOn', 'On (in game: .ahbot reload, .ahbot empty).') : t('modules.multiraceOff', 'Off.'))}</p>${m.ahbot.available ? stopFirst : ''}

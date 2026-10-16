@@ -227,6 +227,7 @@ function publicConfig() {
     hasFeed: !!config.feedUrl,
     // The repack updater: core, bots and addon come from one signed update; the old bots channel is not offered.
     hasUpdates: !!config.server?.updatesUrl,
+    hasMultirace: !!config.server?.multirace,
     hasTestChannel: !!(config.game.testManifestUrl || config.server?.testManifestUrl || config.server?.bots?.testManifestUrl),
     game: { name: config.game.name, realmlists: config.game.realmlists, updatesOnly: config.game.updatesOnly, baseClient: config.game.baseClient ? { note: config.game.baseClient.note } : null, hasClient: !!config.game.manifestUrl, hasAddons: !!config.game.addonCatalogUrl, signed: !!config.keys.game },
     server: config.server ? { repackSource: config.server.repackSource, repackSourceUrl: !!config.server.repackSourceUrl, hosted: !!config.server.manifestUrl, description: config.server.description, hasBots: !!config.server.bots, botsName: config.server.bots?.name || '' } : null,
@@ -708,6 +709,7 @@ function registerIpc() {
     } catch { return null; }
   });
   handle('modules:multirace', async options => {
+    if (!config.server?.multirace) throw new Error('This edition has no Multirace module.');
     if (!serverPath()) throw new Error('Choose the server folder first.');
     if (await worldRunning()) throw new Error('Stop the server first: the races are read when it starts.');
     const on = options?.on === true;

@@ -146,7 +146,8 @@
       "en": "the full CoA Bots repack (the « Download the server » button of the home page)",
       "ru": "полный репак CoA Bots (кнопка «Скачать сервер» на главной)"
     },
-    "updatesUrl": "https://github.com/Zyth45/squidbots-updates/releases/latest/download/update.json"
+    "updatesUrl": "https://github.com/Zyth45/squidbots-updates/releases/latest/download/update.json",
+    "multirace": false
   },
   "edition": "server",
   "feedUrl": "https://github.com/Zyth45/squidbots-updates/releases/download/launcher/feed.json"

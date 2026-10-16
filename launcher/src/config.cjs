@@ -73,6 +73,8 @@ function validate(raw) {
     knownRepacksUrl: serviceUrl(source.knownRepacksUrl, 'server.knownRepacksUrl', trusted, { optional: true }),
     // updatesUrl: the signed list of the latest repack update (update.json of the squidbots-updates releases).
     updatesUrl: serviceUrl(source.updatesUrl, 'server.updatesUrl', trusted, { optional: true }),
+    // The Multirace module (added races) is shown only by an edition that ships the races core.
+    multirace: source.multirace === true,
     repackSource: label(source.repackSource, 300),
     repackSourceUrl: source.repackSourceUrl && /^https:\/\/[\w.-]+(\/[\w\-./?=&#%~+]*)?$/.test(source.repackSourceUrl) ? source.repackSourceUrl : '',
     testManifestUrl: serviceUrl(source.testManifestUrl, 'server.testManifestUrl', trusted, { optional: true }),
