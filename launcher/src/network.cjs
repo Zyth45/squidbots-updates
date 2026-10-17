@@ -14,11 +14,22 @@ const ADDRESS = /^(?=.{1,253}$)[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?$/;
 const NAME = /^[\w '().-]{1,32}$/;
 const DEFAULT = { mode: 'local', address: '127.0.0.1', name: 'AzerothCore' };
 
+// The choice made in the launcher; without one (chosen: false), what the repack's own files say today, so
+// a server opened by hand is shown as it is and never rewritten.
 async function readNetwork(root) {
   try {
     const value = JSON.parse(await fs.readFile(path.join(root, FILE), 'utf8'));
-    return { mode: value.mode === 'open' ? 'open' : 'local', address: ADDRESS.test(value.address || '') ? value.address : DEFAULT.address, name: NAME.test(value.name || '') ? value.name : DEFAULT.name };
-  } catch { return { ...DEFAULT }; }
+    return { mode: value.mode === 'open' ? 'open' : 'local', address: ADDRESS.test(value.address || '') ? value.address : DEFAULT.address, name: NAME.test(value.name || '') ? value.name : DEFAULT.name, chosen: true };
+  } catch { return { ...(await currentNetwork(root)), chosen: false }; }
+}
+
+async function currentNetwork(root) {
+  const read = relative => fs.readFile(path.join(root, relative), 'utf8').catch(() => '');
+  const bind = /^\s*BindIP\s*=\s*"([^"]*)"/m.exec(await read('Settings/worldserver.conf.template'))?.[1];
+  const row = /UPDATE acore_auth\.realmlist SET name='([^']*)',address='([^']*)'/.exec(await read('Scripts/manage.py'));
+  const address = ADDRESS.test(row?.[2] || '') ? row[2] : DEFAULT.address;
+  const name = NAME.test(row?.[1] || '') ? row[1] : DEFAULT.name;
+  return { mode: bind && bind !== '127.0.0.1' ? 'open' : 'local', address, name };
 }
 
 // The IPv4 addresses of this PC on its local networks (what other PCs of the house use).
@@ -29,6 +40,8 @@ function lanAddresses() {
 // Rewrites the realmlist row of manage.py and the BindIP lines; returns the files it changed.
 async function applyNetwork(root, wanted) {
   const network = wanted || await readNetwork(root);
+  // Nothing chosen in the launcher: the files stay as the player (or the repack) left them.
+  if (!wanted && !network.chosen) return [];
   const open = network.mode === 'open';
   const address = open ? network.address : '127.0.0.1';
   const changed = [];
