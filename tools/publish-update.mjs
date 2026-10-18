@@ -85,6 +85,8 @@ const manifest = {
   // A notice shown before the click (a big update, files replaced...) and the free space it needs, from the package.
   ...(spec.notice ? { notice: spec.notice } : {}),
   ...(Number(spec.diskBytes) > 0 ? { diskBytes: Number(spec.diskBytes) } : {}),
+  // The oldest launcher that can install this package (a newer one is asked for first).
+  ...((args['min-launcher'] || spec.minLauncher) ? { minLauncher: String(args['min-launcher'] || spec.minLauncher) } : {}),
   package: { url: fileUrl(zipName), sha256, size: bytes, folder: name, ...(parts.length ? { parts: parts.map(part => ({ url: fileUrl(part.name), sha256: part.sha256, size: part.size })) } : {}) },
 };
 await writeSigned(path.join(out, 'update.json'), manifest, loadPrivateKey(args.key));

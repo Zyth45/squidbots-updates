@@ -214,6 +214,7 @@ function updateCard() {
   const card = (kind, iconName, title, text, action, label) => `<div class="update-card ${kind}">${icon(iconName)}<span><strong>${esc(title)}</strong><small>${esc(text)}</small></span>${action}</div>`;
   if (u.busy) return card('info', 'refresh', t('update.running', 'Updating your server…'), t('update.dontClose', 'Do not close the launcher until it is done.'), `<button class="button primary small" data-action="update-open">${esc(t('update.follow', 'Follow'))}</button>`);
   if (u.state === 'cut') return card('bad', 'warning', t('update.cutTitle', 'Update cut'), t('update.cutShort', 'Finish it or undo it before starting the server.'), `<div class="update-card-actions"><button class="button primary small" data-action="update-finish">${esc(t('update.finish', 'Finish it'))}</button><button class="button ghost small" data-action="update-undo-cut">${esc(t('update.undo', 'Undo the update'))}</button></div>`);
+  if (u.state === 'available' && launcherFirst(u)) return card('info', 'refresh', t('update.title', 'CoA Bots {version}', { version: u.manifest.version }), launcherFirst(u), App.state.launcherUpdate?.phase === 'downloaded' ? `<button class="button primary small" data-action="launcher-install">${esc(t('home.launcherRestart', 'Restart and update'))}</button>` : `<button class="button ghost small" data-action="launcher-check">${esc(t('settings.checkLauncher', 'Check for a launcher update'))}</button>`);
   if (u.state === 'available') return card('new', 'download', `${t('update.title', 'CoA Bots {version}', { version: u.manifest.version })}${u.manifest.channel === 'beta' ? ' · BETA' : ''}`, (u.manifest.package?.size || 0) + (u.manifest.package?.parts || []).reduce((sum, part) => sum + part.size, 0) >= BIG_UPDATE ? t('update.bigShort', 'Big update: about {size} to download.', { size: formatBytes((u.manifest.package?.size || 0) + (u.manifest.package?.parts || []).reduce((sum, part) => sum + part.size, 0)) }) : t('update.availableShort', 'New version: update in one click, with a backup.'), `<button class="button primary small" data-action="update-open"><i class="dot"></i>${esc(t('update.see', 'Update'))}</button>`);
   if (u.last?.error) return card('bad', 'warning', t('update.lastFailedTitle', 'Update stopped'), t('update.lastFailed', 'The last update stopped with an error.'), `<button class="button ghost small" data-action="update-open">${esc(t('update.seeError', 'See what to do'))}</button>`);
   return '';
@@ -282,4 +283,20 @@ function bigUpdate(u) {
   if (need) facts.push(t('update.bigDisk', 'Free disk space needed: about {need} (free now: {free}).', { need: formatBytes(need), free: typeof u.diskFree === 'number' ? formatBytes(u.diskFree) : '?' }));
   const html = `<div class="update-card ${blocked ? 'bad' : 'info'} big-update">${icon(blocked ? 'warning' : 'info')}<span><strong>${esc(blocked ? t('update.bigBlocked', 'Not enough free disk space for this update.') : t('update.bigTitle', 'Big update'))}</strong>${notice ? `<small>${esc(notice)}</small>` : ''}<small>${esc(facts.join(' '))}</small></span></div>`;
   return { html, blocked };
+}
+
+// An update offered only with a launcher recent enough, and never while a new launcher is on its way:
+// the player installs the launcher first (it may be the one that knows how to install this update).
+function versionBelow(a, b) {
+  const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number);
+  for (let i = 0; i < Math.max(x.length, y.length); i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) < (y[i] || 0);
+  return false;
+}
+function launcherFirst(u) {
+  const phase = App.state.launcherUpdate?.phase;
+  if (phase === 'downloaded') return t('update.launcherReady', 'A new launcher is ready: restart it first, then update the server.');
+  if (phase === 'downloading') return t('update.launcherComing', 'A new launcher is being downloaded: install it first, then update the server.');
+  const need = u.manifest?.minLauncher;
+  if (need && versionBelow(App.state.version, need)) return t('update.launcherNeeded', 'This update needs launcher {need} or newer (you have {have}): update the launcher first.', { need, have: App.state.version });
+  return '';
 }

@@ -72,6 +72,7 @@ function subscribe() {
     // Only the bar is redrawn: the page underneath (a form being filled…) is left alone.
     const bar = $('#launcher-banner');
     if (bar) bar.innerHTML = launcherBanner();
+    if (['downloading', 'downloaded'].includes(status.phase) && App.state.tab === 'home' && !$('#dialog').open) App.render();
     if (status.phase === 'downloaded') toast(t('launcher.ready', 'A new launcher is ready: it installs when you restart.'), 'success');
   });
   api.onGameExit(async () => { App.state.client = await api.clientInfo(); App.refresh('play'); });

@@ -49,6 +49,7 @@ function cleanManifest(data) {
     notes: text(data.notes, 60000),
     notice: typeof data.notice === 'string' ? { en: text(data.notice, 600) } : data.notice && typeof data.notice === 'object' ? Object.fromEntries(['en', 'fr', 'ru'].filter(lang => typeof data.notice[lang] === 'string').map(lang => [lang, text(data.notice[lang], 600)])) : null,
     diskBytes: Number.isSafeInteger(data.diskBytes) && data.diskBytes > 0 ? data.diskBytes : 0,
+    minLauncher: /^\d+(\.\d+){0,3}$/.test(data.minLauncher || '') ? data.minLauncher : '',
     package: { url: pkg.url, sha256: pkg.sha256, size: Number(pkg.size), folder: pkg.folder, parts },
   };
 }

@@ -610,6 +610,7 @@ function registerIpc() {
     const state = repackUpdateState();
     if (update.busy) throw new Error('An update is already running.');
     if (state.state !== 'available') throw new Error('No update to install for this server.');
+    if (update.manifest?.minLauncher && repackUpdate.compareVersions(app.getVersion(), update.manifest.minLauncher) < 0) throw new Error(`This update needs launcher ${update.manifest.minLauncher} or newer: update the launcher first (Settings > About).`);
     update.busy = true;
     const phase = (name, extra = {}) => { update.phase = name; send('update:event', { event: 'phase', phase: name, ...extra }); };
     // A server that was running is started again once the update ended well (the tool stops it for the update).

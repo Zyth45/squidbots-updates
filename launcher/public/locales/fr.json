@@ -917,5 +917,8 @@
   "update.unpackLine": "Décompression des fichiers de la mise à jour…",
   "update.unpackPart": "Décompression des fichiers de la mise à jour : partie {done} sur {total}…",
   "check.bots.outland.info.title": "Quelques bots de bas niveau en Outreterre",
-  "check.bots.outland.info.text": "{count} bot(s) de niveau inférieur à 61 en Outreterre. Rien à faire : ils retournent dans une zone de leur niveau à leur prochaine téléportation."
+  "check.bots.outland.info.text": "{count} bot(s) de niveau inférieur à 61 en Outreterre. Rien à faire : ils retournent dans une zone de leur niveau à leur prochaine téléportation.",
+  "update.launcherReady": "Un nouveau launcher est prêt : redémarrez-le d'abord, puis mettez à jour le serveur.",
+  "update.launcherComing": "Un nouveau launcher est en cours de téléchargement : installez-le d'abord, puis mettez à jour le serveur.",
+  "update.launcherNeeded": "Cette mise à jour demande le launcher {need} ou plus récent (vous avez {have}) : mettez d'abord le launcher à jour."
 }
