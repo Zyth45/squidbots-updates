@@ -28,6 +28,7 @@ const { cleanFeed } = require('./feed.cjs');
 const repackUpdate = require('./repack-update.cjs');
 const addonSync = require('./addon-sync.cjs');
 const manastormClient = require('./manastorm-client.cjs');
+const components = require('./components.cjs');
 const live = require('./live.cjs');
 const modules = require('./modules.cjs');
 // The repack's own updates (squidbots-updates releases): the signed list, the run in progress, its last result.
@@ -428,7 +429,10 @@ function registerIpc() {
   handle('dashboard:open', async () => {
     const status = await dashboard.status(serverPath());
     if (!status.running) throw new Error('Start the dashboard first.');
-    openDashboardWindow(status.url);
+    // The game folder chosen in "Your game" goes along (?client=), so the dashboard can fill it in (map extraction).
+    const page = new URL(status.url);
+    if (settings.installPaths.addon && fs_exists(settings.installPaths.addon)) page.searchParams.set('client', settings.installPaths.addon);
+    openDashboardWindow(page.toString());
   });
   // ---- who can join: this PC only, or other PCs (LAN / Internet)
   handle('network:get', async () => {
@@ -590,6 +594,30 @@ function registerIpc() {
   handle('notes:list', () => patchNotes());
   handle('notes:open', async index => { const link = notesCache.list[Number(index)]?.url; if (link) await shell.openExternal(link); });
   handle('update:refresh', () => refreshRepackUpdate());
+  // ---- components published on their own (addon, dashboard): no full update, the server is not touched
+  handle('components:state', () => componentsState());
+  handle('components:refresh', () => refreshComponents());
+  handle('components:install', async name => {
+    const id = text(name, 20);
+    const offer = componentLists[id];
+    if (!serverPath() || !offer) throw new Error('No new version of this component.');
+    if (componentsBusy) throw new Error('A component is already being installed.');
+    if (offer.minLauncher && repackUpdate.compareVersions(app.getVersion(), offer.minLauncher) < 0) throw new Error(`This needs launcher ${offer.minLauncher} or newer: update the launcher first (Settings > About).`);
+    if (update.busy) throw new Error('An update is running.');
+    componentsBusy = true;
+    let restart = false;
+    try {
+      if (id === 'dashboard') { restart = (await dashboard.status(serverPath())).running; if (restart) dashboard.stop(); }
+      const dirs = { cacheDir: path.join(app.getPath('userData'), 'updates'), backupDir: path.join(app.getPath('userData'), 'component-backups'), fetchImpl: netFetch };
+      const version = await components.install(serverPath(), offer, dirs);
+      let game = '';
+      // The addon goes on into the game, as at every start (only when the game is closed).
+      if (id === 'addon' && settings.installPaths.addon) game = await addonSync.gameRunning() ? 'running' : (await addonInstall().then(() => 'installed').catch(() => 'failed'));
+      if (restart) await dashboard.start(serverPath()).catch(() => {});
+      componentsBusy = false;
+      return { version, game, state: componentsState() };
+    } finally { componentsBusy = false; send('components:state', componentsState()); }
+  });
   // Download, check, apply. Each step stops at the first error; the tool says whether anything was changed.
   handle('update:run', async () => {
     if (demoUpdate()) {
@@ -1174,6 +1202,26 @@ function createUpdaters() {
 }
 
 // The signed list of the latest update, read at start and every 30 minutes.
+// The signed lists of the components, read at start and every 30 minutes (a missing one is simply not offered).
+let componentLists = {};
+let componentsBusy = false;
+const componentsState = () => ({ busy: componentsBusy, list: components.status(serverPath(), componentLists) });
+async function refreshComponents() {
+  const base = config.server?.componentsUrl;
+  if (!base) return componentsState();
+  const next = {};
+  for (const name of components.NAMES) {
+    try {
+      const { data } = await fetchSigned(new URL(`${name}.json`, base.endsWith('/') ? base : `${base}/`), { key: config.keys.server, fetchImpl: netFetch, signal: AbortSignal.timeout(20000), maxBytes: 64 * 1024, redirect: 'follow' });
+      next[name] = components.clean(name, data);
+    } catch {}
+  }
+  componentLists = next;
+  const state = componentsState();
+  send('components:state', state);
+  return state;
+}
+
 // Testers (betaUpdates in the settings) also read the beta list and get the newer of the two.
 async function refreshRepackUpdate() {
   const url = config.server?.updatesUrl;
@@ -1353,6 +1401,8 @@ async function main() {
   setTimeout(() => refreshFeed(), 3000).unref();
   setInterval(() => refreshFeed(), 30 * 60 * 1000).unref();
   setInterval(() => { if (!update.busy) refreshRepackUpdate(); }, 30 * 60 * 1000).unref();
+  setTimeout(() => refreshComponents(), 6000).unref();
+  setInterval(() => refreshComponents(), 30 * 60 * 1000).unref();
 }
 
 if (!smokeDir && !app.requestSingleInstanceLock()) app.quit();

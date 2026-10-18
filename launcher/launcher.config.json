@@ -1,7 +1,7 @@
 {
-  "appName": "CoA Launcher Lite",
-  "launcherUpdateUrl": "http://127.0.0.1:5082/downloads/launcher-lite/",
-  "launcherUpdateKey": "8QP9Z3PebRJhEPqw6c3f7FQnXEG+ppAluXRtUXWrdy0=",
+  "appName": "SquidBots Server",
+  "launcherUpdateUrl": "https://github.com/Zyth45/squidbots-updates/releases/download/launcher/",
+  "launcherUpdateKey": "AX5UARixwzb0fFDAnLbdKS0Se+NBpl00eVdzgwlghfQ=",
   "discordUrl": "https://discord.gg/UV4engmU96",
   "trustedLocalHosts": [
     "127.0.0.1",
@@ -14,16 +14,15 @@
       "Ascension.exe",
       "Wow.exe"
     ],
-    "manifestUrl": "http://127.0.0.1:5082/downloads/client/latest.json",
-    "addonCatalogUrl": "http://127.0.0.1:5082/downloads/addons/catalog.json",
-    "releaseKey": "8QP9Z3PebRJhEPqw6c3f7FQnXEG+ppAluXRtUXWrdy0=",
+    "manifestUrl": "",
+    "addonCatalogUrl": "",
+    "releaseKey": "AX5UARixwzb0fFDAnLbdKS0Se+NBpl00eVdzgwlghfQ=",
     "realmlists": [
       {
         "name": "Mon serveur local",
         "address": "127.0.0.1"
       }
-    ],
-    "testManifestUrl": "http://127.0.0.1:5082/downloads/test/client/latest.json"
+    ]
   },
   "server": {
     "description": {
@@ -31,8 +30,7 @@
       "fr": "Le repack CoA de Jealous : cœur, cartes et base de données prête.",
       "ru": "Репак CoA от Jealous: ядро, карты и готовая база данных."
     },
-    "manifestUrl": "http://127.0.0.1:5082/downloads/repack/latest.json",
-    "releaseKey": "8QP9Z3PebRJhEPqw6c3f7FQnXEG+ppAluXRtUXWrdy0=",
+    "releaseKey": "AX5UARixwzb0fFDAnLbdKS0Se+NBpl00eVdzgwlghfQ=",
     "requiredExecutable": "Core/worldserver.exe",
     "services": [
       {
@@ -129,8 +127,7 @@
         "ru": "Боты для Conquest of Azeroth: worldserver с ботами, их база данных и настройки SquidBots."
       },
       "folder": "CoA-Bots",
-      "manifestUrl": "http://127.0.0.1:5082/downloads/bots/latest.json",
-      "releaseKey": "8QP9Z3PebRJhEPqw6c3f7FQnXEG+ppAluXRtUXWrdy0=",
+      "releaseKey": "AX5UARixwzb0fFDAnLbdKS0Se+NBpl00eVdzgwlghfQ=",
       "requiredExecutable": "Core/worldserver.exe",
       "install": {
         "script": "Installer-Bots.ps1",
@@ -142,9 +139,16 @@
         ],
         "timeout": 1200
       },
-      "addon": "squidbots-lite",
-      "testManifestUrl": "http://127.0.0.1:5082/downloads/test/bots/latest.json"
+      "addon": "squidbots-lite"
     },
-    "testManifestUrl": "http://127.0.0.1:5082/downloads/test/repack/latest.json"
-  }
+    "repackSource": {
+      "fr": "le repack complet CoA Bots (bouton « Télécharger le serveur » de l’accueil)",
+      "en": "the full CoA Bots repack (the « Download the server » button of the home page)",
+      "ru": "полный репак CoA Bots (кнопка «Скачать сервер» на главной)"
+    },
+    "updatesUrl": "https://github.com/Zyth45/squidbots-updates/releases/latest/download/update.json",
+    "multirace": false
+  },
+  "edition": "server",
+  "feedUrl": "https://github.com/Zyth45/squidbots-updates/releases/download/launcher/feed.json"
 }

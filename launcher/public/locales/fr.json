@@ -920,5 +920,15 @@
   "check.bots.outland.info.text": "{count} bot(s) de niveau inférieur à 61 en Outreterre. Rien à faire : ils retournent dans une zone de leur niveau à leur prochaine téléportation.",
   "update.launcherReady": "Un nouveau launcher est prêt : redémarrez-le d'abord, puis mettez à jour le serveur.",
   "update.launcherComing": "Un nouveau launcher est en cours de téléchargement : installez-le d'abord, puis mettez à jour le serveur.",
-  "update.launcherNeeded": "Cette mise à jour demande le launcher {need} ou plus récent (vous avez {have}) : mettez d'abord le launcher à jour."
+  "update.launcherNeeded": "Cette mise à jour demande le launcher {need} ou plus récent (vous avez {have}) : mettez d'abord le launcher à jour.",
+  "live.waitLogin": "Attendez un peu avant de vous connecter : le serveur fait entrer ses bots dans le monde. Le jeu reste plus lent tant qu'ils ne sont pas tous là.",
+  "component.addon": "Addon SquidBots",
+  "component.dashboard": "Dashboard des bots",
+  "component.title": "{name} {version}",
+  "component.available": "Version {version} (vous avez {have}) : quelques secondes, le serveur n'est pas touché.",
+  "component.launcherFirst": "Installez d'abord le nouveau launcher.",
+  "component.installing": "Installation…",
+  "component.done": "{name} {version} installé.",
+  "component.addonGameOpen": "Fermez le jeu : l'addon y sera installé au prochain démarrage du launcher.",
+  "component.addonInGame": "Il est dans votre jeu : il se charge à votre prochaine connexion."
 }

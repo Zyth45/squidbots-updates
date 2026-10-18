@@ -264,10 +264,10 @@
 .module-facts li.ok .icon { color: var(--ok); }
 .module-facts li.bad .icon { color: var(--bad); }
 .module-facts li.warn .icon { color: var(--warn); }
-.switch { position: relative; width: 46px; height: 26px; border-radius: 13px; border: 1px solid var(--line-strong); background: var(--tint-strong, rgba(255, 255, 255, .1)); flex: none; padding: 0; }
-.switch span { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--muted); transition: transform .15s, background .15s; }
-.switch.on { background: color-mix(in srgb, var(--accent) 45%, transparent); border-color: var(--accent); }
-.switch.on span { transform: translateX(20px); background: var(--accent); }
+button.switch { position: relative; width: 46px; height: 26px; border-radius: 13px; border: 1px solid var(--line-strong); background: var(--tint-strong, rgba(255, 255, 255, .1)); flex: none; padding: 0; }
+button.switch span { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--muted); transition: transform .15s, background .15s; }
+button.switch.on { background: color-mix(in srgb, var(--accent) 45%, transparent); border-color: var(--accent); }
+button.switch.on span { transform: translateX(20px); background: var(--accent); }
 .switch:disabled { opacity: .45; cursor: not-allowed; }
 .module-facts { padding: 0; }
 
@@ -332,3 +332,18 @@ button.switch.on span { transform: translateX(20px); background: #fff; }
 /* Update window: a long step says it is still working. */
 .update-still { display: flex; gap: 6px; align-items: center; }
 .update-still .icon { width: 14px; height: 14px; animation: spin 2s linear infinite; }
+
+/* Settings switches (checkboxes): the same colours as the module switches, green ON and red OFF. */
+label.switch input + span { background: color-mix(in srgb, var(--bad) 38%, transparent); border-color: color-mix(in srgb, var(--bad) 75%, transparent); }
+label.switch input:checked + span { background: color-mix(in srgb, var(--ok) 55%, transparent); border-color: var(--ok); }
+label.switch input + span::after { background: #e9eef0; box-shadow: 0 1px 3px rgba(0, 0, 0, .45); }
+label.switch input:checked + span::after { background: #fff; }
+/* The settings bar stays on screen only while changes wait to be saved (saved, it no longer covers the first setting). */
+.conf-bar:not(.dirty) { position: static; }
+
+/* Server live: while the bots arrive, a word for the player who wants to log in. */
+.live-wait { display: flex; gap: 8px; align-items: center; margin: 2px 2px 0; font-size: 12.5px; color: var(--warn); }
+.live-wait .icon { width: 16px; height: 16px; flex: none; }
+
+/* Home: a component card (addon, dashboard) takes the width of the column, like the update card. */
+.server-hero .classic-side > .component-card { grid-column: 1 / -1; }

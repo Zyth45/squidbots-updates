@@ -300,3 +300,33 @@ function launcherFirst(u) {
   if (need && versionBelow(App.state.version, need)) return t('update.launcherNeeded', 'This update needs launcher {need} or newer (you have {have}): update the launcher first.', { need, have: App.state.version });
   return '';
 }
+
+// ---------------------------------------------------------------- components published on their own
+// The addon and the dashboard: a small card when a newer one is published, installed in a few seconds without
+// touching the server. Not while a new launcher is on its way (the launcher comes first).
+App.state.components = null;
+const COMPONENT_LABEL = { addon: 'SquidBots addon', dashboard: 'Bots dashboard' };
+function componentCards() {
+  const list = (App.state.components?.list || []).filter(item => item.available);
+  if (!list.length) return '';
+  const first = ['downloading', 'downloaded'].includes(App.state.launcherUpdate?.phase);
+  return list.map(item => {
+    const label = t(`component.${item.name}`, COMPONENT_LABEL[item.name] || item.name);
+    const text = first ? t('component.launcherFirst', 'Install the new launcher first.') : t('component.available', 'Version {version} (you have {have}): a few seconds, the server is not touched.', { version: item.version, have: item.installed === '0' ? '—' : item.installed });
+    const action = first ? '' : `<button class="button primary small" data-action="component-install" data-id="${esc(item.name)}" ${App.state.components.busy ? 'disabled' : ''}>${esc(t('update.see', 'Update'))}</button>`;
+    return `<div class="update-card new component-card">${icon(item.name === 'addon' ? 'addons' : 'chart')}<span><strong>${esc(t('component.title', '{name} {version}', { name: label, version: item.version }))}</strong><small>${esc(text)}</small></span>${action}</div>`;
+  }).join('');
+}
+Object.assign(App.actions, {
+  'component-install': button => guard(async () => {
+    const name = button.dataset.id;
+    toast(t('component.installing', 'Installing…'));
+    const result = await App.api.componentsInstall(name);
+    App.state.components = result.state;
+    const label = t(`component.${name}`, COMPONENT_LABEL[name] || name);
+    const extra = name === 'addon' && result.game === 'running' ? t('component.addonGameOpen', 'Close the game: the addon goes into it at the next start of the launcher.') : name === 'addon' && result.game === 'installed' ? t('component.addonInGame', 'It is in your game: it loads at your next login.') : '';
+    toast(`${t('component.done', '{name} {version} installed.', { name: label, version: result.version })} ${extra}`.trim(), 'success');
+    if (name === 'addon') refreshAddon();
+    App.render();
+  }, button),
+});

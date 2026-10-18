@@ -64,6 +64,7 @@ function subscribe() {
     else if (App.state.srvTab === 'backups' && App.state.tab === 'server' && !$('#dialog').open) App.refresh('server');
   });
   api.onAddonProgress(({ done, total }) => { if (total) toast(t('addon.downloading', 'Downloading addons… {pct}%', { pct: Math.floor((100 * done) / total) })); });
+  api.onComponents(state => { App.state.components = state; if (App.state.tab === 'home' && !$('#dialog').open) App.render(); });
   api.onUpdateState(state => { App.state.update.state = state; if (App.state.tab === 'home' && !$('#dialog').open) App.render(); });
   api.onUpdateEvent(event => onUpdateEvent(event));
   api.onFeed(feed => { App.state.feed = feed; if (['home', 'server'].includes(App.state.tab) && !$('#dialog').open) App.render(); });
@@ -84,6 +85,7 @@ App.smoke = step => {
   // Screenshot tours: show the launcher-update bar as if a new launcher were downloading / ready.
   if (step.startsWith('launcher:')) { App.state.launcherUpdate = { phase: step.slice(9), version: '9.9.9', percent: 56 }; const bar = $('#launcher-banner'); if (bar) bar.innerHTML = launcherBanner(); return; }
   if (step.startsWith('click:')) { $(step.slice(6))?.click(); return; }
+  if (step.startsWith('scroll:')) { $(step.slice(7))?.scrollIntoView({ block: 'center' }); return; }
   if (step.startsWith('fill:')) {
     const [selector, value] = step.slice(5).split('::');
     const input = $(selector);
@@ -126,7 +128,7 @@ App.smoke = step => {
   setInterval(probeRealm, 30 * 1000);
   if (isClassic() && data.config.edition !== 'server') loadNews();
   // Compare the game with its latest release at start (nothing is downloaded without asking).
-  if (data.config.edition === 'server') { refreshAddon(true); App.api.updateRefresh().then(state => { if (state) { App.state.update.state = state; if (App.state.tab === 'home') App.render(); } }).catch(() => {}); App.api.notes().then(notes => { App.state.notes = notes; if (App.state.tab === 'home') App.render(); }).catch(() => {}); App.api.updateState().then(state => { if (!App.state.update.state) App.state.update.state = state; if (App.state.tab === 'home') App.render(); }).catch(() => {}); loadNews(); App.api.feed().then(feed => { App.state.feed = feed; if (App.state.tab === 'home') App.render(); }).catch(() => {}); }
+  if (data.config.edition === 'server') { refreshAddon(true); App.api.updateRefresh().then(state => { if (state) { App.state.update.state = state; if (App.state.tab === 'home') App.render(); } }).catch(() => {}); App.api.componentsRefresh().then(state => { App.state.components = state; if (App.state.tab === 'home') App.render(); }).catch(() => {}); App.api.notes().then(notes => { App.state.notes = notes; if (App.state.tab === 'home') App.render(); }).catch(() => {}); App.api.updateState().then(state => { if (!App.state.update.state) App.state.update.state = state; if (App.state.tab === 'home') App.render(); }).catch(() => {}); loadNews(); App.api.feed().then(feed => { App.state.feed = feed; if (App.state.tab === 'home') App.render(); }).catch(() => {}); }
   else if (data.client.installed && data.config.game.hasClient) checkClient(false, true).catch(error => { App.state.client.progress = { phase: 'error', message: error.message }; App.refresh('play'); });
   if (data.config.edition !== 'server' && data.config.game.hasAddons && (data.settings.autoCheckAddons || data.client.installed)) loadAddons();
   if (data.config.server) App.api.serverInfo().then(info => { App.state.server = info; if (info.installed) checkServer(false, true).catch(() => {}); refreshUpdates(); }).catch(() => {});

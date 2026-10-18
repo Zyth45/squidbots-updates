@@ -298,9 +298,9 @@ function homeView() {
         <button class="icon-button gear-settings" data-action="srv-tab" data-id="settings" title="${esc(t('srv.tab.settings', 'Server settings'))}" aria-label="${esc(t('srv.tab.settings', 'Server settings'))}">${icon('settings')}</button>${s.config.hasUpdates ? `<button class="icon-button gear-settings" data-action="update-check" title="${esc(t('settings.checkRepack', 'Check for a repack and bots update'))}" aria-label="${esc(t('settings.checkRepack', 'Check for a repack and bots update'))}">${icon('refresh')}</button>` : ''}</div>
         <span class="chip classic-folder" title="${esc(info.path)}">${icon('folder')}<span>${esc(info.path)}</span></span>
       </div>
-      <aside class="classic-side">${updateCard()}
-        <button class="side-card" ${s.update?.state?.state === 'available' ? 'data-action="update-open"' : 'data-tab="verify"'}>${icon('layers')}<span><strong>${esc(t('home.core', 'Core'))}</strong><small>${esc(info.details?.release || info.version || '—')}</small></span>${s.updates.core || s.update?.state?.state === 'available' ? '<i class="dot"></i>' : icon('next')}</button>
-        <button class="side-card" data-tab="verify">${icon('bot')}<span><strong>CoA Bots</strong><small>${esc(info.bots?.installed ? `${info.bots.version}${info.bots.builtFor ? ` · ${info.bots.builtFor}` : ''}` : t('bots.notInstalled', 'Not installed'))}</small></span>${s.updates.bots ? '<i class="dot"></i>' : icon('next')}</button>
+      <aside class="classic-side">${updateCard()}${componentCards()}
+        <button class="side-card" ${s.update?.state?.state === 'available' ? 'data-action="update-open"' : 'data-tab="verify"'}>${icon('layers')}<span><strong>${esc(t('home.core', 'Core'))}</strong><small>${esc(shortRelease(info.details?.release || info.version) || '—')}</small></span>${s.updates.core || s.update?.state?.state === 'available' ? '<i class="dot"></i>' : icon('next')}</button>
+        <button class="side-card" data-tab="verify">${icon('bot')}<span><strong>CoA Bots</strong><small>${esc(info.bots?.installed ? `${info.bots.version}${info.bots.builtFor ? ` · ${shortRelease(info.bots.builtFor)}` : ''}` : t('bots.notInstalled', 'Not installed'))}</small></span>${s.updates.bots ? '<i class="dot"></i>' : icon('next')}</button>
         <button class="side-card verify-card ${verifyState}" data-tab="verify">${icon('shield')}<span><strong>${esc(t('tab.verify', 'Verification'))}</strong><small>${esc(verifyText)}</small></span>${icon('next')}</button>
         ${addonCard()}
         ${newerRepack(info) ? `<button class="side-card" data-action="repack-newer">${icon('download')}<span><strong>${esc(t('home.newRepack', 'New repack available'))}</strong><small>${esc(newerRepack(info).name || newerRepack(info).release)}</small></span><i class="dot"></i></button>` : ''}
@@ -347,7 +347,7 @@ function liveView() {
     ${tile('bot', t('live.bots', 'Bots in game'), l.bots ? String(l.bots.count) : '—', l.bots ? t('live.inCombat', '{n} in combat', { n: l.bots.inCombat }) : '')}
     ${tile('refresh', t('live.tick', 'Tick'), tick === null || tick === undefined ? '—' : `${tick} ms`, arriving && tick > 150 ? t('live.tickLoading', 'bots arriving') : tick > 150 ? t('live.tickSlow', 'slow') : tick !== null && tick !== undefined ? t('live.tickOk', 'smooth') : '')}
     ${tile('database', t('live.memory', 'Memory'), l.memory ? formatBytes(l.memory) : '—')}
-  </div></section>`;
+  </div>${arriving ? `<p class="live-wait">${icon('info')}${esc(t('live.waitLogin', 'Wait a little before logging in: the server is bringing its bots into the world. The game is slower until they are all there.'))}</p>` : ''}</section>`;
 }
 
 // Read every 10 s while the home page is shown, and at once when it opens.
@@ -648,3 +648,6 @@ function friendsLine() {
   return line;
 }
 document.addEventListener('input', event => { if (event.target.id === 'net-address') friendsLine(); });
+
+// "main-20261018-0ab739f5" reads "main-20261018" on the home cards (the full id stays in Verification).
+function shortRelease(release) { return String(release || '').replace(/-[0-9a-f]{7,40}$/i, ''); }

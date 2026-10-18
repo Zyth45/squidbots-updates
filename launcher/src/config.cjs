@@ -75,6 +75,8 @@ function validate(raw) {
     updatesUrl: serviceUrl(source.updatesUrl, 'server.updatesUrl', trusted, { optional: true }),
     // betaUpdatesUrl: the same list for the beta channel (a pre-release), read only by testers who ask for it.
     betaUpdatesUrl: serviceUrl(source.betaUpdatesUrl, 'server.betaUpdatesUrl', trusted, { optional: true }),
+    // componentsUrl: the folder of the signed lists of the components published on their own (addon, dashboard).
+    componentsUrl: serviceUrl(source.componentsUrl, 'server.componentsUrl', trusted, { optional: true }),
     // The Multirace module (added races) is shown only by an edition that ships the races core.
     multirace: source.multirace === true,
     repackSource: label(source.repackSource, 300),

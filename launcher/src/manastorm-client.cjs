@@ -29,7 +29,7 @@ async function install({ client, entry, cacheDir, backupDir, fetchImpl }) {
   if (!entry?.url || !entry.sha256 || !entry.bytes) throw new Error('No client files to install yet: download the zip instead.');
   await fsp.mkdir(cacheDir, { recursive: true });
   const zip = path.join(cacheDir, `manastorm-client-${entry.sha256.slice(0, 12)}.zip`);
-  await downloadObject({ url: new URL(entry.url), size: entry.bytes, sha256: entry.sha256, destination: zip, fetchImpl, redirect: 'follow' });
+  await downloadObject({ url: new URL(entry.url), size: entry.bytes, sha256: entry.sha256, destination: zip, signal: AbortSignal.timeout(30 * 60 * 1000), fetchImpl, redirect: 'follow' });
   const files = entriesOf((await run(tar, ['-tf', zip], { maxBuffer: 16 << 20, windowsHide: true })).stdout);
   if (!files.length) throw new Error('The client zip is empty.');
   const stage = await fsp.mkdtemp(path.join(cacheDir, 'stage-'));
