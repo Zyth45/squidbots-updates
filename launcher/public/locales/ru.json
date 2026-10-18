@@ -930,5 +930,6 @@
   "component.installing": "Установка…",
   "component.done": "{name} {version} установлен.",
   "component.addonGameOpen": "Закройте игру: аддон будет установлен при следующем запуске лаунчера.",
-  "component.addonInGame": "Он уже в вашей игре: загрузится при следующем входе."
+  "component.addonInGame": "Он уже в вашей игре: загрузится при следующем входе.",
+  "logs.quieted": "Журналы облегчены: повторяющиеся сообщения «Wrong area flag» новых карт больше не записываются (Settings\\worldserver.conf.template)."
 }

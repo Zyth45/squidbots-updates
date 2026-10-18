@@ -64,6 +64,7 @@ function subscribe() {
     else if (App.state.srvTab === 'backups' && App.state.tab === 'server' && !$('#dialog').open) App.refresh('server');
   });
   api.onAddonProgress(({ done, total }) => { if (total) toast(t('addon.downloading', 'Downloading addons… {pct}%', { pct: Math.floor((100 * done) / total) })); });
+  api.onRepackNotice(notice => toast(t(notice.key, notice.text), 'success'));
   api.onComponents(state => { App.state.components = state; if (App.state.tab === 'home' && !$('#dialog').open) App.render(); });
   api.onUpdateState(state => { App.state.update.state = state; if (App.state.tab === 'home' && !$('#dialog').open) App.render(); });
   api.onUpdateEvent(event => onUpdateEvent(event));

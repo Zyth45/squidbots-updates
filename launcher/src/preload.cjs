@@ -92,6 +92,7 @@ contextBridge.exposeInMainWorld('launcher', Object.freeze({
   updateOpenLog: () => call('update:openLog'),
   onUpdateState: on('update:state'),
   onComponents: on('components:state'),
+  onRepackNotice: on('repack:notice'),
   componentsState: () => call('components:state'),
   componentsRefresh: () => call('components:refresh'),
   componentsInstall: name => call('components:install', name),

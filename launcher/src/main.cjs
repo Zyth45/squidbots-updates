@@ -29,6 +29,7 @@ const repackUpdate = require('./repack-update.cjs');
 const addonSync = require('./addon-sync.cjs');
 const manastormClient = require('./manastorm-client.cjs');
 const components = require('./components.cjs');
+const tweaks = require('./repack-tweaks.cjs');
 const live = require('./live.cjs');
 const modules = require('./modules.cjs');
 // The repack's own updates (squidbots-updates releases): the signed list, the run in progress, its last result.
@@ -432,7 +433,8 @@ function registerIpc() {
     // The game folder chosen in "Your game" goes along (?client=), so the dashboard can fill it in (map extraction).
     const page = new URL(status.url);
     if (settings.installPaths.addon && fs_exists(settings.installPaths.addon)) page.searchParams.set('client', settings.installPaths.addon);
-    openDashboardWindow(page.toString());
+    // In the player's own browser (bookmarks, tabs); the launcher's window only if Windows cannot open one.
+    try { await shell.openExternal(page.toString()); } catch { openDashboardWindow(page.toString()); }
   });
   // ---- who can join: this PC only, or other PCs (LAN / Internet)
   handle('network:get', async () => {
@@ -666,7 +668,7 @@ function registerIpc() {
       update.phase = null;
     }
     if (wasRunning && update.last && !update.last.code && !update.last.error) {
-      network.applyNetwork(folder).catch(() => {}).then(() => modules.keepRotationOff(folder)).then(() => requireControl().startAll()).catch(() => {});
+      network.applyNetwork(folder).catch(() => {}).then(() => modules.keepRotationOff(folder)).then(() => quietLogs(folder)).then(() => requireControl().startAll()).catch(() => {});
     }
     const state2 = repackUpdateState();
     send('update:state', state2);
@@ -885,7 +887,7 @@ function registerIpc() {
     return serverInfo();
   });
   handle('repack:pause', () => { repackUpdater?.cancel(); bots?.updater.cancel(); });
-  handle('repack:start', async id => { await network.applyNetwork(serverPath()).catch(() => {}); await modules.keepRotationOff(serverPath()); if (id === 'all') await requireControl().startAll(); else await requireControl().start(text(id, 30)); return serverInfo(); });
+  handle('repack:start', async id => { await network.applyNetwork(serverPath()).catch(() => {}); await modules.keepRotationOff(serverPath()); await quietLogs(serverPath()); if (id === 'all') await requireControl().startAll(); else await requireControl().start(text(id, 30)); return serverInfo(); });
   handle('repack:stop', async id => { if (id === 'all') await requireControl().stopAll(); else await requireControl().stop(text(id, 30)); return serverInfo(); });
   handle('repack:tail', id => requireControl().tail(text(id, 30)));
   handle('repack:account', (name, password, gm) => requireControl().createAccount(text(name, 20), text(password, 20), gm === true));
@@ -1202,6 +1204,11 @@ function createUpdaters() {
 }
 
 // The signed list of the latest update, read at start and every 30 minutes.
+// Before a start: the repack's small log fix (only when the player has no line of his own); the window is told.
+async function quietLogs(root) {
+  if (await tweaks.quietPlayerLogger(root).catch(() => false)) send('repack:notice', { key: 'logs.quieted', text: 'Quieter logs: the repeated "Wrong area flag" messages of the new maps are no longer written (Settings\\worldserver.conf.template).' });
+}
+
 // The signed lists of the components, read at start and every 30 minutes (a missing one is simply not offered).
 let componentLists = {};
 let componentsBusy = false;
