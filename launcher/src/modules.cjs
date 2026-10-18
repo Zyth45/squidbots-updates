@@ -22,12 +22,12 @@ const confValue = (text, key) => new RegExp(`^\\s*${key.replace(/\./g, '\\.')}\\
 
 // Does this worldserver know the switch? Its own config keys are plain text inside the executable.
 const coreCache = new Map();
-async function coreSupports(exe) {
+async function coreSupports(exe, mark = CORE_MARK) {
   const stat = await fsp.stat(exe).catch(() => null);
   if (!stat) return false;
-  const key = `${exe}|${stat.size}|${stat.mtimeMs}`;
+  const key = `${exe}|${stat.size}|${stat.mtimeMs}|${mark}`;
   if (coreCache.has(key)) return coreCache.get(key);
-  const needle = Buffer.from(CORE_MARK, 'latin1');
+  const needle = Buffer.from(mark, 'latin1');
   let found = false;
   let tail = Buffer.alloc(0);
   for await (const chunk of fs.createReadStream(exe, { highWaterMark: 4 << 20 })) {
@@ -55,6 +55,8 @@ async function status(root, { squidbots = true, client = '' } = {}) {
   return {
     squidbots: { installed: fs.existsSync(path.join(root, 'CoA-Bots', 'coa_bots.py')), enabled: squidbots !== false },
     ahbot: await ahbotStatus(root),
+    manastorm: await manastormStatus(root),
+    rotation: await rotationStatus(root),
     multirace: {
       enabled: confValue(conf, 'CoACustomRaces.Enable') === '1',
       bots: confValue(conf, 'CoACustomRaces.BotsEnable') === '1',
@@ -111,23 +113,91 @@ async function setClientPatch(client, on) {
   return clientPatch(client);
 }
 
-// The auction house bot (from CoA Bots 2.5): one key, a restart, nothing to purge. Its own account (AHBOT) is not
-// a random bot account, so purges never touch it.
-const AHBOT_CONF = 'CoA-Bots/Core/configs/modules/mod_ahbot.conf';
+// A module switch kept in a .conf of the server's modules (with or without bots). Without a .conf the server reads
+// the .dist, so its value is the one in force; the first switch creates the .conf from the .dist.
+const MODULE_DIRS = ['CoA-Bots/Core/configs/modules', 'Core/configs/modules'];
+async function moduleConf(root, name) {
+  for (const dir of MODULE_DIRS) {
+    const file = path.join(root, dir, name);
+    const conf = await fsp.readFile(file, 'utf8').catch(() => null);
+    if (conf !== null) return conf;
+    const dist = await fsp.readFile(`${file}.dist`, 'utf8').catch(() => null);
+    if (dist !== null) return dist;
+  }
+  return null;
+}
+async function setModuleKeys(root, name, keys, missing) {
+  let written = 0;
+  for (const dir of MODULE_DIRS) {
+    const file = path.join(root, dir, name);
+    let text = await fsp.readFile(file, 'utf8').catch(() => null);
+    if (text === null) {
+      text = await fsp.readFile(`${file}.dist`, 'utf8').catch(() => null);
+      if (text === null) continue;
+    } else await fsp.copyFile(file, `${file}.bak-${new Date().toISOString().replace(/[:.]/g, '-')}`);
+    for (const [key, value] of Object.entries(keys)) text = await setKey(text, key, value);
+    await fsp.writeFile(file, text);
+    written++;
+  }
+  if (!written) throw new Error(missing);
+}
+const isOn = value => /^(1|true)$/i.test(value || '');
+
+// The auction house bot (from CoA Bots 2.5, on by default): one key, a restart, nothing to purge. Its own account
+// (AHBOT) is not a random bot account, so purges never touch it.
+const AHBOT = 'mod_ahbot.conf';
 async function ahbotStatus(root) {
-  const conf = await fsp.readFile(path.join(root, AHBOT_CONF), 'utf8').catch(() => null);
-  const available = conf !== null || fs.existsSync(path.join(root, `${AHBOT_CONF}.dist`));
-  return { available, enabled: /^(1|true)$/i.test(confValue(conf, 'AuctionHouseBot.Enable') || '') };
+  const conf = await moduleConf(root, AHBOT);
+  return { available: conf !== null, enabled: isOn(confValue(conf, 'AuctionHouseBot.Enable')) };
 }
 async function setAhbot(root, on) {
-  const file = path.join(root, AHBOT_CONF);
-  let text = await fsp.readFile(file, 'utf8').catch(() => null);
-  if (text === null) {
-    text = await fsp.readFile(`${file}.dist`, 'utf8').catch(() => null);
-    if (text === null) throw new Error('The auction house bot comes with CoA Bots 2.5.');
-  } else await fsp.copyFile(file, `${file}.bak-${new Date().toISOString().replace(/[:.]/g, '-')}`);
-  await fsp.writeFile(file, await setKey(text, 'AuctionHouseBot.Enable', on ? 'true' : 'false'));
+  await setModuleKeys(root, AHBOT, { 'AuctionHouseBot.Enable': on ? 'true' : 'false' }, 'The auction house bot comes with CoA Bots 2.5.');
   return ahbotStatus(root);
+}
+
+// Manastorm Endless (core of CoA, from CoA Bots 2.5): off by default. Its tables are always there (the server needs
+// them to start); the switch only sets Enable, with ClientMode 2 (the native window of the patched client).
+const MANASTORM = 'manastorm-endless.conf';
+async function manastormStatus(root) {
+  const conf = await moduleConf(root, MANASTORM);
+  return { available: conf !== null, enabled: isOn(confValue(conf, 'Manastorm.Enable')) };
+}
+async function setManastorm(root, on) {
+  await setModuleKeys(root, MANASTORM, { 'Manastorm.Enable': on ? '1' : '0', 'Manastorm.ClientMode': '2' }, 'Manastorm comes with CoA Bots 2.5.');
+  return manastormStatus(root);
+}
+
+// The one-button rotation assistant (core of CoA): off in CoA Bots. The core turns it ON when its key is missing,
+// so the key is always written (0 when absent, see keepRotationOff). manage.py writes Core\configs\modules\coa.conf
+// from Settings\coa.conf.template at every start: the template is the setting, the copies follow it.
+const ROTATION_KEY = 'CoA.RotationAssist.Enable';
+const ROTATION_FILES = ['Settings/coa.conf.template', 'CoA-Bots/Core/configs/modules/coa.conf', 'Core/configs/modules/coa.conf'];
+async function rotationStatus(root) {
+  const template = await fsp.readFile(path.join(root, ROTATION_FILES[0]), 'utf8').catch(() => null);
+  const known = await coreSupports(path.join(root, 'CoA-Bots', 'Core', 'worldserver.exe'), ROTATION_KEY);
+  const value = confValue(template, ROTATION_KEY);
+  return { available: template !== null && known, enabled: value === undefined ? known : isOn(value), missing: value === undefined };
+}
+async function writeRotation(root, value, onlyWhenMissing) {
+  let written = 0;
+  for (const rel of ROTATION_FILES) {
+    const file = path.join(root, rel);
+    const text = await fsp.readFile(file, 'utf8').catch(() => null);
+    if (text === null || (onlyWhenMissing && confValue(text, ROTATION_KEY) !== undefined)) continue;
+    await fsp.writeFile(file, await setKey(text, ROTATION_KEY, value));
+    written++;
+  }
+  return written;
+}
+async function setRotation(root, on) {
+  if (!(await rotationStatus(root)).available) throw new Error('The rotation assistant comes with CoA Bots 2.5.');
+  await writeRotation(root, on ? '1' : '0', false);
+  return rotationStatus(root);
+}
+// Before every start: a missing key is written as 0 (never changes a value the player chose).
+async function keepRotationOff(root) {
+  if (!(await coreSupports(path.join(root, 'CoA-Bots', 'Core', 'worldserver.exe'), ROTATION_KEY).catch(() => false))) return 0;
+  return writeRotation(root, '0', true).catch(() => 0);
 }
 
 // The repack's own switch (CoA-Bots\coa_multirace.py, from CoA Bots 2.4): it also moves the players' characters of
@@ -149,4 +219,4 @@ function runScript(root, command, apply) {
   }));
 }
 
-module.exports = { ahbotStatus, setAhbot, hasScript, runScript, status, setMultirace, setClientPatch, clientPatch, coreSupports, multiraceBlockers, RACES_CONF, RACES_DBC_COUNT };
+module.exports = { ahbotStatus, setAhbot, manastormStatus, setManastorm, rotationStatus, setRotation, keepRotationOff, hasScript, runScript, status, setMultirace, setClientPatch, clientPatch, coreSupports, multiraceBlockers, RACES_CONF, RACES_DBC_COUNT };

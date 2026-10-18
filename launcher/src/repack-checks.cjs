@@ -195,7 +195,7 @@ async function repackChecks({ root, add, mysqlQuery, services }) {
         const maxLevel = Number(confValue(botsConf, 'AiPlayerbot.RandomBotMaxLevel')) || 80;
         if (maxLevel <= 60) {
           const [outland] = await mysqlQuery("SELECT COUNT(*) FROM acore_characters.characters c JOIN acore_auth.account a ON a.id = c.account WHERE a.username LIKE 'RNDBOT%' AND c.map = 530 AND c.level <= 60 AND c.zone NOT IN (3430, 3433, 3487, 3524, 3525, 3557)");
-          add('bots', 'bots.outland', Number(outland) > 0 ? 'warn' : 'ok', { count: Number(outland) });
+          add('bots', 'bots.outland', Number(outland) >= 10 ? 'warn' : Number(outland) > 0 ? 'info' : 'ok', { count: Number(outland) });
         }
       } catch {}
     }

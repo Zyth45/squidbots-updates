@@ -56,6 +56,15 @@
       }
     },
     {
+      "id": "difficulty",
+      "icon": "swords",
+      "label": {
+        "en": "Creature difficulty",
+        "fr": "Difficulté des créatures",
+        "ru": "Сложность существ"
+      }
+    },
+    {
       "id": "chat",
       "icon": "news",
       "label": {
@@ -1457,6 +1466,125 @@
         "en": "Out of 100: how often a bot near a real player says something unprompted.",
         "fr": "Sur 100 : à quelle fréquence un bot près d'un joueur parle de lui-même.",
         "ru": "Из 100: как часто бот рядом с игроком говорит сам."
+      }
+    },
+    {
+      "key": "CoA.CreatureScaling.Enable",
+      "file": "coa.conf",
+      "group": "difficulty",
+      "kind": "bool",
+      "when": "restart",
+      "label": {
+        "en": "Stronger creatures (CoA scaling)",
+        "fr": "Créatures renforcées (réglage CoA)",
+        "ru": "Усиленные существа (настройка CoA)"
+      },
+      "help": {
+        "en": "Multiplies the health and damage of creatures as on the CoA live realm. Off in CoA Bots (normal difficulty kept). Values below apply only when it is on. Regular difficulty only: heroic, mythic, battlegrounds, arenas, pets, summons and training dummies are never changed.",
+        "fr": "Multiplie la vie et les dégâts des créatures comme sur le royaume CoA officiel. Désactivé dans CoA Bots (difficulté normale gardée). Les valeurs ci-dessous ne comptent que s'il est activé. Difficulté normale seulement : héroïque, mythique, champs de bataille, arènes, familiers, invocations et mannequins ne changent jamais.",
+        "ru": "Умножает здоровье и урон существ, как на официальном мире CoA. В CoA Bots выключено (обычная сложность). Значения ниже действуют только при включении. Только обычная сложность: героик, мифик, поля боя, арены, питомцы, призванные существа и манекены не меняются."
+      }
+    },
+    {
+      "key": "CoA.CreatureScaling.World.Health",
+      "file": "coa.conf",
+      "group": "difficulty",
+      "kind": "float",
+      "when": "restart",
+      "label": {
+        "en": "Health in the open world",
+        "fr": "Vie dans le monde",
+        "ru": "Здоровье в открытом мире"
+      },
+      "help": {
+        "en": "Multiplier (2.5 = two and a half times the health). Regular difficulty only: heroic, mythic, battlegrounds, arenas, pets, summons and training dummies are never changed.",
+        "fr": "Multiplicateur (2,5 = deux fois et demie la vie). Difficulté normale seulement : héroïque, mythique, champs de bataille, arènes, familiers, invocations et mannequins ne changent jamais.",
+        "ru": "Множитель (2,5 = в два с половиной раза больше здоровья). Только обычная сложность: героик, мифик, поля боя, арены, питомцы, призванные существа и манекены не меняются."
+      }
+    },
+    {
+      "key": "CoA.CreatureScaling.Dungeon.Health",
+      "file": "coa.conf",
+      "group": "difficulty",
+      "kind": "float",
+      "when": "restart",
+      "label": {
+        "en": "Health in dungeons",
+        "fr": "Vie en donjon",
+        "ru": "Здоровье в подземельях"
+      },
+      "help": {
+        "en": "Multiplier (default 2.5). Regular difficulty only: heroic, mythic, battlegrounds, arenas, pets, summons and training dummies are never changed.",
+        "fr": "Multiplicateur (2,5 par défaut). Difficulté normale seulement : héroïque, mythique, champs de bataille, arènes, familiers, invocations et mannequins ne changent jamais.",
+        "ru": "Множитель (по умолчанию 2,5). Только обычная сложность: героик, мифик, поля боя, арены, питомцы, призванные существа и манекены не меняются."
+      }
+    },
+    {
+      "key": "CoA.CreatureScaling.Raid.Health",
+      "file": "coa.conf",
+      "group": "difficulty",
+      "kind": "float",
+      "when": "restart",
+      "label": {
+        "en": "Health in raids",
+        "fr": "Vie en raid",
+        "ru": "Здоровье в рейдах"
+      },
+      "help": {
+        "en": "Multiplier (default 2.2). Raid bosses with a measured flex health keep it. Regular difficulty only: heroic, mythic, battlegrounds, arenas, pets, summons and training dummies are never changed.",
+        "fr": "Multiplicateur (2,2 par défaut). Les boss de raid qui ont une vie « flex » mesurée la gardent. Difficulté normale seulement : héroïque, mythique, champs de bataille, arènes, familiers, invocations et mannequins ne changent jamais.",
+        "ru": "Множитель (по умолчанию 2,2). Рейдовые боссы с измеренным «flex»-здоровьем его сохраняют. Только обычная сложность: героик, мифик, поля боя, арены, питомцы, призванные существа и манекены не меняются."
+      }
+    },
+    {
+      "key": "CoA.CreatureScaling.World.Damage",
+      "file": "coa.conf",
+      "group": "difficulty",
+      "kind": "float",
+      "when": "restart",
+      "label": {
+        "en": "Damage in the open world",
+        "fr": "Dégâts dans le monde",
+        "ru": "Урон в открытом мире"
+      },
+      "help": {
+        "en": "Multiplier of the hits on players and their pets (default 2). Regular difficulty only: heroic, mythic, battlegrounds, arenas, pets, summons and training dummies are never changed.",
+        "fr": "Multiplicateur des coups reçus par les joueurs et leurs familiers (2 par défaut). Difficulté normale seulement : héroïque, mythique, champs de bataille, arènes, familiers, invocations et mannequins ne changent jamais.",
+        "ru": "Множитель ударов по игрокам и их питомцам (по умолчанию 2). Только обычная сложность: героик, мифик, поля боя, арены, питомцы, призванные существа и манекены не меняются."
+      }
+    },
+    {
+      "key": "CoA.CreatureScaling.Dungeon.Damage",
+      "file": "coa.conf",
+      "group": "difficulty",
+      "kind": "float",
+      "when": "restart",
+      "label": {
+        "en": "Damage in dungeons",
+        "fr": "Dégâts en donjon",
+        "ru": "Урон в подземельях"
+      },
+      "help": {
+        "en": "Multiplier (default 1.5). Regular difficulty only: heroic, mythic, battlegrounds, arenas, pets, summons and training dummies are never changed.",
+        "fr": "Multiplicateur (1,5 par défaut). Difficulté normale seulement : héroïque, mythique, champs de bataille, arènes, familiers, invocations et mannequins ne changent jamais.",
+        "ru": "Множитель (по умолчанию 1,5). Только обычная сложность: героик, мифик, поля боя, арены, питомцы, призванные существа и манекены не меняются."
+      }
+    },
+    {
+      "key": "CoA.CreatureScaling.Raid.Damage",
+      "file": "coa.conf",
+      "group": "difficulty",
+      "kind": "float",
+      "when": "restart",
+      "label": {
+        "en": "Damage in raids",
+        "fr": "Dégâts en raid",
+        "ru": "Урон в рейдах"
+      },
+      "help": {
+        "en": "Multiplier (default 1, unchanged). Regular difficulty only: heroic, mythic, battlegrounds, arenas, pets, summons and training dummies are never changed.",
+        "fr": "Multiplicateur (1 par défaut, inchangé). Difficulté normale seulement : héroïque, mythique, champs de bataille, arènes, familiers, invocations et mannequins ne changent jamais.",
+        "ru": "Множитель (по умолчанию 1, без изменений). Только обычная сложность: героик, мифик, поля боя, арены, питомцы, призванные существа и манекены не меняются."
       }
     }
   ],

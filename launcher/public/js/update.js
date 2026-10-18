@@ -6,6 +6,7 @@
 // The steps shown to the player, in order. The tool's own step lines are matched to them.
 const UPDATE_STEPS = [
   ['download', 'download', 'Download'],
+  ['unpack', 'folder', 'Unpacking the files'],
   ['check', 'shield', 'Checks'],
   ['backup', 'folder', 'Backup'],
   ['files', 'layers', 'New files'],
@@ -47,15 +48,19 @@ function updateStepOf(text) { return TOOL_STEPS.find(([pattern]) => pattern.test
 
 // Live events of the run: the step, the download and file progress, the last line.
 function onUpdateEvent(event) {
-  const run = App.state.update.run || (App.state.update.run = { step: 'download', line: '', done: 0, total: 0 });
+  const run = App.state.update.run || (App.state.update.run = { step: 'download', line: '', done: 0, total: 0, stepSince: Date.now() });
+  const before = run.step;
   if (event.event === 'phase') {
     if (event.phase === 'download') Object.assign(run, { step: 'download', done: 0, total: event.total || 0 });
+    if (event.phase === 'unpack') Object.assign(run, { step: 'unpack', done: 0, total: 0, line: t('update.unpackLine', 'Unpacking the update files…') });
     if (event.phase === 'check') run.step = 'check';
     if (event.phase === 'undo') run.step = 'undo';
   } else if (event.event === 'bytes') Object.assign(run, { done: event.done, total: event.total });
+  else if (event.event === 'unpack') Object.assign(run, { step: 'unpack', line: event.total > 1 ? t('update.unpackPart', 'Unpacking the update files: part {done} of {total}…', { done: event.done, total: event.total }) : t('update.unpackLine', 'Unpacking the update files…') });
   else if (event.event === 'step') { const step = updateStepOf(event.text) || run.step; if (step !== run.step) Object.assign(run, { done: 0, total: 0 }); run.step = step; run.line = event.text; if (step === 'test' && !run.testSince) run.testSince = Date.now(); }
   else if (event.event === 'progress') Object.assign(run, { done: event.done, total: event.total, line: event.text });
   else if (['info', 'installer', 'warn'].includes(event.event) && event.text) run.line = event.text;
+  if (run.step !== before) run.stepSince = Date.now();
   if ($('#dialog').open && $('#update-live')) { $('#update-live').innerHTML = updateLive(); applyBars($('#update-live')); }
 }
 
@@ -68,16 +73,20 @@ function updateLive() {
     : UPDATE_STEPS.map(([id, iconName, label], index) => `<li class="${index < current ? 'done' : index === current ? 'active' : ''}">${icon(index < current ? 'check' : iconName)}<span>${esc(t(`update.step.${id}`, label))}</span></li>`).join('');
   return `<ol class="update-steps">${steps}</ol>
     ${pct !== null && ['download', 'files'].includes(run.step) ? `${progressBar({ total: 100, completed: pct }).html}<small class="muted">${run.step === 'download' ? esc(`${formatBytes(run.done)} / ${formatBytes(run.total)}`) : `${pct} %`}</small>` : ''}
-    <p class="update-line">${esc(run.step === 'test' && run.testSince ? testLine(run.testSince) : run.line || '')}</p>`;
+    <p class="update-line">${esc(run.step === 'test' && run.testSince ? testLine(run.testSince) : run.line || '')}</p>
+    ${run.step !== 'test' && run.stepSince && Date.now() - run.stepSince > 10000 ? `<p class="muted small update-still">${icon('refresh')}${esc(t('update.stillWorking', 'Still working ({time}). Big updates take longer: do not close the launcher.', { time: elapsed(run.stepSince) }))}</p>` : ''}`;
 }
 
 // The test start: what it does and how long it has been running, in the player's words (not the tool's line).
-function testLine(since) {
+function elapsed(since) {
   const seconds = Math.floor((Date.now() - since) / 1000);
-  const time = seconds < 60 ? `${seconds} s` : `${Math.floor(seconds / 60)} min ${String(seconds % 60).padStart(2, '0')} s`;
+  return seconds < 60 ? `${seconds} s` : `${Math.floor(seconds / 60)} min ${String(seconds % 60).padStart(2, '0')} s`;
+}
+function testLine(since) {
+  const time = elapsed(since);
   return t('update.testLine', 'The server starts once to check that everything works ({time} so far). The first start after an update takes 5 to 15 minutes; the server is then stopped cleanly.', { time });
 }
-setInterval(() => { if (App.state.update.run?.step === 'test' && $('#dialog').open && $('#update-live')) { $('#update-live').innerHTML = updateLive(); applyBars($('#update-live')); } }, 1000);
+setInterval(() => { if (App.state.update.run && $('#dialog').open && $('#update-live')) { $('#update-live').innerHTML = updateLive(); applyBars($('#update-live')); } }, 1000);
 
 function updateResultView() {
   const last = App.state.update.state?.last;
@@ -117,7 +126,9 @@ function showUpdate() {
       <div class="line-action">${icon('addons')}<span>${u.addonClient ? esc(t('update.addonTo', 'The SquidBots addon is also installed in your game: {path}', { path: u.addonClient })) : esc(t('update.addonNone', 'SquidBots addon: choose your game folder to install it too (otherwise it is left as it is).'))}</span><button class="button ghost small" data-action="update-client">${esc(u.addonClient ? t('update.addonChange', 'Change') : t('update.addonPick', 'Choose the game folder'))}</button></div>
       <p class="muted">${esc(t('update.time', 'About 5 to 20 minutes. If anything goes wrong, your server is put back as it was.'))}</p>
       ${m?.notes ? `<details class="update-notes"><summary>${esc(t('update.notes', 'What is new'))}</summary><div class="patch-notes">${markdownLite(m.notes)}</div></details>` : ''}`;
-  const foot = running ? '' : u.state === 'available' && !u.last?.error
+  const big = !running && u.state === 'available' && !u.last?.error ? bigUpdate(u) : null;
+  if (big) body = big.html + body;
+  const foot = running ? '' : u.state === 'available' && !u.last?.error && !big?.blocked
     ? `<footer class="dialog-foot"><button class="button ghost" data-action="dialog-close">${esc(t('common.later', 'Later'))}</button><button class="button primary" data-action="update-start">${icon('download')}${esc(t('update.start', 'Update now'))}</button></footer>`
     : `<footer class="dialog-foot"><button class="button ghost" data-action="dialog-close">${esc(t('common.close', 'Close'))}</button></footer>`;
   dialog.open(`${head}<div class="dialog-content update">${body}</div>${foot}`, 'wide');
@@ -203,7 +214,7 @@ function updateCard() {
   const card = (kind, iconName, title, text, action, label) => `<div class="update-card ${kind}">${icon(iconName)}<span><strong>${esc(title)}</strong><small>${esc(text)}</small></span>${action}</div>`;
   if (u.busy) return card('info', 'refresh', t('update.running', 'Updating your server…'), t('update.dontClose', 'Do not close the launcher until it is done.'), `<button class="button primary small" data-action="update-open">${esc(t('update.follow', 'Follow'))}</button>`);
   if (u.state === 'cut') return card('bad', 'warning', t('update.cutTitle', 'Update cut'), t('update.cutShort', 'Finish it or undo it before starting the server.'), `<div class="update-card-actions"><button class="button primary small" data-action="update-finish">${esc(t('update.finish', 'Finish it'))}</button><button class="button ghost small" data-action="update-undo-cut">${esc(t('update.undo', 'Undo the update'))}</button></div>`);
-  if (u.state === 'available') return card('new', 'download', t('update.title', 'CoA Bots {version}', { version: u.manifest.version }), t('update.availableShort', 'New version: update in one click, with a backup.'), `<button class="button primary small" data-action="update-open"><i class="dot"></i>${esc(t('update.see', 'Update'))}</button>`);
+  if (u.state === 'available') return card('new', 'download', `${t('update.title', 'CoA Bots {version}', { version: u.manifest.version })}${u.manifest.channel === 'beta' ? ' · BETA' : ''}`, (u.manifest.package?.size || 0) + (u.manifest.package?.parts || []).reduce((sum, part) => sum + part.size, 0) >= BIG_UPDATE ? t('update.bigShort', 'Big update: about {size} to download.', { size: formatBytes((u.manifest.package?.size || 0) + (u.manifest.package?.parts || []).reduce((sum, part) => sum + part.size, 0)) }) : t('update.availableShort', 'New version: update in one click, with a backup.'), `<button class="button primary small" data-action="update-open"><i class="dot"></i>${esc(t('update.see', 'Update'))}</button>`);
   if (u.last?.error) return card('bad', 'warning', t('update.lastFailedTitle', 'Update stopped'), t('update.lastFailed', 'The last update stopped with an error.'), `<button class="button ghost small" data-action="update-open">${esc(t('update.seeError', 'See what to do'))}</button>`);
   return '';
 }
@@ -246,7 +257,9 @@ Object.assign(App.actions, {
   'update-start': () => runUpdate(() => App.api.updateRun()),
   'update-undo': async () => {
     if (!await confirmDialog({ title: t('update.undo', 'Undo the update'), body: esc(t('update.undoConfirm', 'The server is stopped and put back exactly as it was before the update (database and files).')), confirm: t('update.undo', 'Undo the update'), danger: true })) return;
-    runUpdate(() => App.api.updateUndo('rollback'));
+    await runUpdate(() => App.api.updateUndo('rollback'));
+    App.state.undoInfo = null;
+    if (App.state.srvTab === 'backups') loadBackups();
   },
   'update-finish': () => runUpdate(() => App.api.updateUndo('finish')),
   'update-undo-cut': () => runUpdate(() => App.api.updateUndo('undo-cut')),
@@ -254,3 +267,19 @@ Object.assign(App.actions, {
   'update-report': button => guard(async () => { await App.api.updateReport(); toast(t('update.copied', 'Report copied: paste it on the support Discord.'), 'success'); }, button),
   'update-log': () => guard(() => App.api.updateOpenLog()),
 });
+
+// A big update (or one with a notice) says so before the click: what it does, the download, the disk space needed.
+// Not enough free space: the update is not offered (the tool would stop at its checks anyway).
+const BIG_UPDATE = 500 * 1024 * 1024;
+function bigUpdate(u) {
+  const m = u.manifest || {};
+  const notice = m.notice ? m.notice[I18N.lang] || m.notice.en || '' : '';
+  const size = (m.package?.size || 0) + (m.package?.parts || []).reduce((sum, part) => sum + part.size, 0);
+  if (!notice && !(size >= BIG_UPDATE) && !m.diskBytes) return null;
+  const need = m.diskBytes || 0;
+  const blocked = need > 0 && typeof u.diskFree === 'number' && u.diskFree < need;
+  const facts = [t('update.bigDownload', 'Download: about {size}.', { size: formatBytes(size) })];
+  if (need) facts.push(t('update.bigDisk', 'Free disk space needed: about {need} (free now: {free}).', { need: formatBytes(need), free: typeof u.diskFree === 'number' ? formatBytes(u.diskFree) : '?' }));
+  const html = `<div class="update-card ${blocked ? 'bad' : 'info'} big-update">${icon(blocked ? 'warning' : 'info')}<span><strong>${esc(blocked ? t('update.bigBlocked', 'Not enough free disk space for this update.') : t('update.bigTitle', 'Big update'))}</strong>${notice ? `<small>${esc(notice)}</small>` : ''}<small>${esc(facts.join(' '))}</small></span></div>`;
+  return { html, blocked };
+}

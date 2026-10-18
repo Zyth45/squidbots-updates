@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Prepares a repack update for the squidbots-updates releases (nothing is sent: gh release create does that).
 //   node tools/publish-update.mjs <CoA-Update-2.x folder or its zip> <out folder> --key <private.pem> [--notes CHANGELOG.md]
-//     [--repo Zyth45/squidbots-updates]
+//     [--repo Zyth45/squidbots-updates] [--channel beta]
 // Writes <out>/CoA-Update-<version>.zip, update.json and update.json.sig. The launcher reads
 // releases/latest/download/update.json, checks its signature, downloads the zip, checks its sha256, then runs the
 // package's own coa_update.py (check, apply). Version, target release and accepted releases come from the
@@ -12,7 +12,7 @@ import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { parseArgs, loadPrivateKey, writeSigned } from './lib.mjs';
 
-const args = parseArgs(process.argv.slice(2), { 'allow-draft': 'bool' });
+const args = parseArgs(process.argv.slice(2), { 'allow-draft': 'bool', part: 'list' });
 const [source, out] = args._;
 if (!source || !out || !args.key) {
   console.log('Usage: node tools/publish-update.mjs <CoA-Update-2.x folder or zip> <out folder> --key <private.pem> [--notes file.md] [--repo owner/name]');
@@ -47,21 +47,49 @@ const zip = path.join(out, zipName);
 if (zipSource) fs.copyFileSync(zipSource, zip);
 else { fs.rmSync(zip, { force: true }); execFileSync(tar, ['-a', '-cf', zip, '-C', path.dirname(path.resolve(folder)), name]); }
 fs.rmSync(path.join(out, '.probe'), { recursive: true, force: true });
+// Read in pieces: a package may be close to 2 GiB.
+const sha256Of = file => new Promise((resolve, reject) => {
+  const hash = crypto.createHash('sha256');
+  fs.createReadStream(file).on('data', chunk => hash.update(chunk)).on('error', reject).on('end', () => resolve(hash.digest('hex')));
+});
+const LIMIT = 2 * 1024 ** 3;
 const bytes = fs.statSync(zip).size;
-const hash = crypto.createHash('sha256');
-for (const chunk of [fs.readFileSync(zip)]) hash.update(chunk);
-const sha256 = hash.digest('hex');
+if (bytes >= LIMIT) throw new Error(`${zipName} is ${bytes} bytes: GitHub takes files under 2 GiB. Split the package (--part).`);
+const sha256 = await sha256Of(zip);
 
+// --part <zip> (repeatable): more zips of the same package, each holding the same CoA-Update-x folder at its top.
+const parts = [];
+for (const partSource of args.part || []) {
+  const listing = execFileSync(tar, ['-tf', partSource], { maxBuffer: 256 << 20 }).toString().split(/\r?\n/).filter(Boolean);
+  if (!listing.length || listing.some(entry => entry.split('/')[0] !== name)) throw new Error(`${path.basename(partSource)} must hold only the ${name} folder at its top.`);
+  const partName = path.basename(partSource);
+  const target = path.join(out, partName);
+  if (path.resolve(target) !== path.resolve(partSource)) fs.copyFileSync(partSource, target);
+  const size = fs.statSync(target).size;
+  if (size >= LIMIT) throw new Error(`${partName} is ${size} bytes: GitHub takes files under 2 GiB.`);
+  parts.push({ name: partName, file: target, size, sha256: await sha256Of(target) });
+}
+
+// --channel beta: signed as a beta and served from the fixed "beta" pre-release (testers only).
+const channel = args.channel === 'beta' ? 'beta' : 'stable';
+// --url-base: where the files are served instead of the GitHub release (a local test server).
+const fileUrl = file => (args['url-base'] ? `${String(args['url-base']).replace(/\/$/, '')}/${file}` : `https://github.com/${repo}/releases/download/${channel === 'beta' ? 'beta' : `v${spec.version}`}/${file}`);
 const manifest = {
   product: 'coa-bots-repack',
   version: spec.version,
+  channel,
   release: spec.targetRelease,
   from: spec.fromReleases,
   publishedAt: new Date().toISOString(),
   notes: args.notes ? fs.readFileSync(args.notes, 'utf8') : '',
-  // --url-base: where the zip is served instead of the GitHub release (a local test server).
-  package: { url: args['url-base'] ? `${String(args['url-base']).replace(/\/$/, '')}/${zipName}` : `https://github.com/${repo}/releases/download/v${spec.version}/${zipName}`, sha256, size: bytes, folder: name },
+  // A notice shown before the click (a big update, files replaced...) and the free space it needs, from the package.
+  ...(spec.notice ? { notice: spec.notice } : {}),
+  ...(Number(spec.diskBytes) > 0 ? { diskBytes: Number(spec.diskBytes) } : {}),
+  package: { url: fileUrl(zipName), sha256, size: bytes, folder: name, ...(parts.length ? { parts: parts.map(part => ({ url: fileUrl(part.name), sha256: part.sha256, size: part.size })) } : {}) },
 };
 await writeSigned(path.join(out, 'update.json'), manifest, loadPrivateKey(args.key));
 console.log(`Update ${spec.version} (${spec.targetRelease}) ready in ${out}: ${zipName} ${(bytes / 1048576).toFixed(1)} MB, sha256 ${sha256.slice(0, 16)}…, from ${spec.fromReleases.length} release(s).`);
-console.log(`Publish (after your OK): gh release create v${spec.version} --repo ${repo} --title "CoA Bots ${spec.version}" --notes-file <notes> "${zip}" "${path.join(out, 'update.json')}" "${path.join(out, 'update.json.sig')}"`);
+for (const part of parts) console.log(`  part ${part.name} ${(part.size / 1048576).toFixed(1)} MB, sha256 ${part.sha256.slice(0, 16)}…`);
+const assets = [zip, ...parts.map(part => part.file)].map(file => `"${file}"`).join(' ');
+if (channel === 'beta') console.log(`Publish the beta (after your OK): gh release upload beta --repo ${repo} --clobber ${assets} "${path.join(out, 'update.json')}" "${path.join(out, 'update.json.sig')}"  (first time: gh release create beta --prerelease --title "CoA Bots beta" --notes "Beta versions for testers")`);
+else console.log(`Publish (after your OK): gh release create v${spec.version} --repo ${repo} --title "CoA Bots ${spec.version}" --notes-file <notes> ${assets} "${path.join(out, 'update.json')}" "${path.join(out, 'update.json.sig')}"`);

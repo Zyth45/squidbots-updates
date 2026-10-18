@@ -6,6 +6,7 @@ const fs = require('node:fs/promises');
 const fsSync = require('node:fs');
 const path = require('node:path');
 const { execFile } = require('node:child_process');
+const { compareVersions } = require('./repack-update.cjs');
 
 const EXES = ['Ascension.exe', 'Wow.exe', 'WoW.exe'];
 const isClient = folder => !!folder && EXES.some(name => fsSync.existsSync(path.join(folder, name)));
@@ -17,15 +18,8 @@ function tocVersion(folder, name) {
   } catch { return ''; }
 }
 
-// Version strings like 2.3 or 2.10.1: compared number by number.
-function newer(a, b) {
-  const pa = String(a).split('.').map(Number), pb = String(b).split('.').map(Number);
-  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-    const x = pa[i] || 0, y = pb[i] || 0;
-    if (x !== y) return x > y;
-  }
-  return false;
-}
+// Version strings like 2.3, 2.10.1 or 2.5-beta: number by number, a stable version before its betas.
+const newer = (a, b) => compareVersions(a, b) > 0;
 
 // The client the bots installer used last time (CoA-Bots\client.json), offered when none was chosen here.
 function suggestedClient(repack) {

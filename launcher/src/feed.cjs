@@ -5,6 +5,9 @@
 const HTTPS = /^https:\/\/[\w.-]+(?::\d+)?(\/[\w\-./?=&#%~+:@!$'()*,;]*)?$/;
 const text = (value, max) => String(value ?? '').slice(0, max);
 const url = value => (typeof value === 'string' && HTTPS.test(value) ? value : '');
+// The Manastorm client zip may also come from this PC (a local test server), like the update lists.
+const LOCAL = /^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?\/[\w\-./]*$/;
+const fileUrl = value => url(value) || (typeof value === 'string' && LOCAL.test(value) ? value : '');
 
 function cleanLink(value) {
   if (!value || typeof value !== 'object' || !url(value.url)) return null;
@@ -26,6 +29,16 @@ function cleanFeed(data) {
     // The game client patch for the added races (Multirace module).
     clientRaces: cleanLink(data.clientRaces),
     client: cleanLink(data.client),
+    // The client files of Manastorm (a zip of Data/ and Interface/ files): the launcher installs it only when its
+    // sha256 and size are given, otherwise the link is only opened in the browser.
+    manastormClient: (() => {
+      const entry = data.manastormClient;
+      const link = entry && typeof entry === 'object' && fileUrl(entry.url) ? { name: text(entry.name, 80), url: fileUrl(entry.url), notes: text(entry.notes, 400), size: text(entry.size, 20) } : null;
+      if (!link) return null;
+      const sha256 = /^[0-9a-f]{64}$/i.test(data.manastormClient.sha256 || '') ? data.manastormClient.sha256.toLowerCase() : '';
+      const bytes = Number.isSafeInteger(data.manastormClient.bytes) && data.manastormClient.bytes > 0 ? data.manastormClient.bytes : 0;
+      return { ...link, sha256, bytes };
+    })(),
     repacks: (Array.isArray(data.repacks) ? data.repacks : []).filter(item => /^[0-9a-f]{64}$/i.test(item?.sha256 || '')).slice(0, 50)
       .map(item => ({ sha256: item.sha256.toLowerCase(), name: text(item.name, 80), release: text(item.release, 80), notes: text(item.notes, 300) })),
     news: (Array.isArray(data.news) ? data.news : []).slice(0, 12)

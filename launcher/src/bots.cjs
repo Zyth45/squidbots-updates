@@ -57,7 +57,7 @@ class BotsPackage {
   async runInstaller(root) {
     if (this.child) throw new Error('The bot installer is already running.');
     const script = path.join(this.folder(root), ...this.bots.install.script.split('/'));
-    if (!script.startsWith(path.resolve(root) + path.sep) || !fs.existsSync(script)) throw new Error('The bot installer is missing from the package.');
+    if (!script.startsWith(path.resolve(root) + path.sep) || !fs.existsSync(script)) throw new Error('This server folder has no CoA Bots in it (CoA-Bots\\Installer-Bots.ps1 is missing): it is another repack, or the CoA-Bots folder was moved. Choose the folder of the CoA Bots repack, or get it with "Download the server" on the home page.');
     const args = ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', script, ...this.bots.install.args.map(arg => arg.replace(/\{root\}/g, path.resolve(root)))];
     const log = path.join(root, 'logs', 'launcher-bots-install.log');
     await fsp.mkdir(path.dirname(log), { recursive: true });

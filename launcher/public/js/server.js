@@ -110,6 +110,7 @@ function installView(info) {
 
 // ---------------------------------------------------------------- backups
 async function loadBackups() {
+  App.api.updateUndoInfo().then(info => { App.state.undoInfo = info; App.refresh('server'); }).catch(() => {});
   try { App.state.backups = await App.api.backups(); }
   catch (error) { App.state.backups = { error: translateError(error.message) }; }
   App.refresh('server');
@@ -120,7 +121,9 @@ function backupsView() {
   if (!backups) return skeleton(4);
   if (backups.error) return emptyState('warning', t('backup.error', 'Backups are unavailable'), backups.error);
   const task = App.state.task && ['backup', 'restore'].includes(App.state.task.phase) ? `<div class="task-line">${icon('refresh')}<span>${esc(taskText(App.state.task))}</span></div>` : '';
-  return `<section class="panel"><header><h2>${icon('database')}${esc(t('backup.title', 'Database backups'))}</h2><div class="button-row"><button class="button ghost small" data-action="backup-folder">${icon('folder')}${esc(t('backup.folder', 'Folder'))}</button><button class="button primary small" data-action="backup-create">${icon('download')}${esc(t('backup.now', 'Back up now'))}</button></div></header>
+  // The last CoA Bots update can be undone from here too (not only after an error).
+  const undo = App.state.undoInfo?.available ? `<section class="panel undo-panel"><header><h2>${icon('refresh')}${esc(t('update.undoLastTitle', 'Undo the last update'))}</h2><button class="button ghost small" data-action="update-undo">${icon('refresh')}${esc(t('update.undo', 'Undo the update'))}</button></header><p class="muted">${esc(t('update.undoLastText', 'Puts the server back exactly as it was before the CoA Bots {version} update of {at} (database and files). What was played since is kept aside in its backup.', { version: App.state.undoInfo.version, at: App.state.undoInfo.at }))}</p></section>` : '';
+  return `${undo}<section class="panel"><header><h2>${icon('database')}${esc(t('backup.title', 'Database backups'))}</h2><div class="button-row"><button class="button ghost small" data-action="backup-folder">${icon('folder')}${esc(t('backup.folder', 'Folder'))}</button><button class="button primary small" data-action="backup-create">${icon('download')}${esc(t('backup.now', 'Back up now'))}</button></div></header>
     <p class="muted">${esc(t('backup.hint', 'Accounts, characters and bots, compressed, in the Backups folder of the server. One is also made before every restore and every new version.'))}</p>
     <label class="check"><input type="checkbox" id="backup-world"><span>${esc(t('backup.world', 'Also the world database (large, only if you changed it)'))}</span></label>
     ${task}
@@ -278,9 +281,23 @@ function modulesView() {
       ${moduleCredit('multirace', 'Ilusixn')}
     </section>` : ''}
     <section class="panel module-card ${m.ahbot.available ? '' : 'soon'}"><header><h2>${icon('coin')}${esc(t('modules.ahbot', 'Auction house'))}</h2>${moduleSwitch('modules-ahbot', m.ahbot.enabled, m.worldRunning || !m.ahbot.available)}</header>
-      <p class="muted">${esc(t('modules.ahbotText', 'An auctioneer fills the auction house with items to buy and buys what you sell. It has its own account, never removed when the bots are recreated.'))}</p>
-      <p class="small">${esc(!m.ahbot.available ? t('modules.ahbotSoon', 'Available with CoA Bots 2.5.') : m.ahbot.enabled ? t('modules.ahbotOn', 'On (in game: .ahbot reload, .ahbot empty).') : t('modules.multiraceOff', 'Off.'))}</p>${m.ahbot.available ? stopFirst : ''}
-      ${moduleCredit('ahbot', 'AzerothCore')}
+      <p class="muted">${esc(t('modules.ahbotText2', 'Gavelgrin, an auctioneer with its own account, keeps about 3000 auctions of items you can get in game (up to level 60, nothing from TBC or WotLK) and buys what players sell. Its account is never removed when the bots are recreated.'))}</p>
+      <p class="small">${esc(!m.ahbot.available ? t('modules.ahbotSoon', 'Available with CoA Bots 2.5.') : m.ahbot.enabled ? t('modules.ahbotOn2', 'On.') : t('modules.multiraceOff', 'Off.'))}</p>${m.ahbot.available ? stopFirst : ''}
+      ${m.ahbot.available ? `<div class="button-row module-actions"><button class="button ghost small" data-action="modules-ahbot-empty" ${m.worldRunning ? '' : `disabled title="${esc(t('modules.ahbotEmptyStopped', 'Start the server to empty the auction house.'))}"`}>${icon('trash')}${esc(t('modules.ahbotEmpty', 'Empty the auction house'))}</button>${m.worldRunning ? '' : `<small class="muted">${esc(t('modules.ahbotEmptyStopped', 'Start the server to empty the auction house.'))}</small>`}</div>` : ''}
+      ${moduleCredit('ahbot', 'Nathan Handley (mod-ah-bot-plus)')}
+    </section>
+    <section class="panel module-card ${m.manastorm?.available ? '' : 'soon'}"><header><h2>${icon('play')}Manastorm Endless</h2>${moduleSwitch('modules-manastorm', !!m.manastorm?.enabled, m.worldRunning || !m.manastorm?.available)}</header>
+      <p class="muted">${esc(t('modules.manastormText', 'Endless runs of Manastorm rooms, with its native window in game. Every player needs the updated client files of Manastorm.'))}</p>
+      <p class="small">${esc(!m.manastorm?.available ? t('modules.ahbotSoon', 'Available with CoA Bots 2.5.') : m.manastorm.enabled ? t('modules.ahbotOn2', 'On.') : t('modules.multiraceOff', 'Off.'))}</p>${m.manastorm?.available ? stopFirst : ''}
+      ${m.manastorm?.available && App.state.feed?.manastormClient ? `<div class="button-row module-actions"><button class="button ghost small" data-action="manastorm-files">${icon('download')}${esc(t('modules.manastormFiles', 'Client files'))}</button></div>` : ''}
+      <p class="module-note">${icon('info')}${esc(t('modules.newModule', 'New module, not tried with the bots yet: feedback is welcome.'))}</p>
+      <p class="module-credit">${esc(t('modules.by', 'By {author}', { author: 'Conquest of Azeroth (core)' }))}</p>
+    </section>
+    <section class="panel module-card ${m.rotation?.available ? '' : 'soon'}"><header><h2>${icon('refresh')}${esc(t('modules.rotation', 'Rotation assistant'))}</h2>${moduleSwitch('modules-rotation', !!(m.rotation?.available && m.rotation.enabled), m.worldRunning || !m.rotation?.available)}</header>
+      <p class="muted">${esc(t('modules.rotationText', 'One button that casts the next spell of your rotation for you.'))}</p>
+      <p class="small">${esc(!m.rotation?.available ? t('modules.ahbotSoon', 'Available with CoA Bots 2.5.') : m.rotation.enabled ? t('modules.ahbotOn2', 'On.') : t('modules.multiraceOff', 'Off.'))}</p>${m.rotation?.available ? stopFirst : ''}
+      <p class="module-note">${icon('info')}${esc(t('modules.newModule', 'New module, not tried with the bots yet: feedback is welcome.'))}</p>
+      <p class="module-credit">${esc(t('modules.by', 'By {author}', { author: 'Conquest of Azeroth (core)' }))}</p>
     </section>
   </div>
   <p class="modules-foot">${esc(t('modules.foot', 'SquidBots Server is open source.'))} <button class="link-button" data-action="source-link" data-id="launcher">${icon('external')}${esc(t('modules.source', 'Source code'))}</button></p>`;
@@ -478,6 +495,26 @@ Object.assign(App.actions, {
     toast(t('modules.restartNeeded', 'Saved: it applies at the next start of the server.'), 'success');
     App.render();
   }, button),
+  // Only the bot's auctions go; players who had bid on them get their money back (done by the server).
+  'modules-ahbot-empty': button => guard(async () => {
+    if (!await confirmDialog({ title: t('modules.ahbotEmptyTitle', 'Empty the auction house?'), body: esc(t('modules.ahbotEmptyBody', 'Every auction of the bot is removed and the players who bid on them get their money back. Auctions of real players are not touched.')), confirm: t('modules.ahbotEmpty', 'Empty the auction house'), danger: true })) return;
+    await App.api.modulesAhbotEmpty();
+    toast(t('modules.ahbotEmptied', 'The auctions of the bot were removed.'), 'success');
+  }, button),
+  'modules-manastorm': button => guard(async () => {
+    const on = button.dataset.on !== '1';
+    // Switching it on always says first that every player needs the client files.
+    if (on && !await manastormClientDialog(true)) return;
+    App.state.modules = await App.api.modulesManastorm(on);
+    toast(t('modules.restartNeeded', 'Saved: it applies at the next start of the server.'), 'success');
+    App.render();
+  }, button),
+  'manastorm-files': () => manastormClientDialog(false),
+  'modules-rotation': button => guard(async () => {
+    App.state.modules = await App.api.modulesRotation(button.dataset.on !== '1');
+    toast(t('modules.restartNeeded', 'Saved: it applies at the next start of the server.'), 'success');
+    App.render();
+  }, button),
   'modules-client': button => guard(async () => {
     const on = button.dataset.on === '1';
     if (!on && !await confirmDialog({ title: t('modules.clientOffTitle', 'Switch the race patch off in your game?'), body: esc(t('modules.clientOffBody', 'Its files are renamed to .disabled (nothing is deleted). Do it to play on a server without the added races; switch it back on at any time.')) + `<br><small class="muted">${esc((App.state.modules?.multirace?.client?.active || []).join(', '))}</small>`, confirm: t('modules.clientOff', 'Switch it off in my game') })) return;
@@ -635,4 +672,37 @@ async function saveConf(restart) {
     toast(t('conf.restarted', 'The server restarted with the new settings.'), 'success');
   }
   await loadConf();
+}
+
+// Manastorm's client files: install them in the chosen game (zip of the signed feed), download the zip, or cancel.
+// When switching the module on, "install" and "download" both go on with the switch.
+function manastormClientDialog(switching) {
+  const entry = App.state.feed?.manastormClient;
+  const canInstall = !!(entry?.sha256 && entry.bytes && App.state.addon?.client);
+  return new Promise(resolve => {
+    const buttons = [
+      `<button class="button ghost" data-choice="cancel">${esc(t('common.cancel', 'Cancel'))}</button>`,
+      entry?.url ? `<button class="button ghost" data-choice="zip">${icon('download')}${esc(t('modules.manastormZip', 'Download zip'))}</button>` : '',
+      canInstall ? `<button class="button primary" data-choice="install">${icon('check')}${esc(t('modules.manastormInstall', 'Install client patch'))}</button>` : '',
+      switching && !entry?.url ? `<button class="button primary" data-choice="go">${esc(t('modules.on', 'Switch on'))}</button>` : '',
+    ].join('');
+    const where = canInstall ? t('modules.manastormWhere', 'Your game: {path}', { path: App.state.addon.client }) : t('modules.manastormGm', 'Without it, a GM can still start a run with .manastorm start 1, without the native window.');
+    dialog.open(`${dialog.header(t('modules.manastormTitle', 'Manastorm needs updated client files'))}<div class="dialog-content"><p>${esc(t('modules.manastormBody2', 'Manastorm needs the up-to-date game client of the official Ascension PTR launcher: its patch-B.MPQ holds the Manastorm window. Update your game with that launcher, then restart it. Every player of your server needs it.'))}</p><p class="muted small">${esc(where)}</p></div><footer class="dialog-foot">${buttons}</footer>`, 'small');
+    const element = $('#dialog');
+    const done = value => { element.removeEventListener('click', onClick); element.removeEventListener('close', onClose); dialog.close(); resolve(value); };
+    const onClick = async event => {
+      const choice = event.target.closest('[data-choice]')?.dataset.choice;
+      if (!choice) return;
+      if (choice === 'cancel') return done(false);
+      if (choice === 'zip') { App.api.openFeedLink('manastormClient').catch(() => {}); return done(switching); }
+      if (choice === 'go') return done(true);
+      const files = await guard(() => App.api.modulesManastormClient(), event.target.closest('button'));
+      if (!files) return;
+      toast(t('modules.manastormInstalled', '{n} Manastorm file(s) installed in your game: restart the game.', { n: files.length }), 'success');
+      done(switching);
+    };
+    const onClose = () => { if (!element.open) done(false); };
+    element.addEventListener('click', onClick);
+    element.addEventListener('close', onClose, { once: true });
+  });
 }

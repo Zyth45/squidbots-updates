@@ -27,6 +27,7 @@ const repackImport = require('./repack-import.cjs');
 const { cleanFeed } = require('./feed.cjs');
 const repackUpdate = require('./repack-update.cjs');
 const addonSync = require('./addon-sync.cjs');
+const manastormClient = require('./manastorm-client.cjs');
 const live = require('./live.cjs');
 const modules = require('./modules.cjs');
 // The repack's own updates (squidbots-updates releases): the signed list, the run in progress, its last result.
@@ -227,6 +228,7 @@ function publicConfig() {
     hasFeed: !!config.feedUrl,
     // The repack updater: core, bots and addon come from one signed update; the old bots channel is not offered.
     hasUpdates: !!config.server?.updatesUrl,
+    hasBeta: !!config.server?.betaUpdatesUrl,
     hasMultirace: !!config.server?.multirace,
     hasTestChannel: !!(config.game.testManifestUrl || config.server?.testManifestUrl || config.server?.bots?.testManifestUrl),
     game: { name: config.game.name, realmlists: config.game.realmlists, updatesOnly: config.game.updatesOnly, baseClient: config.game.baseClient ? { note: config.game.baseClient.note } : null, hasClient: !!config.game.manifestUrl, hasAddons: !!config.game.addonCatalogUrl, signed: !!config.keys.game },
@@ -254,7 +256,7 @@ function registerIpc() {
   handle('settings:save', async patch => {
     if (!patch || typeof patch !== 'object') throw new Error('Invalid settings.');
     const next = { ...settings };
-    for (const key of ['language', 'theme', 'channel', 'startPage', 'realmlist', 'minimizeOnLaunch', 'reduceMotion', 'autoCheckAddons']) if (Object.hasOwn(patch, key)) next[key] = patch[key];
+    for (const key of ['language', 'theme', 'channel', 'startPage', 'realmlist', 'minimizeOnLaunch', 'reduceMotion', 'autoCheckAddons', 'betaUpdates']) if (Object.hasOwn(patch, key)) next[key] = patch[key];
     const switching = Object.hasOwn(patch, 'channel') && patch.channel !== settings.channel;
     if (switching && (busyFiles || upgradeState.running || updater?.busy || repackUpdater?.busy || bots?.updater.busy || bots?.child)) throw new Error('Wait for the current operation to finish.');
     const saved = await persist(next);
@@ -614,12 +616,12 @@ function registerIpc() {
     const wasRunning = await serverControl()?.status().then(services => services.some(service => /world/i.test(service.id) && service.state === 'running')).catch(() => false);
     try {
       dashboard.stop();
-      phase('download', { total: update.manifest.package.size });
+      phase('download', { total: repackUpdate.packageSize(update.manifest) });
       const controller = new AbortController();
-      const zip = await repackUpdate.fetchPackage(update.manifest, path.join(app.getPath('userData'), 'updates'), { fetchImpl: netFetch, signal: controller.signal, onBytes: have => send('update:event', { event: 'bytes', done: have, total: update.manifest.package.size }) })
+      const zip = await repackUpdate.fetchPackage(update.manifest, path.join(app.getPath('userData'), 'updates'), { fetchImpl: netFetch, signal: controller.signal, onBytes: have => send('update:event', { event: 'bytes', done: have, total: repackUpdate.packageSize(update.manifest) }) })
         .catch(error => { throw Object.assign(new Error(error.message), { launcherCode: 'download' }); });
       phase('unpack');
-      await repackUpdate.unpack(zip, folder, update.manifest.package.folder).catch(error => { throw Object.assign(new Error(error.message), { launcherCode: 'unpack' }); });
+      await repackUpdate.unpack(zip, folder, update.manifest.package.folder, (done, total) => send('update:event', { event: 'unpack', done, total })).catch(error => { throw Object.assign(new Error(error.message), { launcherCode: 'unpack' }); });
       phase('check');
       let result = await runUpdateTool(folder, update.manifest.package.folder, 'check', []);
       if (!result.code) {
@@ -635,13 +637,25 @@ function registerIpc() {
       update.phase = null;
     }
     if (wasRunning && update.last && !update.last.code && !update.last.error) {
-      network.applyNetwork(folder).catch(() => {}).then(() => requireControl().startAll()).catch(() => {});
+      network.applyNetwork(folder).catch(() => {}).then(() => modules.keepRotationOff(folder)).then(() => requireControl().startAll()).catch(() => {});
     }
     const state2 = repackUpdateState();
     send('update:state', state2);
     return state2;
   });
   // Undo (the latest backup of the update) or the end of a cut update: with the tool already in the repack.
+  // The last update that can be undone: the update tool still in the repack and its backup (Backups\<version>-<date>).
+  handle('update:undoInfo', async () => {
+    const folder = serverPath();
+    if (!folder || !(await packageInRepack(folder))) return { available: false };
+    const names = (await fs.readdir(path.join(folder, 'Backups')).catch(() => [])).filter(name => /^\d+(\.\d+)*[\w.-]*-\d{8}-\d{6}$/.test(name) && fs_exists(path.join(folder, 'Backups', name, 'backup.json')));
+    const last = names.sort((a, b) => a.slice(-15).localeCompare(b.slice(-15))).pop();
+    if (!last) return { available: false };
+    const [, version, day, time] = /^(.+)-(\d{8})-(\d{6})$/.exec(last);
+    // Already undone (the server is back on an older version): nothing to offer.
+    if (repackUpdate.installed(folder).bots !== version) return { available: false };
+    return { available: true, version, at: `${day.slice(0, 4)}-${day.slice(4, 6)}-${day.slice(6)} ${time.slice(0, 2)}:${time.slice(2, 4)}` };
+  });
   handle('update:undo', async mode => {
     const folder = serverPath();
     if (update.busy) throw new Error('An update is already running.');
@@ -709,7 +723,7 @@ function registerIpc() {
     launcher: 'https://github.com/Zyth45/squidbots-updates',
     squidbots: 'https://github.com/Zyth45/mod-playerbots',
     multirace: 'https://github.com/ilusixn/azerothcore-wotlk-coa',
-    ahbot: 'https://github.com/azerothcore/mod-ahbot',
+    ahbot: 'https://github.com/NathanHandley/mod-ah-bot-plus',
     botsHelp: 'https://zyth45.github.io/mod-playerbots/',
   };
   handle('source:open', async id => { const link = SOURCES[text(id, 20)]; if (link) await shell.openExternal(link); });
@@ -717,6 +731,29 @@ function registerIpc() {
     if (await worldRunning()) throw new Error('Stop the server first: the auction house bot is read when it starts.');
     await modules.setAhbot(serverPath(), on === true);
     return modulesStatus();
+  });
+  // Empties the auctions of the bot (bidders are paid back by the server): only on a running world.
+  handle('modules:ahbotEmpty', async () => {
+    if (!serverPath()) throw new Error('Choose the server folder first.');
+    if (!(await worldRunning())) throw new Error('Start the server to empty the auction house.');
+    return live.raCommand(serverPath(), 'ahbot empty', 120000);
+  });
+  handle('modules:rotation', async on => {
+    if (!serverPath()) throw new Error('Choose the server folder first.');
+    if (await worldRunning()) throw new Error('Stop the server first: the rotation assistant is read when it starts.');
+    await modules.setRotation(serverPath(), on === true);
+    return modulesStatus();
+  });
+  handle('modules:manastorm', async on => {
+    if (!serverPath()) throw new Error('Choose the server folder first.');
+    if (await worldRunning()) throw new Error('Stop the server first: Manastorm is read when it starts.');
+    await modules.setManastorm(serverPath(), on === true);
+    return modulesStatus();
+  });
+  // The Manastorm files of the game, from the zip named in the signed feed (game closed).
+  handle('modules:manastormClient', async () => {
+    if (await addonSync.gameRunning()) throw new Error('Close the game first.');
+    return manastormClient.install({ client: settings.installPaths.addon, entry: feed?.manastormClient, cacheDir: path.join(app.getPath('userData'), 'downloads'), backupDir: path.join(app.getPath('userData'), 'manastorm-backups'), fetchImpl: netFetch });
   });
   handle('modules:squidbots', async on => {
     if (await worldRunning()) throw new Error('Stop the server first: the bots are chosen when it starts.');
@@ -819,7 +856,7 @@ function registerIpc() {
     return serverInfo();
   });
   handle('repack:pause', () => { repackUpdater?.cancel(); bots?.updater.cancel(); });
-  handle('repack:start', async id => { await network.applyNetwork(serverPath()).catch(() => {}); if (id === 'all') await requireControl().startAll(); else await requireControl().start(text(id, 30)); return serverInfo(); });
+  handle('repack:start', async id => { await network.applyNetwork(serverPath()).catch(() => {}); await modules.keepRotationOff(serverPath()); if (id === 'all') await requireControl().startAll(); else await requireControl().start(text(id, 30)); return serverInfo(); });
   handle('repack:stop', async id => { if (id === 'all') await requireControl().stopAll(); else await requireControl().stop(text(id, 30)); return serverInfo(); });
   handle('repack:tail', id => requireControl().tail(text(id, 30)));
   handle('repack:account', (name, password, gm) => requireControl().createAccount(text(name, 20), text(password, 20), gm === true));
@@ -1136,12 +1173,23 @@ function createUpdaters() {
 }
 
 // The signed list of the latest update, read at start and every 30 minutes.
+// Testers (betaUpdates in the settings) also read the beta list and get the newer of the two.
 async function refreshRepackUpdate() {
   const url = config.server?.updatesUrl;
   if (!url) return null;
+  const read = async (link, channel) => {
+    const { data } = await fetchSigned(new URL(link), { key: config.keys.server, fetchImpl: netFetch, signal: AbortSignal.timeout(20000), maxBytes: 512 * 1024, redirect: 'follow' });
+    const manifest = repackUpdate.cleanManifest(data);
+    if (manifest.channel !== channel) throw new Error(`The ${channel} update list holds a ${manifest.channel} version: it is not used.`);
+    return manifest;
+  };
   try {
-    const { data } = await fetchSigned(new URL(url), { key: config.keys.server, fetchImpl: netFetch, signal: AbortSignal.timeout(20000), maxBytes: 512 * 1024, redirect: 'follow' });
-    update.manifest = repackUpdate.cleanManifest(data);
+    let manifest = await read(url, 'stable');
+    if (settings.betaUpdates && config.server.betaUpdatesUrl) {
+      const beta = await read(config.server.betaUpdatesUrl, 'beta').catch(() => null);
+      if (beta && repackUpdate.compareVersions(beta.version, manifest.version) > 0) manifest = beta;
+    }
+    update.manifest = manifest;
     update.error = null;
   } catch (error) { update.error = error.message; }
   const state = repackUpdateState();
@@ -1157,7 +1205,9 @@ function repackUpdateState() {
   if (demoUpdate()) return { busy: update.busy, phase: update.phase, last: update.last, state: update.last && !update.last.error ? 'current' : demoUpdate(), here: { release: 'main-20261014-ad8370da', bots: '2.3' }, manifest: DEMO_MANIFEST };
   const folder = serverPath();
   const base = { busy: update.busy, phase: update.phase, last: update.last, listError: update.error, addonClient: settings.installPaths.addon || '' };
-  return folder && fs_exists(folder) ? { ...base, ...repackUpdate.status(folder, update.manifest) } : { ...base, state: 'noserver', manifest: update.manifest };
+  let diskFree = null;
+  try { const disk = require('node:fs').statfsSync(folder); diskFree = disk.bavail * disk.bsize; } catch {}
+  return folder && fs_exists(folder) ? { ...base, diskFree, ...repackUpdate.status(folder, update.manifest) } : { ...base, state: 'noserver', manifest: update.manifest };
 }
 
 // The newest CoA-Update-x folder already in the repack (for an undo or the end of a cut update).

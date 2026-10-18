@@ -104,7 +104,8 @@ const CHECK_TEXT = {
   },
   'bots.outland': {
     ok: ['No level-60 bot in Outland', ''],
-    warn: ['Level-60 bots in Outland', '{count} bots under level 61 in Outland (old level brackets). They leave at their next teleport with the 1.6 bots.'],
+    warn: ['Level-60 bots in Outland', '{count} bot(s) under level 61 in Outland. Nothing to do: they go back to a zone of their level at their next teleport.'],
+    info: ['A few low-level bots in Outland', '{count} bot(s) under level 61 in Outland. Nothing to do: they go back to a zone of their level at their next teleport.'],
   },
   'bots.tables': {
     ok: ['Bot database complete', '{count} playerbots tables.'],
@@ -274,7 +275,8 @@ function homeView() {
   const status = stuck ? t('home.stuckText', 'The world has not answered for {n} minutes: it is stuck. Force it to stop, then start the server again.', { n: Math.round(s.live.busyFor / 60000) })
     : busy ? t('home.botsCreatingText', 'The server is creating its bots (about 10 minutes at a first start). Do not close it: it can be stopped as soon as it answers again.')
     : foreign ? t('home.foreign', '{name}: port {port} is taken by another program.', { name: foreign.name, port: foreign.port })
-    : all ? (info.ports?.auth && info.ports.auth !== 3724 ? t('home.runningPort', 'Your server is running. Players set their realmlist to 127.0.0.1:{port}.', { port: info.ports.auth }) : t('home.running', 'Your server is running. Players connect to 127.0.0.1.')) : running ? t('server.partial', '{n} of {total} services running', { n: running, total: services.length }) : t('server.allStopped', 'The server is stopped');
+    // The address the players use: this PC, or the one given in "Who can join" when the server is open.
+    : all ? t('home.runningAt', 'Your server is running. Players connect to {address}.', { address: `${s.network?.mode === 'open' ? s.network.address : '127.0.0.1'}${info.ports?.auth && info.ports.auth !== 3724 ? `:${info.ports.auth}` : ''}` }) : running ? t('server.partial', '{n} of {total} services running', { n: running, total: services.length }) : t('server.allStopped', 'The server is stopped');
   const v = s.verify;
   const verifyText = s.verifying ? t('verify.running', 'Checking…') : !v ? t('verify.never', 'Not checked yet') : v.summary.bad ? t('verify.bad', '{n} problem(s) to fix', { n: v.summary.bad }) : v.summary.warn ? t('verify.warn', '{n} point(s) to look at', { n: v.summary.warn }) : t('verify.ok', 'All good');
   const verifyState = !v ? '' : v.summary.bad ? 'bad' : v.summary.warn ? 'warn' : 'ok';
@@ -302,8 +304,8 @@ function homeView() {
         <button class="side-card verify-card ${verifyState}" data-tab="verify">${icon('shield')}<span><strong>${esc(t('tab.verify', 'Verification'))}</strong><small>${esc(verifyText)}</small></span>${icon('next')}</button>
         ${addonCard()}
         ${newerRepack(info) ? `<button class="side-card" data-action="repack-newer">${icon('download')}<span><strong>${esc(t('home.newRepack', 'New repack available'))}</strong><small>${esc(newerRepack(info).name || newerRepack(info).release)}</small></span><i class="dot"></i></button>` : ''}
-        <button class="side-card" data-action="network-open">${icon('globe')}<span><strong>${esc(t('net.card', 'Who can join'))}</strong><small>${esc(s.network?.mode === 'open' ? t('net.cardOpen', 'Other PCs: {address}', { address: s.network.address }) : t('net.cardLocal', 'This PC only'))}</small></span>${icon('next')}</button>
         ${dash?.available ? `<button class="side-card" data-action="${dash.running ? 'dashboard-open' : 'dashboard-start'}">${icon('chart')}<span><strong>${esc(t('home.dashboard', 'Bots dashboard'))}</strong><small>${esc(dash.running ? t('home.dashboardOpen', 'Running on localhost:{port}: open it', { port: dash.port }) : t('home.dashboardStart', 'Map, bots, stats, chat: start it'))}</small></span>${icon('next')}</button>` : ''}
+        <button class="side-card" data-action="network-open">${icon('globe')}<span><strong>${esc(t('net.card', 'Who can join'))}</strong><small>${esc(s.network?.mode === 'open' ? t('net.cardOpen', 'Other PCs: {address}', { address: s.network.address }) : t('net.cardLocal', 'This PC only'))}</small></span>${icon('next')}</button>
       </aside>
     </section>
     ${feedNewsRow()}

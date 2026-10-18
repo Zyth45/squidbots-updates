@@ -274,6 +274,7 @@ function showSettings() {
     <h3>${icon('info')}${esc(t('settings.about', 'About'))}</h3>
     <p class="muted small">${esc(config.appName)} v${esc(version)} · ${esc(launcherUpdate?.message || t('settings.updatesAuto', 'Launcher updates are checked automatically.'))}</p>
     ${config.edition === 'server' ? `<div class="button-row"><button class="button ghost small" data-action="launcher-check">${icon('refresh')}${esc(t('settings.checkLauncher', 'Check for a launcher update'))}</button>${config.hasUpdates ? `<button class="button ghost small" data-action="update-check">${icon('refresh')}${esc(t('settings.checkRepack', 'Check for a repack and bots update'))}</button>` : ''}</div>` : ''}
+    ${config.edition === 'server' && config.hasBeta ? `${check('set-beta', 'betaUpdates', t('settings.beta', 'Receive beta versions (testers)'))}<p class="muted small">${esc(t('settings.betaHint', 'Betas come before the stable version and may have bugs. Backup and undo work as usual. Unticking never installs an older version: you stay on the beta until the next stable one.'))}</p>` : ''}
     ${config.edition === 'server' ? `<p class="small"><button class="link-button" data-action="source-link" data-id="launcher">${icon('external')}${esc(t('modules.launcherSource', 'Open source launcher: source code on GitHub'))}</button></p>` : ''}
   </div>`, 'wide');
 }
@@ -286,6 +287,8 @@ document.addEventListener('change', event => {
     App.state.settings = await App.api.saveSettings({ [key]: value });
     if (key === 'language') { await loadLocale(value); App.render(); showSettings(); }
     if (key === 'reduceMotion') Ocean.setStill(value);
+    // The beta list is read (or left) at once: the home page shows what this changes.
+    if (key === 'betaUpdates') App.api.updateRefresh().then(state => { if (state) App.state.update.state = state; }).catch(() => {});
     if (key === 'theme') { applyTheme(value); Ocean.setStill(App.state.settings.reduceMotion); App.render(); if (value === 'classic' && !App.state.news) loadNews(); }
     // Another channel: look again at the game, the server and the bots against the new addresses.
     if (key === 'channel') {
