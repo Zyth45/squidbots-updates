@@ -931,5 +931,6 @@
   "component.done": "{name} {version} installé.",
   "component.addonGameOpen": "Fermez le jeu : l'addon y sera installé au prochain démarrage du launcher.",
   "component.addonInGame": "Il est dans votre jeu : il se charge à votre prochaine connexion.",
-  "logs.quieted": "Journaux allégés : les messages répétés « Wrong area flag » des nouvelles cartes ne sont plus écrits (Settings\\worldserver.conf.template)."
+  "logs.quieted": "Journaux allégés : les messages répétés « Wrong area flag » des nouvelles cartes ne sont plus écrits (Settings\\worldserver.conf.template).",
+  "home.accountHint": "Créez ici vos comptes de jeu."
 }

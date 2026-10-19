@@ -285,7 +285,7 @@ function homeView() {
   const menu = [['srv-tab', 'services', t('home.menuServices', 'Services one by one')], ['srv-tab', 'backups', t('srv.tab.backups', 'Backups')], ['server-folder', '', t('home.menuFolder', 'Open the server folder')],
     ['instance-new', '', t('home.menuNew', 'Create a new server (clean instance)…')], ['instance-add', '', t('home.menuAdd', 'Add a repack folder I unpacked…')], ['instance-pick', '', t('home.menuSwitch', 'My servers…')]];
   return `<div class="page classic">
-    <section class="hero classic-hero server-hero">
+    <section class="hero classic-hero server-hero">${homeLinks()}
       <div class="classic-main">
         <h1>JS CoA Repack</h1>
         <p class="status-line ${foreign ? 'bad' : ''}">${esc(status)}</p>
@@ -308,7 +308,7 @@ function homeView() {
         <button class="side-card" data-action="network-open">${icon('globe')}<span><strong>${esc(t('net.card', 'Who can join'))}</strong><small>${esc(s.network?.mode === 'open' ? t('net.cardOpen', 'Other PCs: {address}', { address: s.network.address }) : t('net.cardLocal', 'This PC only'))}</small></span>${icon('next')}</button>
       </aside>
     </section>
-    ${feedNewsRow()}
+    ${feedNewsRow(false)}
     ${!App.state.feed?.news?.length && (s.news || []).filter(item => item.area !== 'client').length ? `<section class="news-row"><h2>${esc(t('classic.news', 'Latest news'))}</h2><div class="news-grid">${newsCards((s.news || []).filter(item => item.area !== 'client'))}</div></section>` : ''}
   </div>`;
 }
@@ -322,12 +322,17 @@ function newerRepack(info) {
 }
 
 // News written by the realm owner in the feed (feed.json on the download server).
-function feedNewsRow() {
+function homeLinks() {
+  return `<span class="news-links"><button class="link-button" data-action="source-link" data-id="botsHelp">${icon('book')}${esc(t('home.botsHelp', 'Bots help'))}</button>${App.state.feed?.discord?.invite ? `<button class="link-button" data-action="feed-open" data-kind="discord">${icon('discord')}${esc(t('home.discordJoin', 'Join the Discord'))}</button>` : ''}</span>`;
+}
+
+function feedNewsRow(links = true) {
   const notes = App.state.notes || [];
   const news = notes.length ? notes : App.state.feed?.news || [];
   if (!news.length) return '';
-  const discord = `<span class="news-links"><button class="link-button" data-action="source-link" data-id="botsHelp">${icon('book')}${esc(t('home.botsHelp', 'Bots help'))}</button>${App.state.feed?.discord?.invite ? `<button class="link-button" data-action="feed-open" data-kind="discord">${icon('discord')}${esc(t('home.discordJoin', 'Join the Discord'))}</button>` : ''}</span>`;
-  return `<section class="news-row"><div class="news-head"><h2>${esc(notes.length ? t('home.lastPatch', 'Last patch note') : t('home.announcements', 'News'))}</h2>${discord}</div><div class="news-live"><div class="news-grid one">${news.slice(0, 1).map((item, index) => `<article class="news-card ${notes.length ? 'bots' : 'news'}" data-action="${notes.length ? 'note-open' : 'feed-news'}" data-index="${index}" tabindex="0" role="button"><div class="news-art">${icon(notes.length ? 'bot' : 'book')}</div><div class="news-text"><small>${esc(item.date)}</small><strong>${esc(item.title)}</strong><p>${esc(item.summary || item.text)}</p></div></article>`).join('')}</div>${liveView()}</div></section>`;
+  const title = esc(notes.length ? t('home.lastPatch', 'Last patch note') : t('home.announcements', 'News'));
+  const discord = links ? homeLinks() : '';
+  return `<section class="news-row">${discord}<div class="news-live"><div class="news-grid one">${news.slice(0, 1).map((item, index) => `<article class="news-card ${notes.length ? 'bots' : 'news'}" data-action="${notes.length ? 'note-open' : 'feed-news'}" data-index="${index}" tabindex="0" role="button"><div class="news-art"><h2>${title}</h2>${icon(notes.length ? 'bot' : 'book')}</div><div class="news-text"><small>${esc(item.date)}</small><strong>${esc(item.title)}</strong><p>${esc(item.summary || item.text)}</p></div></article>`).join('')}</div>${liveView()}</div></section>`;
 }
 
 // ---------------------------------------------------------------- live state of the server (home)
@@ -342,22 +347,38 @@ function liveView() {
   const tick = l.tickMean ?? l.tick;
   // Bots still logging in (fewer than the number set): the server is slower meanwhile, and that is expected.
   const arriving = l.bots?.target && l.bots.count < Math.floor(l.bots.target * 0.95);
-  return `<section class="live"><h3>${esc(t('live.title', 'Server live'))}${arriving ? `<span class="live-arriving" title="${esc(t('live.arrivingHint', 'While they log in, the server is slower (high tick): this is normal. Wait a few minutes until all of them are there.'))}">${icon('bot')}${esc(t('live.arrivingTitle', 'The bots are arriving in your realm: {count} / {target}', { count: l.bots.count, target: l.bots.target }))}${progressBar({ total: l.bots.target, completed: l.bots.count }).html}</span>` : ''}</h3><div class="live-grid">
+  if (!arriving) App.state.waitClosed = false;
+  return `<section class="live"><h3>${esc(t('live.title', 'Server live'))}${arriving ? `<span class="live-arriving" title="${esc(t('live.arrivingHint', 'While they log in, the server is slower (high tick): this is normal. Wait a few minutes until all of them are there.'))}">${icon('bot')}${esc(t('live.arrivingTitle', 'The bots are arriving in your realm: {count} / {target}', { count: l.bots.count, target: l.bots.target }))}${progressBar({ total: l.bots.target, completed: l.bots.count }).html}</span>` : ''}</h3><div class="live-body"><div class="live-grid">
     ${tile('user', t('live.players', 'Players'), dash(l.players))}
     ${tile('bot', t('live.bots', 'Bots in game'), l.bots ? String(l.bots.count) : '—', l.bots ? t('live.inCombat', '{n} in combat', { n: l.bots.inCombat }) : '')}
     ${tile('refresh', t('live.tick', 'Tick'), tick === null || tick === undefined ? '—' : `${tick} ms`, arriving && tick > 150 ? t('live.tickLoading', 'bots arriving') : tick > 150 ? t('live.tickSlow', 'slow') : tick !== null && tick !== undefined ? t('live.tickOk', 'smooth') : '')}
     ${tile('database', t('live.memory', 'Memory'), l.memory ? formatBytes(l.memory) : '—')}
-  </div>${arriving ? `<p class="live-wait">${icon('info')}${esc(t('live.waitLogin', 'Wait a little before logging in: the server is bringing its bots into the world. The game is slower until they are all there.'))}</p>` : ''}</section>`;
+  </div>${homeAccount()}</div>${arriving && !App.state.waitClosed ? `<p class="live-wait live-toast">${icon('info')}<span>${esc(t('live.waitLogin', 'Wait a little before logging in: the server is bringing its bots into the world. The game is slower until they are all there.'))}</span><button class="icon-button" data-action="live-wait-close" title="${esc(t('common.close', 'Close'))}">${icon('close')}</button></p>` : ''}</section>`;
 }
 
 // Read every 10 s while the home page is shown, and at once when it opens.
 let liveBusy = false;
+// The first login, on the home page: the account to create, then where to log in (the full form stays in Management).
+function homeAccount() {
+  return `<div class="live-account"><strong>${icon('user')}${esc(t('server.account', 'Game account'))}</strong>
+    <p class="muted small">${esc(t('home.accountHint', 'Create your game accounts here.'))}</p>
+    <form id="home-account" class="home-account-form"><input id="ha-name" maxlength="17" placeholder="${esc(t('server.accountName', 'Account name'))}" autocomplete="off"><input id="ha-password" type="password" maxlength="16" placeholder="${esc(t('server.password', 'Password'))}" autocomplete="new-password"><label class="check"><input type="checkbox" class="ga-gm"><span>${esc(t('server.gm', 'Game master'))}</span></label><button class="button primary small" type="submit">${esc(t('server.create', 'Create'))}</button></form></div>`;
+}
+
+App.actions['live-wait-close'] = () => { App.state.waitClosed = true; document.querySelector('.live-toast')?.remove(); };
+
 async function refreshLive() {
   if (liveBusy || App.state.tab !== 'home' || !App.state.server?.installed || document.hidden) return;
   liveBusy = true;
   try { App.state.live = await App.api.liveStats(); } catch { App.state.live = null; }
   liveBusy = false;
-  if (App.state.tab === 'home' && !$('#dialog').open && !document.querySelector('.split-menu:not([hidden])')) App.render();
+  if (App.state.tab !== 'home' || $('#dialog').open || document.querySelector('.split-menu:not([hidden])')) return;
+  // An account being typed is kept: only the figures are redrawn.
+  const form = $('#home-account');
+  const typing = form && (form.contains(document.activeElement) || [...form.querySelectorAll('input')].some(input => input.value));
+  const grid = $('.live .live-grid');
+  if (typing && grid && App.state.live?.running) { const fresh = document.createElement('div'); fresh.innerHTML = liveView(); const next = fresh.querySelector('.live-grid'); if (next) grid.replaceWith(next); }
+  else App.render();
 }
 setInterval(refreshLive, 10000);
 setTimeout(refreshLive, 1500);

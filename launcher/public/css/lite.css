@@ -238,8 +238,8 @@ input:focus, select:focus { border-color: var(--accent); }
 .conf-warn .icon { width: 14px; height: 14px; }
 .num-input { width: 110px; text-align: right; }
 .text-input { width: 220px; }
-.switch { display: inline-flex; cursor: pointer; }
-.switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.switch { position: relative; display: inline-flex; cursor: pointer; }
+.switch input { position: absolute; top: 0; left: 0; opacity: 0; width: 1px; height: 1px; margin: 0; }
 .switch span { width: 44px; height: 24px; border-radius: 12px; background: var(--tint-strong); border: 1px solid var(--line-strong); position: relative; transition: background .2s; }
 .switch span::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: var(--muted); transition: transform .2s, background .2s; }
 .switch input:checked + span { background: var(--accent-deep); }

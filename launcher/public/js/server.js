@@ -52,7 +52,7 @@ function servicesView(info) {
       ${summary}<div class="service-list">${list}</div></section>
     <section class="panel"><header><h2>${icon('user')}${esc(t('server.account', 'Game account'))}</h2></header>
       <p class="muted">${esc(t('server.accountHint', 'Create the account you log in with on your own server. The worldserver must be running.'))}</p>
-      <form id="game-account" class="form-grid"><input id="ga-name" maxlength="17" placeholder="${esc(t('server.accountName', 'Account name'))}" autocomplete="off"><input id="ga-password" type="password" maxlength="16" placeholder="${esc(t('server.password', 'Password'))}" autocomplete="new-password"><label class="check"><input type="checkbox" id="ga-gm"><span>${esc(t('server.gm', 'Game master'))}</span></label><button class="button primary small" type="submit" ${worldRunning(info) ? '' : 'disabled'}>${esc(t('server.create', 'Create'))}</button></form>
+      <form id="game-account" class="form-grid"><input id="ga-name" maxlength="17" placeholder="${esc(t('server.accountName', 'Account name'))}" autocomplete="off"><input id="ga-password" type="password" maxlength="16" placeholder="${esc(t('server.password', 'Password'))}" autocomplete="new-password"><label class="check"><input type="checkbox" id="ga-gm" class="ga-gm"><span>${esc(t('server.gm', 'Game master'))}</span></label><button class="button primary small" type="submit" ${worldRunning(info) ? '' : 'disabled'}>${esc(t('server.create', 'Create'))}</button></form>
       ${info.bots?.installed && info.canPurgeBots ? `<div class="line-action">${icon('bot')}<span>${esc(t('server.purgeHint', 'Bots acting strangely after an update? Recreate them: your own characters stay.'))}</span><button class="button ghost small" data-action="purge-bots" ${worldRunning(info) ? 'disabled' : ''}>${esc(t('server.purge', 'Recreate the bots'))}</button>${worldRunning(info) ? `<small class="muted purge-stop">${esc(t('server.purgeStop', 'Stop the server first.'))}</small>` : ''}</div>` : ''}
     </section></div>`;
 }
@@ -429,13 +429,16 @@ async function installBotsNow() {
 }
 
 document.addEventListener('submit', event => {
-  if (event.target.id !== 'game-account') return;
+  const form = event.target;
+  if (form.id !== 'game-account' && form.id !== 'home-account') return;
   event.preventDefault();
-  const button = event.target.querySelector('[type=submit]');
+  const button = form.querySelector('[type=submit]');
+  const [nameInput, passwordInput] = form.querySelectorAll('input');
   guard(async () => {
-    const name = $('#ga-name').value.trim();
-    const output = await App.api.createGameAccount(name, $('#ga-password').value, $('#ga-gm').checked);
-    $('#ga-password').value = '';
+    const name = nameInput.value.trim();
+    const output = await App.api.createGameAccount(name, passwordInput.value, !!form.querySelector('#ga-gm, .ga-gm')?.checked);
+    passwordInput.value = '';
+    if (form.id === 'home-account') nameInput.value = '';
     toast(output || t('server.accountCreated', 'Account {name} created.', { name: name.toUpperCase() }), 'success');
   }, button);
 });

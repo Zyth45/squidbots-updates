@@ -347,3 +347,31 @@ label.switch input:checked + span::after { background: #fff; }
 
 /* Home: a component card (addon, dashboard) takes the width of the column, like the update card. */
 .server-hero .classic-side > .component-card { grid-column: 1 / -1; }
+/* Home, server live: the figures two by two on the left, the first login on the right. */
+.live-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+.live-body .live-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.live-account { display: grid; gap: 8px; padding: 12px; border-radius: 10px; background: var(--tint); }
+.live-account > strong { display: flex; align-items: center; gap: 8px; }
+.live-account > strong .icon { width: 18px; height: 18px; color: var(--accent); }
+.live-account p { margin: 0; }
+.home-account-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+.home-account-form button { grid-column: 1 / -1; justify-self: end; }
+@media (max-width: 1100px) { .live-body { grid-template-columns: 1fr; } }
+/* Home: help and Discord above the server card, the patch note column narrower with its title inside. */
+.classic-hero > .news-links { position: absolute; top: -44px; right: 4px; display: flex; gap: 14px; }
+.news-row > .news-links { justify-self: end; }
+.news-live { grid-template-columns: minmax(0, 300px) minmax(0, 1fr); }
+.news-art { position: relative; }
+.news-art h2 { position: absolute; top: 10px; left: 14px; margin: 0; font-size: 12px; }
+.home-account-form { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; }
+.home-account-form .check { grid-column: 1; }
+.home-account-form button { grid-column: 2; justify-self: stretch; justify-content: center; }
+/* The "wait before logging in" notice: a bar floating at the bottom of the window. */
+.live-wait.live-toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 30; width: min(640px, calc(100% - 48px)); margin: 0; padding: 10px 14px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--warn) 55%, transparent); background: var(--panel-solid, #0a2233); box-shadow: 0 12px 30px rgba(0, 0, 0, .5); }
+.live-toast span { flex: 1; }
+.live-toast .icon-button { width: 28px; height: 28px; flex: none; }
+.news-art { place-items: end center; padding-bottom: 10px; }
+.news-art .icon { width: 34px; height: 34px; }
+/* The account card as tall as the four figures beside it. */
+.live-body { align-items: stretch; }
+.live-account { align-content: space-between; }

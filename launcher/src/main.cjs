@@ -836,7 +836,7 @@ function registerIpc() {
     if (found) await found.stopAll().catch(() => {});
     return serverInfo();
   });
-  handle('live:stats', () => (serverPath() ? live.stats(serverPath()) : { running: false }));
+  handle('live:stats', () => (smokeDir && process.env.COA_SMOKE_LIVE ? JSON.parse(process.env.COA_SMOKE_LIVE) : serverPath() ? live.stats(serverPath()) : { running: false }));
   handle('console:run', async command => {
     if (!serverPath()) throw new Error('Choose the server folder first.');
     const line = text(command, 500).trim();
@@ -1376,7 +1376,7 @@ async function main() {
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   window.webContents.on('will-navigate', event => event.preventDefault());
   window.webContents.on('will-attach-webview', event => event.preventDefault());
-  window.once('ready-to-show', () => { if (!smokeDir) window.show(); });
+  window.once('ready-to-show', () => { if (!smokeDir || process.env.COA_SMOKE_SHOW) window.show(); });
   window.on('close', event => {
     if (update.busy) {
       event.preventDefault();
