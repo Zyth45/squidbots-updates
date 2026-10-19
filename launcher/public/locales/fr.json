@@ -932,5 +932,11 @@
   "component.addonGameOpen": "Fermez le jeu : l'addon y sera installé au prochain démarrage du launcher.",
   "component.addonInGame": "Il est dans votre jeu : il se charge à votre prochaine connexion.",
   "logs.quieted": "Journaux allégés : les messages répétés « Wrong area flag » des nouvelles cartes ne sont plus écrits (Settings\\worldserver.conf.template).",
-  "home.accountHint": "Créez ici vos comptes de jeu."
+  "home.accountHint": "Créez ici vos comptes de jeu.",
+  "modules.comingSoon": "Bientôt disponible",
+  "modules.iatalkBank": "Une banque de phrases écrites à l'avance : elle marche sans aucune IA.",
+  "modules.iatalkAi": "IA en option pour les réponses : Ollama sur ce PC ou sur votre réseau, ou un service en ligne avec votre propre clé et un plafond par jour.",
+  "modules.squidchatText": "Votre serveur ne sera plus jamais silencieux : les bots discutent, félicitent les beaux loots, se moquent des wipes et ont toujours un avis sur tout. Même sur Jealous.",
+  "conf.savedShort": "Tout est enregistré.",
+  "common.new": "Nouveau"
 }

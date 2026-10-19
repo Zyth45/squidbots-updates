@@ -375,3 +375,33 @@ label.switch input:checked + span::after { background: #fff; }
 /* The account card as tall as the four figures beside it. */
 .live-body { align-items: stretch; }
 .live-account { align-content: space-between; }
+/* Modules: a picture above each card. */
+.module-card { overflow: hidden; }
+.module-art { margin: -18px -20px 2px; height: 104px; border-bottom: 1px solid var(--line); }
+.module-art svg { display: block; width: 100%; height: 100%; }
+.module-card.soon .module-art { filter: saturate(.7); }
+.module-card.coming { opacity: .8; }
+/* Modules: every card the same height, the credit at the bottom. */
+.grid-2.modules { align-items: stretch; grid-auto-rows: 1fr; }
+.module-card .module-credit, .module-card > .module-credit:last-child { margin-top: auto; }
+/* Module credit: the author on the left, the source code on the right. */
+.module-card .module-credit { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: nowrap; }
+.module-card .module-credit span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.module-card .module-credit .link-button { flex: none; }
+/* Server settings: the categories on the left, one at a time on the right. */
+.conf-bar .button .icon { width: 14px; height: 14px; }
+.conf-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 16px; align-items: start; margin-top: 14px; }
+.conf-nav { position: sticky; top: 50px; display: grid; gap: 4px; padding: 8px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); }
+.conf-tab { display: flex; align-items: center; gap: 9px; padding: 9px 10px; border-radius: 9px; text-align: left; color: var(--muted); font-size: 13px; }
+.conf-tab .icon { width: 16px; height: 16px; flex: none; }
+.conf-tab span { flex: 1; min-width: 0; }
+.conf-tab em { font-style: normal; font-size: 11px; min-width: 18px; text-align: center; padding: 1px 6px; border-radius: 9px; background: var(--accent); color: #04121c; }
+.conf-tab:hover { background: var(--tint); color: var(--text); }
+.conf-tab.active { background: var(--tint-strong, rgba(255, 255, 255, .1)); color: var(--text); box-shadow: inset 3px 0 0 var(--accent); }
+.conf-tab.active .icon { color: var(--accent); }
+.conf-pane .conf-group h3 { margin-top: 0; }
+@media (max-width: 860px) { .conf-layout { grid-template-columns: 1fr; } .conf-nav { position: static; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); } }
+/* Picture texts in the launcher font. */
+.module-art text { font-family: var(--body); letter-spacing: .01em; }
+:root .conf-bar .spacer { flex: 1; order: 0; }
+.conf-group > .recipes { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 6px; }

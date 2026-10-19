@@ -246,7 +246,7 @@ function raceName(id) {
 
 // Who made the module, and a link to its source code.
 function moduleCredit(id, author) {
-  return `<p class="module-credit">${esc(t('modules.by', 'By {author}', { author }))} · <button class="link-button" data-action="source-link" data-id="${id}">${icon('external')}${esc(t('modules.source', 'Source code'))}</button></p>`;
+  return `<p class="module-credit"><span>${esc(t('modules.by', 'By {author}', { author }))}</span><button class="link-button" data-action="source-link" data-id="${id}">${icon('external')}${esc(t('modules.source', 'Source code'))}</button></p>`;
 }
 
 function moduleSwitch(action, on, disabled) {
@@ -269,7 +269,7 @@ function modulesView() {
   // Where to get the patched client (link of the signed feed).
   const getClient = App.state.feed?.clientRaces && r.client.state !== 'yes' ? `<button class="button ghost small" data-action="feed-open" data-kind="clientRaces">${icon('download')}${esc(t('modules.getClient', 'Get the patched client'))}</button>` : '';
   return `<div class="grid-2 modules">
-    <section class="panel module-card"><header><h2>${icon('bot')}SquidBots</h2>${moduleSwitch('modules-squidbots', m.squidbots.enabled, m.worldRunning || !m.squidbots.installed)}</header>
+    <section class="panel module-card">${moduleArt('squidbots')}<header><h2>${icon('bot')}SquidBots</h2>${moduleSwitch('modules-squidbots', m.squidbots.enabled, m.worldRunning || !m.squidbots.installed)}</header>
       <p class="muted">${esc(t('modules.squidbotsText', 'The random bots and the group AI. Off, the server starts without them (your own characters are not changed).'))}</p>
       <p class="small">${esc(m.squidbots.installed ? (m.squidbots.enabled ? t('modules.squidbotsOn', 'On: the server starts with the bots.') : t('modules.squidbotsOff', 'Off: the server starts without the bots.')) : t('modules.squidbotsMissing', 'CoA Bots is not installed in this server.'))}</p>${stopFirst}
       ${moduleCredit('squidbots', 'SquidBots (Zyth45)')}
@@ -280,24 +280,29 @@ function modulesView() {
       <p class="small">${esc(r.enabled ? (r.bots ? t('modules.multiraceOnBots', 'On, bots included.') : t('modules.multiraceOn', 'On, players only.')) : t('modules.multiraceOff', 'Off.'))}</p>${stopFirst}
       ${moduleCredit('multirace', 'Ilusixn')}
     </section>` : ''}
-    <section class="panel module-card ${m.ahbot.available ? '' : 'soon'}"><header><h2>${icon('coin')}${esc(t('modules.ahbot', 'Auction house'))}</h2>${moduleSwitch('modules-ahbot', m.ahbot.enabled, m.worldRunning || !m.ahbot.available)}</header>
+    <section class="panel module-card ${m.ahbot.available ? '' : 'soon'}">${moduleArt('ahbot')}<header><h2>${icon('coin')}${esc(t('modules.ahbot', 'Auction house'))}</h2>${moduleSwitch('modules-ahbot', m.ahbot.enabled, m.worldRunning || !m.ahbot.available)}</header>
       <p class="muted">${esc(t('modules.ahbotText2', 'Gavelgrin, an auctioneer with its own account, keeps about 3000 auctions of items you can get in game (up to level 60, nothing from TBC or WotLK) and buys what players sell. Its account is never removed when the bots are recreated.'))}</p>
       <p class="small">${esc(!m.ahbot.available ? t('modules.ahbotSoon', 'Available with CoA Bots 2.5.') : m.ahbot.enabled ? t('modules.ahbotOn2', 'On.') : t('modules.multiraceOff', 'Off.'))}</p>${m.ahbot.available ? stopFirst : ''}
       ${m.ahbot.available ? `<div class="button-row module-actions"><button class="button ghost small" data-action="modules-ahbot-empty" ${m.worldRunning ? '' : `disabled title="${esc(t('modules.ahbotEmptyStopped', 'Start the server to empty the auction house.'))}"`}>${icon('trash')}${esc(t('modules.ahbotEmpty', 'Empty the auction house'))}</button>${m.worldRunning ? '' : `<small class="muted">${esc(t('modules.ahbotEmptyStopped', 'Start the server to empty the auction house.'))}</small>`}</div>` : ''}
-      ${moduleCredit('ahbot', 'Nathan Handley (mod-ah-bot-plus)')}
+      ${moduleCredit('ahbot', 'Nathan Handley')}
     </section>
-    <section class="panel module-card ${m.manastorm?.available ? '' : 'soon'}"><header><h2>${icon('play')}Manastorm Endless</h2>${moduleSwitch('modules-manastorm', !!m.manastorm?.enabled, m.worldRunning || !m.manastorm?.available)}</header>
+    <section class="panel module-card soon coming">${moduleArt('squidchat')}<header><h2>${icon('chat')}SquidChat</h2><span class="pill info">${esc(t('modules.comingSoon', 'Coming soon'))}</span></header>
+      <p class="muted">${esc(t('modules.squidchatText', 'Your server will never be quiet again: bots chat, cheer the good loot, laugh at the wipes and have an opinion on everything. Even on Jealous.'))}</p>
+      <ul class="module-facts">${[t('modules.iatalkBank', 'A bank of lines written in advance: it works without any AI.'), t('modules.iatalkAi', 'Optional AI for the answers: Ollama on this PC or on your network, or an online service with your own key and a daily cap.')].map(text => `<li class="ok">${icon('check')}<span>${esc(text)}</span></li>`).join('')}</ul>
+      <p class="module-credit">${esc(t('modules.by', 'By {author}', { author: 'SquidBots (Zyth45)' }))}</p>
+    </section>
+    <section class="panel module-card ${m.rotation?.available ? '' : 'soon'}">${moduleArt('rotation')}<header><h2>${icon('refresh')}${esc(t('modules.rotation', 'Rotation assistant'))}</h2>${moduleSwitch('modules-rotation', !!(m.rotation?.available && m.rotation.enabled), m.worldRunning || !m.rotation?.available)}</header>
+      <p class="muted">${esc(t('modules.rotationText', 'One button that casts the next spell of your rotation for you.'))}</p>
+      <p class="small">${esc(!m.rotation?.available ? t('modules.ahbotSoon', 'Available with CoA Bots 2.5.') : m.rotation.enabled ? t('modules.ahbotOn2', 'On.') : t('modules.multiraceOff', 'Off.'))}</p>${m.rotation?.available ? stopFirst : ''}
+      <p class="module-note">${icon('info')}${esc(t('modules.newModule', 'New module, not tried with the bots yet: feedback is welcome.'))}</p>
+      ${moduleCredit('core', 'Conquest of Azeroth (core)')}
+    </section>
+    <section class="panel module-card ${m.manastorm?.available ? '' : 'soon'}">${moduleArt('manastorm')}<header><h2>${icon('play')}Manastorm Endless</h2>${moduleSwitch('modules-manastorm', !!m.manastorm?.enabled, m.worldRunning || !m.manastorm?.available)}</header>
       <p class="muted">${esc(t('modules.manastormText', 'Endless runs of Manastorm rooms, with its native window in game. Every player needs the updated client files of Manastorm.'))}</p>
       <p class="small">${esc(!m.manastorm?.available ? t('modules.ahbotSoon', 'Available with CoA Bots 2.5.') : m.manastorm.enabled ? t('modules.ahbotOn2', 'On.') : t('modules.multiraceOff', 'Off.'))}</p>${m.manastorm?.available ? stopFirst : ''}
       ${m.manastorm?.available && App.state.feed?.manastormClient ? `<div class="button-row module-actions"><button class="button ghost small" data-action="manastorm-files">${icon('download')}${esc(t('modules.manastormFiles', 'Client files'))}</button></div>` : ''}
       <p class="module-note">${icon('info')}${esc(t('modules.newModule', 'New module, not tried with the bots yet: feedback is welcome.'))}</p>
-      <p class="module-credit">${esc(t('modules.by', 'By {author}', { author: 'Conquest of Azeroth (core)' }))}</p>
-    </section>
-    <section class="panel module-card ${m.rotation?.available ? '' : 'soon'}"><header><h2>${icon('refresh')}${esc(t('modules.rotation', 'Rotation assistant'))}</h2>${moduleSwitch('modules-rotation', !!(m.rotation?.available && m.rotation.enabled), m.worldRunning || !m.rotation?.available)}</header>
-      <p class="muted">${esc(t('modules.rotationText', 'One button that casts the next spell of your rotation for you.'))}</p>
-      <p class="small">${esc(!m.rotation?.available ? t('modules.ahbotSoon', 'Available with CoA Bots 2.5.') : m.rotation.enabled ? t('modules.ahbotOn2', 'On.') : t('modules.multiraceOff', 'Off.'))}</p>${m.rotation?.available ? stopFirst : ''}
-      <p class="module-note">${icon('info')}${esc(t('modules.newModule', 'New module, not tried with the bots yet: feedback is welcome.'))}</p>
-      <p class="module-credit">${esc(t('modules.by', 'By {author}', { author: 'Conquest of Azeroth (core)' }))}</p>
+      ${moduleCredit('core', 'Conquest of Azeroth (core)')}
     </section>
   </div>
   <p class="modules-foot">${esc(t('modules.foot', 'SquidBots Server is open source.'))} <button class="link-button" data-action="source-link" data-id="launcher">${icon('external')}${esc(t('modules.source', 'Source code'))}</button></p>`;
@@ -310,23 +315,29 @@ function settingsView() {
   const count = Object.keys(App.state.pending).length;
   // The Lite version keeps the bot groups and the realm rates: the settings people actually change.
   const groups = conf.groups.filter(group => conf.settings.some(setting => setting.group === group.id));
-  const bar = `<div class="conf-bar${count ? ' dirty' : ''}" id="conf-bar"><span>${esc(count ? t('conf.pending', '{n} unsaved change(s)', { n: count }) : t('conf.saved', 'Saved. A copy of each file is kept before any change.'))}</span><span class="spacer"></span><button class="button ghost small" data-action="conf-history">${esc(t('conf.history', 'History'))}</button>${count ? `<button class="button ghost small" data-action="conf-discard">${esc(t('conf.discard', 'Discard'))}</button><button class="button primary small" data-action="conf-save">${esc(t('common.save', 'Save'))}</button>${worldRunning(App.state.server) ? `<button class="button primary small" data-action="conf-save-restart">${esc(t('conf.saveRestart', 'Save and restart'))}</button>` : ''}` : ''}</div>`;
-  const recipes = conf.recipes.length ? `<div class="recipes">${conf.recipes.map(recipe => `<button class="recipe" data-action="conf-recipe" data-id="${esc(recipe.id)}"><strong>${esc(loc(recipe.title))}</strong><small>${esc(loc(recipe.summary))}</small></button>`).join('')}</div>` : '';
-  const body = groups.map(group => `<section class="conf-group"><h3>${icon(group.icon)}${esc(loc(group.label))}</h3>${conf.settings.filter(setting => setting.group === group.id).map(setting => {
+  const info = App.state.server || {};
+  const purge = info.bots?.installed && info.canPurgeBots ? `<button class="button ghost small" data-action="purge-bots" ${worldRunning(info) ? `disabled title="${esc(t('server.purgeStop', 'Stop the server first.'))}"` : `title="${esc(t('conf.purgeHint', 'Recreate the random bots (after changing their number, classes or levels): your characters stay. The server must be stopped.'))}"`}>${icon('bot')}${esc(t('server.purge', 'Recreate the bots'))}</button>` : '';
+  const logs = `<button class="button ghost small" data-action="open-logs" title="${esc(t('conf.logsHint', 'The server logs (Server.log, errors, bots): the console scrolls too fast, these files keep everything.'))}">${icon('book')}${esc(t('conf.openLogs', 'Open the logs'))}</button>`;
+  const bar = `<div class="conf-bar${count ? ' dirty' : ''}" id="conf-bar"><span>${esc(count ? t('conf.pending', '{n} unsaved change(s)', { n: count }) : t('conf.savedShort', 'All saved.'))}</span><span class="spacer"></span>${count ? `<button class="button ghost small" data-action="conf-discard">${esc(t('conf.discard', 'Discard'))}</button><button class="button primary small" data-action="conf-save">${esc(t('common.save', 'Save'))}</button>${worldRunning(App.state.server) ? `<button class="button primary small" data-action="conf-save-restart">${esc(t('conf.saveRestart', 'Save and restart'))}</button>` : ''}` : `${logs}${purge}<button class="button ghost small" data-action="conf-history" title="${esc(t('conf.saved', 'Saved. A copy of each file is kept before any change.'))}">${icon('refresh')}${esc(t('conf.history', 'History'))}</button>`}</div>`;
+  const tabs = groups.map(group => ({ id: group.id, icon: group.icon, label: loc(group.label) }));
+  if (!tabs.some(tab => tab.id === App.state.confGroup)) App.state.confGroup = tabs[0]?.id;
+  const changedIn = id => conf.settings.filter(setting => setting.group === id && App.state.pending[pendingKey(setting.file, setting.key)] !== undefined).length;
+  const nav = `<nav class="conf-nav" id="conf-nav">${tabs.map(tab => `<button class="conf-tab${App.state.confGroup === tab.id ? ' active' : ''}" data-action="conf-group" data-id="${esc(tab.id)}">${icon(tab.icon)}<span>${esc(tab.label)}</span>${changedIn(tab.id) ? `<em>${changedIn(tab.id)}</em>` : ''}</button>`).join('')}</nav>`;
+  const quick = conf.recipes.filter(recipe => ['coa-recommended', 'fresh-level-1'].includes(recipe.id));
+  const recipes = quick.length ? `<div class="recipes">${quick.map(recipe => `<button class="recipe" data-action="conf-recipe" data-id="${esc(recipe.id)}"><strong>${esc(loc(recipe.title))}</strong><small>${esc(loc(recipe.summary))}</small></button>`).join('')}</div>` : '';
+  const body = groups.filter(group => group.id === App.state.confGroup).map(group => `<section class="conf-group"><h3>${icon(group.icon)}${esc(loc(group.label))}</h3>${group.id === 'population' ? recipes : ''}${conf.settings.filter(setting => setting.group === group.id).map(setting => {
     const warn = warnings(setting.key);
     const changed = App.state.pending[pendingKey(setting.file, setting.key)] !== undefined;
     return `<div class="conf-row${changed ? ' changed' : ''}"><div class="conf-label"><strong>${esc(loc(setting.label))}</strong><p>${esc(loc(setting.help))}</p><small class="when">${icon('refresh')}${esc(loc(conf.when?.[setting.when]))}</small><div class="conf-warn" data-warn="${esc(setting.key)}" ${warn.length ? '' : 'hidden'}>${icon('info')}<span>${esc(warn.join(' '))}</span></div></div><div class="conf-control">${control(setting)}</div></div>`;
   }).join('')}</section>`).join('');
-  // The actions asked about most, above the settings.
-  const info = App.state.server || {};
-  const tools = `<div class="conf-tools">${info.bots?.installed && info.canPurgeBots ? `<div class="line-action">${icon('bot')}<span>${esc(t('conf.purgeHint', 'Recreate the random bots (after changing their number, classes or levels): your characters stay. The server must be stopped.'))}</span><button class="button ghost small" data-action="purge-bots" ${worldRunning(info) ? 'disabled' : ''}>${esc(t('server.purge', 'Recreate the bots'))}</button>${worldRunning(info) ? `<small class="muted purge-stop">${esc(t('server.purgeStop', 'Stop the server first.'))}</small>` : ''}</div>` : ''}<div class="line-action">${icon('book')}<span>${esc(t('conf.logsHint', 'The server logs (Server.log, errors, bots): the console scrolls too fast, these files keep everything.'))}</span><button class="button ghost small" data-action="open-logs">${esc(t('conf.openLogs', 'Open the logs'))}</button></div></div>`;
-  return `${tools}${bar}${recipes}${body}`;
+  return `${bar}<div class="conf-layout">${nav}<div class="conf-pane">${body}</div></div>`;
 }
 
 function patchConfBar() {
   const holder = document.createElement('div');
   holder.innerHTML = settingsView();
   $('#conf-bar')?.replaceWith(holder.querySelector('#conf-bar'));
+  $('#conf-nav')?.replaceWith(holder.querySelector('#conf-nav'));
   for (const element of $$('[data-warn]')) {
     const list = warnings(element.dataset.warn);
     element.hidden = !list.length;
@@ -357,7 +368,7 @@ App.pages.server = {
     if (!info) return `<div class="page server">${skeleton(6)}</div>`;
     if (info.error) return `<div class="page server">${emptyState('warning', t('server.error', 'The server panel is unavailable'), info.error)}</div>`;
     if (!info.path && s.srvTab !== 'install') s.srvTab = 'install';
-    const tabs = `<nav class="subtabs">${SRV_TABS.filter(([id]) => id !== 'settings' || info.path).map(([id, iconName, key, fallback]) => `<button class="subtab${s.srvTab === id ? ' active' : ''}" data-action="srv-tab" data-id="${id}" ${!info.path && id !== 'install' ? 'disabled' : ''}>${icon(iconName)}<span>${esc(t(key, fallback))}</span>${id === 'settings' && Object.keys(s.pending).length ? `<em>${Object.keys(s.pending).length}</em>` : ''}${(id === 'upgrade' && s.updates.core) || (id === 'install' && s.updates.bots) ? '<i class="dot"></i>' : ''}</button>`).join('')}</nav>`;
+    const tabs = `<nav class="subtabs">${SRV_TABS.filter(([id]) => id !== 'settings' || info.path).map(([id, iconName, key, fallback]) => `<button class="subtab${s.srvTab === id ? ' active' : ''}" data-action="srv-tab" data-id="${id}" ${!info.path && id !== 'install' ? 'disabled' : ''}>${icon(iconName)}<span>${esc(t(key, fallback))}</span>${id === 'settings' && Object.keys(s.pending).length ? `<em>${Object.keys(s.pending).length}</em>` : ''}${id === 'settings' && isNew('settings') ? newDot() : ''}${(id === 'upgrade' && s.updates.core) || (id === 'install' && s.updates.bots) ? '<i class="dot"></i>' : ''}</button>`).join('')}</nav>`;
     const view = { services: servicesView, install: installView, backups: backupsView, upgrade: upgradeView, modules: modulesView, settings: settingsView }[s.srvTab];
     return `<div class="page server"><div class="page-head"><div><span class="eyebrow">${esc(t('server.eyebrow', 'On this PC'))}</span><h1>${esc(t('server.title', 'Local server'))}</h1></div></div>${updateBanner()}${tabs}<div class="srv-body">${view(info)}</div></div>`;
   },
@@ -444,7 +455,9 @@ document.addEventListener('submit', event => {
 });
 
 Object.assign(App.actions, {
+  'conf-group': button => { App.state.confGroup = button.dataset.id; App.refresh('server'); $('#view')?.scrollTo({ top: 0 }); },
   'srv-tab': button => guard(async () => {
+    if (button.dataset.id === 'settings') markSeen('settings');
     const s = App.state;
     if (s.srvTab === 'settings' && button.dataset.id !== 'settings' && Object.keys(s.pending).length && !(await confirmDialog({ title: t('conf.unsaved', 'Unsaved changes'), body: esc(t('conf.unsavedBody', 'Discard the changes that are not saved?')), confirm: t('conf.discard', 'Discard'), danger: true }))) return;
     if (button.dataset.id !== 'settings') s.pending = {};

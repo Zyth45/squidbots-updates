@@ -7,6 +7,17 @@ const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const loc = value => (value && typeof value === 'object' ? value[I18N.lang] || value.en || '' : String(value ?? ''));
 
+// What's new: a red dot on the places a launcher update changed, until the player has opened them once.
+// Raise a number when its place changes again in a later launcher.
+const NEW_SPOTS = { modules: 1, settings: 1 };
+const seenSpots = () => { try { return JSON.parse(localStorage.getItem('seenSpots') || '{}'); } catch { return {}; } };
+const isNew = id => (NEW_SPOTS[id] || 0) > (seenSpots()[id] || 0);
+function markSeen(id) {
+  if (!isNew(id)) return;
+  try { localStorage.setItem('seenSpots', JSON.stringify({ ...seenSpots(), [id]: NEW_SPOTS[id] })); } catch {}
+}
+const newDot = () => `<i class="dot" title="${esc(t('common.new', 'New'))}"></i>`;
+
 const App = {
   api: window.launcher,
   state: {
@@ -26,8 +37,8 @@ const App = {
     const rightTabs = [['server', 'layers', t('tab.manage', 'Management')], ['console', 'terminal', t('tab.console', 'Console')]];
     if (App.state.config.edition === 'server' && ![...serverTabs, ...rightTabs].some(([id]) => id === App.state.tab)) App.state.tab = 'home';
     $('#tabs').innerHTML = (App.state.config.edition === 'server' ? serverTabs : [['play', 'play', t('tab.play', 'Play')], ...(isClassic() && App.state.config.game.hasAddons ? [['addons', 'addons', t('addon.title', 'Addons')]] : []), ...(App.state.config.server ? [['server', 'layers', t('tab.server', 'Local server')]] : [])]
-      ).map(([id, iconName, label]) => `<button class="tab${App.state.tab === id ? ' active' : ''}" data-tab="${id}">${icon(iconName)}<span>${esc(label)}</span>${(id === 'server' || id === 'home') && hasUpdates() && !(App.state.config.edition === 'server' && id === 'server') ? `<i class="dot" title="${esc(t('updates.dot', 'A new version is available'))}"></i>` : ''}</button>`).join('');
-    $('#tabs-right').innerHTML = App.state.config.edition === 'server' ? rightTabs.map(([id, iconName, label]) => `<button class="tab${App.state.tab === id ? ' active' : ''}" data-tab="${id}">${icon(iconName)}<span>${esc(label)}</span></button>`).join('') : '';
+      ).map(([id, iconName, label]) => `<button class="tab${App.state.tab === id ? ' active' : ''}" data-tab="${id}">${icon(iconName)}<span>${esc(label)}</span>${(id === 'server' || id === 'home') && hasUpdates() && !(App.state.config.edition === 'server' && id === 'server') ? `<i class="dot" title="${esc(t('updates.dot', 'A new version is available'))}"></i>` : id === 'modules' && isNew('modules') ? newDot() : ''}</button>`).join('');
+    $('#tabs-right').innerHTML = App.state.config.edition === 'server' ? rightTabs.map(([id, iconName, label]) => `<button class="tab${App.state.tab === id ? ' active' : ''}" data-tab="${id}">${icon(iconName)}<span>${esc(label)}</span>${id === 'server' && isNew('settings') ? newDot() : ''}</button>`).join('') : '';
     const banner = $('#launcher-banner');
     if (banner) banner.innerHTML = App.state.config.edition === 'server' && typeof launcherBanner === 'function' ? launcherBanner() : '';
     const page = App.pages[App.state.tab];
@@ -36,7 +47,7 @@ const App = {
     page.mount?.();
   },
   refresh(tab) { if (!tab || App.state.tab === tab || (tab === 'play' && App.state.tab === 'addons') || (tab === 'server' && App.state.tab === 'home')) App.render(); },
-  go(tab) { App.state.tab = tab; if (tab === 'dash') App.state.dashFresh = false; if (tab === 'modules') App.state.modulesFresh = false; App.render(); if (tab === 'home' && typeof refreshLive === 'function') refreshLive(); },
+  go(tab) { App.state.tab = tab; if (tab === 'dash') App.state.dashFresh = false; if (tab === 'modules') { App.state.modulesFresh = false; markSeen('modules'); } App.render(); if (tab === 'home' && typeof refreshLive === 'function') refreshLive(); },
 };
 window.App = App;
 

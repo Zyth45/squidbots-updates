@@ -755,6 +755,7 @@ function registerIpc() {
     squidbots: 'https://github.com/Zyth45/mod-playerbots',
     multirace: 'https://github.com/ilusixn/azerothcore-wotlk-coa',
     ahbot: 'https://github.com/NathanHandley/mod-ah-bot-plus',
+    core: 'https://github.com/jealous-sound/azerothcore-wotlk-coa',
     botsHelp: 'https://zyth45.github.io/mod-playerbots/',
   };
   handle('source:open', async id => { const link = SOURCES[text(id, 20)]; if (link) await shell.openExternal(link); });
