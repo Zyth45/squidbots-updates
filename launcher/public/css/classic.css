@@ -284,8 +284,8 @@ button.switch.on span { transform: translateX(20px); background: var(--accent); 
 .module-card.soon .module-credit { opacity: 1; }
 .modules-foot { margin-top: 14px; display: flex; align-items: center; gap: 4px; color: var(--faint); font-size: 12px; }
 /* The main view scrolls only in a small window, and without a visible bar. */
-#view { scrollbar-width: none; }
-#view::-webkit-scrollbar { width: 0; height: 0; }
+#view { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--accent) 55%, transparent) transparent; scrollbar-gutter: stable; }
+#view::-webkit-scrollbar { width: 8px; } #view::-webkit-scrollbar-track { background: transparent; } #view::-webkit-scrollbar-thumb { border-radius: 8px; background: color-mix(in srgb, var(--accent) 45%, transparent); border: 2px solid transparent; background-clip: padding-box; } #view::-webkit-scrollbar-thumb:hover { background-color: var(--accent); }
 /* No server yet: a more compact hero, so the page fits the window. */
 .classic-hero:not(.server-hero) { min-height: 0; padding-top: 26px; padding-bottom: 24px; }
 .classic-hero:not(.server-hero) .classic-main h1 { font-size: 40px !important; }
@@ -382,7 +382,7 @@ label.switch input:checked + span::after { background: #fff; }
 .module-card.soon .module-art { filter: saturate(.7); }
 .module-card.coming { opacity: .8; }
 /* Modules: every card the same height, the credit at the bottom. */
-.grid-2.modules { align-items: stretch; grid-auto-rows: 1fr; }
+.grid-2.modules { align-items: stretch; }
 .module-card .module-credit, .module-card > .module-credit:last-child { margin-top: auto; }
 /* Module credit: the author on the left, the source code on the right. */
 .module-card .module-credit { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: nowrap; }

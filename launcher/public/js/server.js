@@ -258,7 +258,7 @@ function modulesView() {
   if (!m) return skeleton(4);
   if (m.error) return emptyState('warning', t('modules.error', 'The modules cannot be read'), m.error);
   const r = m.multirace;
-  const stopFirst = m.worldRunning ? `<p class="muted small">${icon('info')}${esc(t('modules.stopFirst', 'Stop the server to switch a module: it is read when the server starts.'))}</p>` : '';
+  const stopFirst = m.worldRunning ? `<p class="module-note">${icon('info')}${esc(t('modules.stopFirst', 'Stop the server to switch a module: it is read when the server starts.'))}</p>` : '';
   const facts = [
     [r.core, r.core ? t('modules.coreYes', 'The core of this server knows the added races.') : t('modules.coreNo', 'The core of this server does not have the added races yet: a CoA Bots update will bring it.')],
     [r.dbc >= r.dbcNeeded, t('modules.dbc', 'Race data: {n} of {need} files in Data\\dbc_races.', { n: r.dbc, need: r.dbcNeeded })],
@@ -271,7 +271,7 @@ function modulesView() {
   return `<div class="grid-2 modules">
     <section class="panel module-card">${moduleArt('squidbots')}<header><h2>${icon('bot')}SquidBots</h2>${moduleSwitch('modules-squidbots', m.squidbots.enabled, m.worldRunning || !m.squidbots.installed)}</header>
       <p class="muted">${esc(t('modules.squidbotsText', 'The random bots and the group AI. Off, the server starts without them (your own characters are not changed).'))}</p>
-      <p class="small">${esc(m.squidbots.installed ? (m.squidbots.enabled ? t('modules.squidbotsOn', 'On: the server starts with the bots.') : t('modules.squidbotsOff', 'Off: the server starts without the bots.')) : t('modules.squidbotsMissing', 'CoA Bots is not installed in this server.'))}</p>${stopFirst}
+      ${m.squidbots.installed ? '' : `<p class="small">${esc(t('modules.squidbotsMissing', 'CoA Bots is not installed in this server.'))}</p>`}${stopFirst}
       ${moduleCredit('squidbots', 'SquidBots (Zyth45)')}
     </section>
     ${App.state.config.hasMultirace ? `<section class="panel module-card"><header><h2>${icon('user')}Multirace</h2>${moduleSwitch('modules-multirace', r.enabled, m.worldRunning || (!r.enabled && (!r.core || r.dbc < r.dbcNeeded)))}</header>
@@ -282,24 +282,24 @@ function modulesView() {
     </section>` : ''}
     <section class="panel module-card ${m.ahbot.available ? '' : 'soon'}">${moduleArt('ahbot')}<header><h2>${icon('coin')}${esc(t('modules.ahbot', 'Auction house'))}</h2>${moduleSwitch('modules-ahbot', m.ahbot.enabled, m.worldRunning || !m.ahbot.available)}</header>
       <p class="muted">${esc(t('modules.ahbotText2', 'Gavelgrin, an auctioneer with its own account, keeps about 3000 auctions of items you can get in game (up to level 60, nothing from TBC or WotLK) and buys what players sell. Its account is never removed when the bots are recreated.'))}</p>
-      <p class="small">${esc(!m.ahbot.available ? t('modules.ahbotSoon', 'Available with CoA Bots 2.5.') : m.ahbot.enabled ? t('modules.ahbotOn2', 'On.') : t('modules.multiraceOff', 'Off.'))}</p>${m.ahbot.available ? stopFirst : ''}
+      ${m.ahbot.available ? '' : ''}${m.ahbot.available ? stopFirst : ''}
       ${m.ahbot.available ? `<div class="button-row module-actions"><button class="button ghost small" data-action="modules-ahbot-empty" ${m.worldRunning ? '' : `disabled title="${esc(t('modules.ahbotEmptyStopped', 'Start the server to empty the auction house.'))}"`}>${icon('trash')}${esc(t('modules.ahbotEmpty', 'Empty the auction house'))}</button>${m.worldRunning ? '' : `<small class="muted">${esc(t('modules.ahbotEmptyStopped', 'Start the server to empty the auction house.'))}</small>`}</div>` : ''}
       ${moduleCredit('ahbot', 'Nathan Handley')}
     </section>
     <section class="panel module-card soon coming">${moduleArt('squidchat')}<header><h2>${icon('chat')}SquidChat</h2><span class="pill info">${esc(t('modules.comingSoon', 'Coming soon'))}</span></header>
       <p class="muted">${esc(t('modules.squidchatText', 'Your server will never be quiet again: bots chat, cheer the good loot, laugh at the wipes and have an opinion on everything. Even on Jealous.'))}</p>
-      <ul class="module-facts">${[t('modules.iatalkBank', 'A bank of lines written in advance: it works without any AI.'), t('modules.iatalkAi', 'Optional AI for the answers: Ollama on this PC or on your network, or an online service with your own key and a daily cap.')].map(text => `<li class="ok">${icon('check')}<span>${esc(text)}</span></li>`).join('')}</ul>
+      <ul class="module-facts">${[t('modules.iatalkBank', 'A bank of lines written in advance.'), t('modules.iatalkAi', 'Optional AI for the answers: Ollama on this PC or on your network, or an online service with your own key and a daily cap.')].map(text => `<li class="ok">${icon('check')}<span>${esc(text)}</span></li>`).join('')}</ul>
       <p class="module-credit">${esc(t('modules.by', 'By {author}', { author: 'SquidBots (Zyth45)' }))}</p>
     </section>
     <section class="panel module-card ${m.rotation?.available ? '' : 'soon'}">${moduleArt('rotation')}<header><h2>${icon('refresh')}${esc(t('modules.rotation', 'Rotation assistant'))}</h2>${moduleSwitch('modules-rotation', !!(m.rotation?.available && m.rotation.enabled), m.worldRunning || !m.rotation?.available)}</header>
       <p class="muted">${esc(t('modules.rotationText', 'One button that casts the next spell of your rotation for you.'))}</p>
-      <p class="small">${esc(!m.rotation?.available ? t('modules.ahbotSoon', 'Available with CoA Bots 2.5.') : m.rotation.enabled ? t('modules.ahbotOn2', 'On.') : t('modules.multiraceOff', 'Off.'))}</p>${m.rotation?.available ? stopFirst : ''}
+      ${m.rotation?.available ? '' : ''}${m.rotation?.available ? stopFirst : ''}
       <p class="module-note">${icon('info')}${esc(t('modules.newModule', 'New module, not tried with the bots yet: feedback is welcome.'))}</p>
       ${moduleCredit('core', 'Conquest of Azeroth (core)')}
     </section>
     <section class="panel module-card ${m.manastorm?.available ? '' : 'soon'}">${moduleArt('manastorm')}<header><h2>${icon('play')}Manastorm Endless</h2>${moduleSwitch('modules-manastorm', !!m.manastorm?.enabled, m.worldRunning || !m.manastorm?.available)}</header>
       <p class="muted">${esc(t('modules.manastormText', 'Endless runs of Manastorm rooms, with its native window in game. Every player needs the updated client files of Manastorm.'))}</p>
-      <p class="small">${esc(!m.manastorm?.available ? t('modules.ahbotSoon', 'Available with CoA Bots 2.5.') : m.manastorm.enabled ? t('modules.ahbotOn2', 'On.') : t('modules.multiraceOff', 'Off.'))}</p>${m.manastorm?.available ? stopFirst : ''}
+      ${m.manastorm?.available ? '' : ''}${m.manastorm?.available ? stopFirst : ''}
       ${m.manastorm?.available && App.state.feed?.manastormClient ? `<div class="button-row module-actions"><button class="button ghost small" data-action="manastorm-files">${icon('download')}${esc(t('modules.manastormFiles', 'Client files'))}</button></div>` : ''}
       <p class="module-note">${icon('info')}${esc(t('modules.newModule', 'New module, not tried with the bots yet: feedback is welcome.'))}</p>
       ${moduleCredit('core', 'Conquest of Azeroth (core)')}
