@@ -34,3 +34,14 @@ test('the state of a repack: available, current, unsupported, cut', () => {
   assert.equal(status(repack('main-20261011-a543922b', true), clean).state, 'cut');
   assert.equal(status(repack('main-20261011-a543922b'), null).state, 'none');
 });
+
+test('a part listed for older releases is left out for a server that already has it', () => {
+  const maps = { url: 'https://github.com/x/y/releases/download/v2.6/maps-1.zip', sha256: 'b'.repeat(64), size: 1000, from: ['main-20261011-a543922b'] };
+  const always = { url: 'https://github.com/x/y/releases/download/v2.6/more.zip', sha256: 'c'.repeat(64), size: 5 };
+  const clean = cleanManifest({ ...manifest, from: ['main-20261011-a543922b', 'main-20261018-0ab739f5'], package: { ...manifest.package, parts: [maps, always] } });
+  const old = status(repack('main-20261011-a543922b'), clean);
+  assert.equal(old.state, 'available');
+  assert.equal(old.manifest.package.parts.length, 2);
+  const recent = status(repack('main-20261018-0ab739f5'), clean);
+  assert.deepEqual(recent.manifest.package.parts.map(part => part.size), [5]);
+});

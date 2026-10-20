@@ -405,3 +405,17 @@ label.switch input:checked + span::after { background: #fff; }
 .module-art text { font-family: var(--body); letter-spacing: .01em; }
 :root .conf-bar .spacer { flex: 1; order: 0; }
 .conf-group > .recipes { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 6px; }
+
+/* Three tabs at the left edge, three before the window buttons, the emblem at the centre of the window; the settings
+   cog sits in the empty corner under the window buttons. Explicit row and columns, whatever the order of the page. */
+:root[data-theme="classic"] .topbar { grid-template-columns: minmax(0, 1fr) 212px minmax(0, 1fr); column-gap: 0; }
+:root[data-theme="classic"] .topbar > * { grid-row: 1; }
+:root[data-theme="classic"] .topbar > .tabs { grid-column: 1; justify-self: start; }
+:root[data-theme="classic"] .topbar > .tabs-right { grid-column: 3; justify-self: end; margin-right: 118px; }
+:root[data-theme="classic"] .topbar > .window-buttons { grid-column: 3; justify-self: end; }
+:root[data-theme="classic"] .topbar > #settings-button { position: fixed; top: 70px; right: 24px; z-index: 7; }
+:root[data-theme="classic"] .tabs .tab, :root[data-theme="classic"] .tabs-right .tab { padding-left: 8px; padding-right: 8px; letter-spacing: .04em; font-size: 12px; }
+@media (max-width: 1150px) {
+  :root[data-theme="classic"] .tabs .tab .icon, :root[data-theme="classic"] .tabs-right .tab .icon { display: none; }
+  :root[data-theme="classic"] .tabs .tab, :root[data-theme="classic"] .tabs-right .tab { padding-left: 8px; padding-right: 8px; }
+}

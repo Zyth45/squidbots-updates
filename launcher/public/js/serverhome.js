@@ -387,8 +387,10 @@ setTimeout(refreshLive, 1500);
 App.state.consoleLog = [];
 const CONSOLE_QUICK = ['server info', 'account onlinelist', 'saveall', 'playerbots rndbot stats'];
 function consoleView() {
-  const log = App.state.consoleLog.map(entry => `<div class="console-entry"><code class="console-cmd">AC&gt; ${esc(entry.command)}</code><pre class="${entry.error ? 'bad' : ''}">${esc(entry.output)}</pre></div>`).join('');
-  return `<div class="page classic"><section class="panel console-panel">
+  const log = App.state.consoleLog.map(entry => `<div class="console-entry"><code class="console-cmd">${entry.realm ? realmEmblem(entry.realm, 16) : ''}AC&gt; ${esc(entry.command)}</code><pre class="${entry.error ? 'bad' : ''}">${esc(entry.output)}</pre></div>`).join('');
+  const realm = App.state.consoleRealm || 'coa';
+  if (!App.state.realms && App.state.server?.path) loadRealms();
+  return `<div class="page classic">${realmPicker(realm, 'console-realm')}${createdRealms().length > 1 ? realmBanner(realm, t('realms.consoleOn', 'The commands go to this realm only.')) : ''}<section class="panel console-panel">
     <header><h2>${icon('terminal')}${esc(t('console.title', 'World console'))}</h2><div class="button-row">${CONSOLE_QUICK.map(command => `<button class="button ghost small" data-action="console-quick" data-command="${esc(command)}">${esc(command)}</button>`).join('')}</div></header>
     <p class="muted small">${esc(t('console.hint', 'The server commands, as in World_Console.bat (the worldserver must run). Up and down arrows bring back the last commands.'))}</p>
     <div class="console-log" id="console-log">${log || `<p class="muted">${esc(t('console.empty', 'Type a command below, for example server info.'))}</p>`}</div>
@@ -403,10 +405,11 @@ async function consoleSend(command) {
   if (/^\.?server (shutdown|restart)/i.test(command) && !(await confirmDialog({ title: t('console.stopTitle', 'Stop the server?'), body: esc(t('console.stopBody', 'This command stops the worldserver for everyone connected.')), confirm: t('console.stopConfirm', 'Send it'), danger: true }))) return;
   consoleHistory = [command, ...consoleHistory.filter(item => item !== command)].slice(0, 30);
   consoleIndex = -1;
-  const entry = { command, output: t('console.waiting', '…') };
+  const realm = App.state.consoleRealm && App.state.consoleRealm !== 'coa' ? App.state.consoleRealm : '';
+  const entry = { command, output: t('console.waiting', '…'), realm: realm || 'coa' };
   App.state.consoleLog = [...App.state.consoleLog, entry].slice(-60);
   App.render();
-  try { entry.output = (await App.api.consoleRun(command)) || t('console.noOutput', '(no answer)'); }
+  try { entry.output = (await App.api.consoleRun(command, realm)) || t('console.noOutput', '(no answer)'); }
   catch (error) { entry.output = translateError(error.message); entry.error = true; }
   if (App.state.tab === 'console') App.render();
 }

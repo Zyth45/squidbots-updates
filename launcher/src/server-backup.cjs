@@ -67,7 +67,9 @@ class ServerBackup {
 
   async databases(includeWorld) {
     const present = new Set(await this.query('SHOW DATABASES'));
-    return [...DATABASES, ...(includeWorld ? OPTIONAL : [])].filter(name => present.has(name));
+    // The extra realms of the launcher (Wildcard, Reborn) have their own characters and bots databases.
+    const realms = [...present].filter(name => /^acore_(characters|playerbots)_(wildcard|reborn)$/.test(name)).sort();
+    return [...DATABASES, ...realms, ...(includeWorld ? OPTIONAL : [])].filter(name => present.has(name));
   }
 
   async exclusive(work) {

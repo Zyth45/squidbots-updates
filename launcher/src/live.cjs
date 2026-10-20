@@ -23,8 +23,11 @@ function raSettings(root) {
 const LINGER = 10 * 60 * 1000;
 const openOn = new Map();
 const raOpen = root => (openOn.get(root) || 0) > 0;
-function raCommand(root, command, timeout = 15000) {
-  const { port, user, password } = raSettings(root);
+// portOverride: the RA port of another realm of the same server (same RA account, shared auth database).
+function raCommand(root, command, timeout = 15000, portOverride = 0) {
+  const { port: own, user, password } = raSettings(root);
+  const port = Number(portOverride) || own;
+  if (portOverride) root = `${root}|${port}`;
   return new Promise((resolve, reject) => {
     const socket = net.connect({ host: '127.0.0.1', port });
     openOn.set(root, (openOn.get(root) || 0) + 1);

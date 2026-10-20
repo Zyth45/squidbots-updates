@@ -58,8 +58,11 @@ if (bytes >= LIMIT) throw new Error(`${zipName} is ${bytes} bytes: GitHub takes 
 const sha256 = await sha256Of(zip);
 
 // --part <zip> (repeatable): more zips of the same package, each holding the same CoA-Update-x folder at its top.
+// --part <zip>=<release>,<release>: a part only the servers on these releases download (launcher 0.3.32 or newer).
 const parts = [];
-for (const partSource of args.part || []) {
+for (const partArg of args.part || []) {
+  const [partSource, fromList] = partArg.split('=');
+  const partFrom = fromList ? fromList.split(',').map(item => item.trim()).filter(Boolean) : null;
   const listing = execFileSync(tar, ['-tf', partSource], { maxBuffer: 256 << 20 }).toString().split(/\r?\n/).filter(Boolean);
   if (!listing.length || listing.some(entry => entry.split('/')[0] !== name)) throw new Error(`${path.basename(partSource)} must hold only the ${name} folder at its top.`);
   const partName = path.basename(partSource);
@@ -67,7 +70,7 @@ for (const partSource of args.part || []) {
   if (path.resolve(target) !== path.resolve(partSource)) fs.copyFileSync(partSource, target);
   const size = fs.statSync(target).size;
   if (size >= LIMIT) throw new Error(`${partName} is ${size} bytes: GitHub takes files under 2 GiB.`);
-  parts.push({ name: partName, file: target, size, sha256: await sha256Of(target) });
+  parts.push({ name: partName, file: target, size, sha256: await sha256Of(target), from: partFrom });
 }
 
 // --channel beta: signed as a beta and served from the fixed "beta" pre-release (testers only).
@@ -87,7 +90,7 @@ const manifest = {
   ...(Number(spec.diskBytes) > 0 ? { diskBytes: Number(spec.diskBytes) } : {}),
   // The oldest launcher that can install this package (a newer one is asked for first).
   ...((args['min-launcher'] || spec.minLauncher) ? { minLauncher: String(args['min-launcher'] || spec.minLauncher) } : {}),
-  package: { url: fileUrl(zipName), sha256, size: bytes, folder: name, ...(parts.length ? { parts: parts.map(part => ({ url: fileUrl(part.name), sha256: part.sha256, size: part.size })) } : {}) },
+  package: { url: fileUrl(zipName), sha256, size: bytes, folder: name, ...(parts.length ? { parts: parts.map(part => ({ url: fileUrl(part.name), sha256: part.sha256, size: part.size, ...(part.from ? { from: part.from } : {}) })) } : {}) },
 };
 await writeSigned(path.join(out, 'update.json'), manifest, loadPrivateKey(args.key));
 console.log(`Update ${spec.version} (${spec.targetRelease}) ready in ${out}: ${zipName} ${(bytes / 1048576).toFixed(1)} MB, sha256 ${sha256.slice(0, 16)}…, from ${spec.fromReleases.length} release(s).`);

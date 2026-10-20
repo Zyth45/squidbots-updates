@@ -9,7 +9,7 @@ const loc = value => (value && typeof value === 'object' ? value[I18N.lang] || v
 
 // What's new: a red dot on the places a launcher update changed, until the player has opened them once.
 // Raise a number when its place changes again in a later launcher.
-const NEW_SPOTS = { modules: 1, settings: 1 };
+const NEW_SPOTS = { modules: 1, settings: 1, realms: 1 };
 const seenSpots = () => { try { return JSON.parse(localStorage.getItem('seenSpots') || '{}'); } catch { return {}; } };
 const isNew = id => (NEW_SPOTS[id] || 0) > (seenSpots()[id] || 0);
 function markSeen(id) {
@@ -32,12 +32,12 @@ const App = {
   pages: {},
   render() {
     if (App.state.tab === 'addons' && !isClassic()) App.state.tab = 'play';
-    // Server edition: Home, Modules, Verification on the left of the crest; Management and Console on its right.
-    const serverTabs = [['home', 'home', t('tab.home', 'Home')], ['modules', 'addons', t('tab.modules', 'Modules')], ['verify', 'shield', t('tab.verify', 'Verification')]];
-    const rightTabs = [['server', 'layers', t('tab.manage', 'Management')], ['console', 'terminal', t('tab.console', 'Console')]];
+    // Server edition: Home, Realms, Modules on the left of the crest; Verification, Management and Console on its right.
+    const serverTabs = [['home', 'home', t('tab.home', 'Home')], ...(App.state.realms?.available ? [['realms', 'globe', t('tab.realms', 'Realms')]] : []), ['modules', 'addons', t('tab.modules', 'Modules')]];
+    const rightTabs = [['verify', 'shield', t('tab.verify', 'Verification')], ['server', 'layers', t('tab.manage', 'Management')], ['console', 'terminal', t('tab.console', 'Console')]];
     if (App.state.config.edition === 'server' && ![...serverTabs, ...rightTabs].some(([id]) => id === App.state.tab)) App.state.tab = 'home';
     $('#tabs').innerHTML = (App.state.config.edition === 'server' ? serverTabs : [['play', 'play', t('tab.play', 'Play')], ...(isClassic() && App.state.config.game.hasAddons ? [['addons', 'addons', t('addon.title', 'Addons')]] : []), ...(App.state.config.server ? [['server', 'layers', t('tab.server', 'Local server')]] : [])]
-      ).map(([id, iconName, label]) => `<button class="tab${App.state.tab === id ? ' active' : ''}" data-tab="${id}">${icon(iconName)}<span>${esc(label)}</span>${(id === 'server' || id === 'home') && hasUpdates() && !(App.state.config.edition === 'server' && id === 'server') ? `<i class="dot" title="${esc(t('updates.dot', 'A new version is available'))}"></i>` : id === 'modules' && isNew('modules') ? newDot() : ''}</button>`).join('');
+      ).map(([id, iconName, label]) => `<button class="tab${App.state.tab === id ? ' active' : ''}" data-tab="${id}">${icon(iconName)}<span>${esc(label)}</span>${(id === 'server' || id === 'home') && hasUpdates() && !(App.state.config.edition === 'server' && id === 'server') ? `<i class="dot" title="${esc(t('updates.dot', 'A new version is available'))}"></i>` : (id === 'modules' && isNew('modules')) || (id === 'realms' && isNew('realms')) ? newDot() : ''}</button>`).join('');
     $('#tabs-right').innerHTML = App.state.config.edition === 'server' ? rightTabs.map(([id, iconName, label]) => `<button class="tab${App.state.tab === id ? ' active' : ''}" data-tab="${id}">${icon(iconName)}<span>${esc(label)}</span>${id === 'server' && isNew('settings') ? newDot() : ''}</button>`).join('') : '';
     const banner = $('#launcher-banner');
     if (banner) banner.innerHTML = App.state.config.edition === 'server' && typeof launcherBanner === 'function' ? launcherBanner() : '';

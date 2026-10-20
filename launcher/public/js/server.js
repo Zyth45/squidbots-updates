@@ -199,10 +199,14 @@ function appendLog(line) {
 
 // ---------------------------------------------------------------- bot settings
 async function loadConf() {
-  try { App.state.conf = await App.api.serverSettings(); }
+  if (!App.state.realms && typeof loadRealms === 'function') loadRealms();
+  try { App.state.conf = await App.api.serverSettings(confRealm()); }
   catch (error) { App.state.conf = { error: translateError(error.message) }; }
   App.refresh('server');
 }
+
+// The realm the settings page works on: '' is Conquest of Azeroth (the files of the repack).
+const confRealm = () => (App.state.confRealm && App.state.confRealm !== 'coa' ? App.state.confRealm : '');
 
 function confValue(setting) {
   const pending = App.state.pending[pendingKey(setting.file, setting.key)];
@@ -219,7 +223,7 @@ function warnings(key) {
 
 function control(setting) {
   const value = confValue(setting);
-  const attrs = `data-conf-file="${esc(setting.file)}" data-conf-key="${esc(setting.key)}" data-conf-kind="${esc(setting.kind)}"`;
+  const attrs = `data-conf-file="${esc(setting.file)}" data-conf-key="${esc(setting.key)}" data-conf-kind="${esc(setting.kind)}"${setting.origin === 'mode' ? ' disabled' : ''}`;
   if (setting.kind === 'bool') return `<label class="switch"><input type="checkbox" ${attrs} ${String(value).trim() === '1' ? 'checked' : ''}><span></span></label>`;
   if (setting.kind === 'choice') return `<select ${attrs}>${setting.choices.map(choice => `<option value="${esc(choice.value)}" ${String(choice.value) === String(value).trim() ? 'selected' : ''}>${esc(loc(choice.label))}</option>`).join('')}</select>`;
   if (setting.kind === 'int' || setting.kind === 'float') return `<input class="num-input" type="number" ${setting.kind === 'float' ? 'step="any"' : 'step="1"'} value="${esc(value)}" ${attrs}>`;
@@ -230,6 +234,7 @@ function control(setting) {
 async function loadModules() {
   try { App.state.modules = await App.api.modulesStatus(); } catch (error) { App.state.modules = { error: translateError(error.message) }; }
   App.refresh('modules');
+  if (!App.state.realms && typeof loadRealms === 'function') loadRealms();
 }
 
 // The Modules tab of the top bar (second, so nobody misses it). Read again at each visit.
@@ -257,6 +262,9 @@ function modulesView() {
   const m = App.state.modules;
   if (!m) return skeleton(4);
   if (m.error) return emptyState('warning', t('modules.error', 'The modules cannot be read'), m.error);
+  // A realm picked above the modules: its own view (realms.js).
+  const modRealm = App.state.modRealm && App.state.modRealm !== 'coa' && createdRealms().some(realm => realm.key === App.state.modRealm) ? App.state.modRealm : '';
+  if (modRealm) return modulesRealmHead(modRealm) + realmModulesView(modRealm);
   const r = m.multirace;
   const stopFirst = m.worldRunning ? `<p class="module-note">${icon('info')}${esc(t('modules.stopFirst', 'Stop the server to switch a module: it is read when the server starts.'))}</p>` : '';
   const facts = [
@@ -268,7 +276,7 @@ function modulesView() {
     : ['yes', 'partial'].includes(r.client.state) ? `<button class="button ghost small" data-action="modules-client" data-on="0">${esc(t('modules.clientOff', 'Switch it off in my game'))}</button>` : '';
   // Where to get the patched client (link of the signed feed).
   const getClient = App.state.feed?.clientRaces && r.client.state !== 'yes' ? `<button class="button ghost small" data-action="feed-open" data-kind="clientRaces">${icon('download')}${esc(t('modules.getClient', 'Get the patched client'))}</button>` : '';
-  return `<div class="grid-2 modules">
+  return `${modulesRealmHead('coa')}<div class="grid-2 modules">
     <section class="panel module-card">${moduleArt('squidbots')}<header><h2>${icon('bot')}SquidBots</h2>${moduleSwitch('modules-squidbots', m.squidbots.enabled, m.worldRunning || !m.squidbots.installed)}</header>
       <p class="muted">${esc(t('modules.squidbotsText', 'The random bots and the group AI. Off, the server starts without them (your own characters are not changed).'))}</p>
       ${m.squidbots.installed ? '' : `<p class="small">${esc(t('modules.squidbotsMissing', 'CoA Bots is not installed in this server.'))}</p>`}${stopFirst}
@@ -316,9 +324,11 @@ function settingsView() {
   // The Lite version keeps the bot groups and the realm rates: the settings people actually change.
   const groups = conf.groups.filter(group => conf.settings.some(setting => setting.group === group.id));
   const info = App.state.server || {};
-  const purge = info.bots?.installed && info.canPurgeBots ? `<button class="button ghost small" data-action="purge-bots" ${worldRunning(info) ? `disabled title="${esc(t('server.purgeStop', 'Stop the server first.'))}"` : `title="${esc(t('conf.purgeHint', 'Recreate the random bots (after changing their number, classes or levels): your characters stay. The server must be stopped.'))}"`}>${icon('bot')}${esc(t('server.purge', 'Recreate the bots'))}</button>` : '';
+  const realmKey = conf.realm?.key || '';
+  const realmOn = realmKey && realmList().some(realm => realm.key === realmKey && realm.state === 'running');
+  const purge = realmKey ? `<button class="button ghost small" data-action="realm-purge" data-key="${realmKey}" ${realmOn ? 'disabled' : ''}>${icon('bot')}${esc(t('realms.purge', 'Recreate its bots'))}</button>` : info.bots?.installed && info.canPurgeBots ? `<button class="button ghost small" data-action="purge-bots" ${worldRunning(info) ? `disabled title="${esc(t('server.purgeStop', 'Stop the server first.'))}"` : `title="${esc(t('conf.purgeHint', 'Recreate the random bots (after changing their number, classes or levels): your characters stay. The server must be stopped.'))}"`}>${icon('bot')}${esc(t('server.purge', 'Recreate the bots'))}</button>` : '';
   const logs = `<button class="button ghost small" data-action="open-logs" title="${esc(t('conf.logsHint', 'The server logs (Server.log, errors, bots): the console scrolls too fast, these files keep everything.'))}">${icon('book')}${esc(t('conf.openLogs', 'Open the logs'))}</button>`;
-  const bar = `<div class="conf-bar${count ? ' dirty' : ''}" id="conf-bar"><span>${esc(count ? t('conf.pending', '{n} unsaved change(s)', { n: count }) : t('conf.savedShort', 'All saved.'))}</span><span class="spacer"></span>${count ? `<button class="button ghost small" data-action="conf-discard">${esc(t('conf.discard', 'Discard'))}</button><button class="button primary small" data-action="conf-save">${esc(t('common.save', 'Save'))}</button>${worldRunning(App.state.server) ? `<button class="button primary small" data-action="conf-save-restart">${esc(t('conf.saveRestart', 'Save and restart'))}</button>` : ''}` : `${logs}${purge}<button class="button ghost small" data-action="conf-history" title="${esc(t('conf.saved', 'Saved. A copy of each file is kept before any change.'))}">${icon('refresh')}${esc(t('conf.history', 'History'))}</button>`}</div>`;
+  const bar = `<div class="conf-bar${count ? ' dirty' : ''}" id="conf-bar"><span>${esc(count ? t('conf.pending', '{n} unsaved change(s)', { n: count }) : t('conf.savedShort', 'All saved.'))}</span><span class="spacer"></span>${count ? `<button class="button ghost small" data-action="conf-discard">${esc(t('conf.discard', 'Discard'))}</button><button class="button primary small" data-action="conf-save">${esc(t('common.save', 'Save'))}</button>${(realmKey ? realmOn : worldRunning(App.state.server)) ? `<button class="button primary small" data-action="conf-save-restart">${esc(t('conf.saveRestart', 'Save and restart'))}</button>` : ''}` : realmKey ? `<button class="button ghost small" data-action="realm-logs" data-key="${realmKey}">${icon('book')}${esc(t('conf.openLogs', 'Open the logs'))}</button>${purge}` : `${logs}${purge}<button class="button ghost small" data-action="conf-history" title="${esc(t('conf.saved', 'Saved. A copy of each file is kept before any change.'))}">${icon('refresh')}${esc(t('conf.history', 'History'))}</button>`}</div>`;
   const tabs = groups.map(group => ({ id: group.id, icon: group.icon, label: loc(group.label) }));
   if (!tabs.some(tab => tab.id === App.state.confGroup)) App.state.confGroup = tabs[0]?.id;
   const changedIn = id => conf.settings.filter(setting => setting.group === id && App.state.pending[pendingKey(setting.file, setting.key)] !== undefined).length;
@@ -328,9 +338,22 @@ function settingsView() {
   const body = groups.filter(group => group.id === App.state.confGroup).map(group => `<section class="conf-group"><h3>${icon(group.icon)}${esc(loc(group.label))}</h3>${group.id === 'population' ? recipes : ''}${conf.settings.filter(setting => setting.group === group.id).map(setting => {
     const warn = warnings(setting.key);
     const changed = App.state.pending[pendingKey(setting.file, setting.key)] !== undefined;
-    return `<div class="conf-row${changed ? ' changed' : ''}"><div class="conf-label"><strong>${esc(loc(setting.label))}</strong><p>${esc(loc(setting.help))}</p><small class="when">${icon('refresh')}${esc(loc(conf.when?.[setting.when]))}</small><div class="conf-warn" data-warn="${esc(setting.key)}" ${warn.length ? '' : 'hidden'}>${icon('info')}<span>${esc(warn.join(' '))}</span></div></div><div class="conf-control">${control(setting)}</div></div>`;
+    return `<div class="conf-row${changed ? ' changed' : ''}${setting.origin ? ` from-${setting.origin}` : ''}"><div class="conf-label"><strong>${esc(loc(setting.label))}</strong>${originTag(setting)}<p>${esc(loc(setting.help))}</p><small class="when">${icon('refresh')}${esc(loc(conf.when?.[setting.when]))}</small><div class="conf-warn" data-warn="${esc(setting.key)}" ${warn.length ? '' : 'hidden'}>${icon('info')}<span>${esc(warn.join(' '))}</span></div></div><div class="conf-control">${control(setting)}</div></div>`;
   }).join('')}</section>`).join('');
-  return `${bar}<div class="conf-layout">${nav}<div class="conf-pane">${body}</div></div>`;
+  const key = realmKey || 'coa';
+  const others = createdRealms().length > 1;
+  const banner = !others ? '' : realmBanner(key, realmKey
+    ? t('realms.confRealm', 'Values marked "as CoA" follow Conquest of Azeroth. Change one and it becomes this realm\'s own; the lock marks the rules of its game mode.')
+    : t('realms.confCoa', 'These values are also those of the other realms, except the ones a realm changes for itself.'));
+  return `${realmPicker(key, 'conf-realm')}${banner}${bar}<div class="conf-layout">${nav}<div class="conf-pane">${body}</div></div>`;
+}
+
+// Where a value of a realm comes from: Conquest of Azeroth, the realm itself (back to CoA in one click), or its mode.
+function originTag(setting) {
+  if (!setting.origin) return '';
+  if (setting.origin === 'mode') return `<span class="origin mode">${icon('key')}${esc(t('realms.fromMode', 'Set by the game mode'))}</span>`;
+  if (setting.origin === 'own') return `<span class="origin own">${esc(t('realms.fromRealm', 'This realm only'))}<button class="link-button" data-action="conf-reset" data-file="${esc(setting.file)}" data-key="${esc(setting.key)}">${icon('refresh')}${esc(t('realms.backToCoa', 'As CoA ({value})', { value: setting.coaValue }))}</button></span>`;
+  return `<span class="origin coa">${esc(t('realms.fromCoa', 'As CoA'))}</span>`;
 }
 
 function patchConfBar() {
@@ -455,6 +478,7 @@ document.addEventListener('submit', event => {
 });
 
 Object.assign(App.actions, {
+
   'conf-group': button => { App.state.confGroup = button.dataset.id; App.refresh('server'); $('#view')?.scrollTo({ top: 0 }); },
   'srv-tab': button => guard(async () => {
     if (button.dataset.id === 'settings') markSeen('settings');
@@ -657,6 +681,12 @@ Object.assign(App.actions, {
     App.state.oldCheck = null;
     App.refresh('server');
   }, button),
+  'conf-reset': button => guard(async () => {
+    await App.api.saveServerSettings([{ file: button.dataset.file, key: button.dataset.key, reset: true }], confRealm());
+    delete App.state.pending[pendingKey(button.dataset.file, button.dataset.key)];
+    toast(t('realms.resetDone', 'Back to the value of Conquest of Azeroth.'), 'success');
+    await loadConf();
+  }, button),
   'conf-save': button => guard(() => saveConf(false), button),
   'conf-save-restart': button => guard(() => saveConf(true), button),
   'conf-discard': () => { App.state.pending = {}; App.refresh('server'); },
@@ -679,10 +709,15 @@ Object.assign(App.actions, {
 });
 
 async function saveConf(restart) {
-  const result = await App.api.saveServerSettings(Object.values(App.state.pending));
+  const realm = confRealm();
+  const result = await App.api.saveServerSettings(Object.values(App.state.pending), realm);
   App.state.pending = {};
   toast(result.written.length ? t('conf.savedFiles', 'Saved in {files}.', { files: result.written.join(', ') }) : t('conf.nothing', 'Nothing changed.'), 'success');
-  if (restart) {
+  if (restart && realm) {
+    await App.api.realmsStop(realm);
+    await App.api.realmsStart(realm);
+    toast(t('realms.restarted', 'The realm restarted with the new settings.'), 'success');
+  } else if (restart) {
     App.state.server = await App.api.stopService('all');
     App.state.server = await App.api.startService('all');
     toast(t('conf.restarted', 'The server restarted with the new settings.'), 'success');

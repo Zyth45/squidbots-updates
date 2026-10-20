@@ -27,7 +27,9 @@ async function tailText(file, bytes = 2 * 1024 * 1024) {
     return buffer.toString('utf8');
   } finally { await handle.close(); }
 }
-const EXPECTED_DATA =new Set(['acore_auth', 'acore_characters', 'acore_world', 'acore_playerbots', 'mysql', 'performance_schema', 'sys']);
+const EXPECTED_DATA =new Set(['acore_auth', 'acore_characters', 'acore_world', 'acore_playerbots', 'mysql', 'performance_schema', 'sys',
+  // the databases of the launcher's extra realms (Realms tab)
+  'acore_characters_wildcard', 'acore_playerbots_wildcard', 'acore_characters_reborn', 'acore_playerbots_reborn']);
 const OLD_LFG_UPDATE = 'CoA-Bots/Database/world/updates/rev_20260925_50_lfg_wing_final_bosses.sql';
 
 // The worldserver process that runs, and when each of our exes started (Windows).

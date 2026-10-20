@@ -37,7 +37,9 @@ function cleanManifest(data) {
   // More zips when the package is too big for one file (each one holds the same CoA-Update-x folder).
   const parts = (Array.isArray(pkg.parts) ? pkg.parts : []).slice(0, 8).map(part => {
     if (!/^[0-9a-f]{64}$/.test(part?.sha256 || '') || !(part.size > 0) || !/^(https:\/\/|http:\/\/(127\.0\.0\.1|localhost)[:/])/.test(part.url || '')) throw new Error('The update list has an invalid package part.');
-    return { url: part.url, sha256: part.sha256, size: Number(part.size) };
+    // A part can say which installed releases need it (the maps of 2.5: only for a server older than 2.5).
+    const from = Array.isArray(part.from) ? part.from.filter(item => RELEASE.test(item)) : null;
+    return { url: part.url, sha256: part.sha256, size: Number(part.size), ...(from ? { from } : {}) };
   });
   return {
     version: text(data.version, 20),
@@ -71,7 +73,7 @@ function status(folder, manifest) {
   if (here.cut) return { state: 'cut', here, manifest };
   if (!manifest) return { state: 'none', here, manifest };
   if (here.release === manifest.release) return { state: 'current', here, manifest };
-  if (manifest.from.includes(here.release)) return { state: 'available', here, manifest };
+  if (manifest.from.includes(here.release)) return { state: 'available', here, manifest: forRelease(manifest, here.release) };
   // A tester on a beta newer than the stable version offered: nothing to do until a newer one comes.
   if (here.bots && compareVersions(here.bots, manifest.version) > 0) return { state: 'current', ahead: true, here, manifest };
   return { state: 'unsupported', here, manifest };
@@ -79,6 +81,12 @@ function status(folder, manifest) {
 
 // The update package: downloaded once into the launcher's cache, its fingerprint checked, then unpacked into the
 // repack (the zip holds one CoA-Update-x folder). An older copy of that folder is replaced.
+// The update as this server takes it: the parts it already has (listed for other releases only) are left out.
+function forRelease(manifest, release) {
+  if (!manifest?.package?.parts?.length) return manifest;
+  return { ...manifest, package: { ...manifest.package, parts: manifest.package.parts.filter(part => !part.from || part.from.includes(release)) } };
+}
+
 // The whole download (main zip and its parts), for the progress bar and the big update notice.
 const packageSize = manifest => manifest.package.size + (manifest.package.parts || []).reduce((sum, part) => sum + part.size, 0);
 
@@ -136,4 +144,4 @@ function runTool(folder, packageFolder, command, extra, onEvent) {
   });
 }
 
-module.exports = { cleanManifest, compareVersions, packageSize, installed, status, fetchPackage, unpack, runTool };
+module.exports = { cleanManifest, compareVersions, forRelease, packageSize, installed, status, fetchPackage, unpack, runTool };

@@ -12,7 +12,7 @@ const { readSettings, writeSettings } = require('./settings.cjs');
 const { ClientUpdater } = require('./client-updater.cjs');
 const { AddonManager } = require('./addons.cjs');
 const { requireGameClosed, configureRealmlist, realmlistStatus, launch } = require('./game.cjs');
-const { ServerControl } = require('./server-control.cjs');
+const { ServerControl, portOpen } = require('./server-control.cjs');
 const { ServerConfig } = require('./server-config.cjs');
 const { ServerBackup } = require('./server-backup.cjs');
 const { ServerUpgrade, inspect: inspectRepack, suggestFolder } = require('./server-upgrade.cjs');
@@ -32,6 +32,7 @@ const components = require('./components.cjs');
 const tweaks = require('./repack-tweaks.cjs');
 const live = require('./live.cjs');
 const modules = require('./modules.cjs');
+const realms = require('./realms.cjs');
 // The repack's own updates (squidbots-updates releases): the signed list, the run in progress, its last result.
 const update = { manifest: null, error: null, busy: false, phase: null, last: null };
 let feed = null;
@@ -647,9 +648,12 @@ function registerIpc() {
     const wasRunning = await serverControl()?.status().then(services => services.some(service => /world/i.test(service.id) && service.state === 'running')).catch(() => false);
     try {
       dashboard.stop();
-      phase('download', { total: repackUpdate.packageSize(update.manifest) });
+      // The extra realms use the same worldserver and MySQL: stopped before the update, started again after it.
+      await realms.stopAll(serverPath()).catch(() => {});
+      const wanted = repackUpdate.forRelease(update.manifest, state.here?.release);
+      phase('download', { total: repackUpdate.packageSize(wanted) });
       const controller = new AbortController();
-      const zip = await repackUpdate.fetchPackage(update.manifest, path.join(app.getPath('userData'), 'updates'), { fetchImpl: netFetch, signal: controller.signal, onBytes: have => send('update:event', { event: 'bytes', done: have, total: repackUpdate.packageSize(update.manifest) }) })
+      const zip = await repackUpdate.fetchPackage(wanted, path.join(app.getPath('userData'), 'updates'), { fetchImpl: netFetch, signal: controller.signal, onBytes: have => send('update:event', { event: 'bytes', done: have, total: repackUpdate.packageSize(wanted) }) })
         .catch(error => { throw Object.assign(new Error(error.message), { launcherCode: 'download' }); });
       phase('unpack');
       await repackUpdate.unpack(zip, folder, update.manifest.package.folder, (done, total) => send('update:event', { event: 'unpack', done, total })).catch(error => { throw Object.assign(new Error(error.message), { launcherCode: 'unpack' }); });
@@ -668,7 +672,7 @@ function registerIpc() {
       update.phase = null;
     }
     if (wasRunning && update.last && !update.last.code && !update.last.error) {
-      network.applyNetwork(folder).catch(() => {}).then(() => modules.keepRotationOff(folder)).then(() => quietLogs(folder)).then(() => requireControl().startAll()).catch(() => {});
+      network.applyNetwork(folder).catch(() => {}).then(() => modules.keepRotationOff(folder)).then(() => quietLogs(folder)).then(() => requireControl().startAll()).then(() => realms.startMarked(folder)).catch(() => {});
     }
     const state2 = repackUpdateState();
     send('update:state', state2);
@@ -838,11 +842,14 @@ function registerIpc() {
     return serverInfo();
   });
   handle('live:stats', () => (smokeDir && process.env.COA_SMOKE_LIVE ? JSON.parse(process.env.COA_SMOKE_LIVE) : serverPath() ? live.stats(serverPath()) : { running: false }));
-  handle('console:run', async command => {
+  handle('console:run', async (command, realm) => {
     if (!serverPath()) throw new Error('Choose the server folder first.');
     const line = text(command, 500).trim();
     if (!line || /[\r\n]/.test(line)) throw new Error('One command per line.');
-    return live.raCommand(serverPath(), line.replace(/^\./, ''), 30000);
+    // The console of another realm: its own RA port, same account.
+    const target = realms.MODES[text(realm, 12)] ? (await realms.status(serverPath(), { live: false })).realms.find(item => item.key === text(realm, 12)) : null;
+    if (target && target.state !== 'running') throw new Error('Start this realm first.');
+    return live.raCommand(serverPath(), line.replace(/^\./, ''), 30000, target?.raPort || 0);
   });
   // First click: the game folder (the one the bots installer used is offered), then the addon is copied.
   handle('addon:setup', async useSuggested => {
@@ -888,9 +895,58 @@ function registerIpc() {
     return serverInfo();
   });
   handle('repack:pause', () => { repackUpdater?.cancel(); bots?.updater.cancel(); });
-  handle('repack:start', async id => { await network.applyNetwork(serverPath()).catch(() => {}); await modules.keepRotationOff(serverPath()); await quietLogs(serverPath()); if (id === 'all') await requireControl().startAll(); else await requireControl().start(text(id, 30)); return serverInfo(); });
-  handle('repack:stop', async id => { if (id === 'all') await requireControl().stopAll(); else await requireControl().stop(text(id, 30)); return serverInfo(); });
+  handle('repack:start', async id => { await network.applyNetwork(serverPath()).catch(() => {}); await modules.keepRotationOff(serverPath()); await quietLogs(serverPath()); if (id === 'all') {
+      // CoA left out of "Start all" when the player chose so and a realm starts with the server: MySQL and the authserver only.
+      const skipCoa = await realms.skipCoaAtStart(serverPath()).catch(() => false);
+      try { if (skipCoa) { await requireControl().start('mysql'); await requireControl().start('auth'); } else await requireControl().startAll(); }
+      finally { realms.startMarked(serverPath()).catch(() => {}); }
+    } else await requireControl().start(text(id, 30)); return serverInfo(); });
+  handle('repack:stop', async id => { if (id === 'all' || id === 'world' || id === 'mysql') await realms.stopAll(serverPath()); if (id === 'all') await requireControl().stopAll(); else await requireControl().stop(text(id, 30)); return serverInfo(); });
   handle('repack:tail', id => requireControl().tail(text(id, 30)));
+  // ---- extra realms (Wildcard, Warcraft Reborn) beside the CoA realm: same MySQL, authserver and bot worldserver
+  // The CoA realm (the repack's own world) beside the extra ones, for the Realms page.
+  const coaRealm = async () => {
+    const world = (await requireControl().status()).find(service => /world/i.test(service.id));
+    const conf = await fs.readFile(path.join(serverPath(), 'CoA-Bots', 'Core', 'configs', 'modules', 'playerbots.conf'), 'utf8').catch(() => '');
+    const bots = Number(/^\s*AiPlayerbot\.MaxRandomBots\s*=\s*(\d+)/m.exec(conf)?.[1]);
+    const info = world?.state === 'running' ? await live.raCommand(serverPath(), 'server info', 6000).then(live.parseInfo).catch(() => null) : null;
+    return { id: 1, state: world?.state || 'stopped', worldPort: world?.port, bots: Number.isFinite(bots) ? bots : null, players: info?.players ?? null, autostart: await realms.coaAutostart(serverPath()) };
+  };
+  const realmsStatus = async () => { if (!serverPath()) throw new Error('Choose the server folder first.'); return { ...(await realms.status(serverPath())), coa: await coaRealm() }; };
+  // MySQL (and the authserver to log in) of the repack, started through its own scripts when needed.
+  const realmBase = async withAuth => { const c = requireControl(); await c.start('mysql'); if (withAuth) await c.start('auth'); };
+  handle('realms:status', realmsStatus);
+  handle('realms:create', async (key, options) => {
+    await realmBase(false);
+    await realms.create(serverPath(), text(key, 12), { bots: Number(options?.bots) || undefined, notify: line => send('realms:progress', line) });
+    if (options?.start === true) { await realmBase(true); await realms.start(serverPath(), text(key, 12)); }
+    return realmsStatus();
+  });
+  handle('realms:start', async key => {
+    await network.applyNetwork(serverPath()).catch(() => {});
+    await realmBase(true);
+    // The CoA realm alone (its own world through the repack's scripts), without the realms marked to start with the server.
+    if (text(key, 12) === 'coa') { if (await realms.anotherStarting(serverPath(), '')) throw new Error('A realm is starting: wait until it runs.'); await modules.keepRotationOff(serverPath()); await quietLogs(serverPath()); await requireControl().start('world'); }
+    else await realms.start(serverPath(), text(key, 12));
+    return realmsStatus();
+  });
+  handle('realms:stop', async key => {
+    if (text(key, 12) !== 'coa') { await realms.stop(serverPath(), text(key, 12)); return realmsStatus(); }
+    // The CoA world alone, by its console: MySQL and the authserver stay for the other realms (the repack's supervisor
+    // ends with its world). Stop all, on the home page, still stops everything.
+    const world = requireControl().services.find(service => /world/i.test(service.id));
+    await live.raCommand(serverPath(), 'server shutdown 1s 0', 20000).catch(() => {});
+    const deadline = Date.now() + 120000;
+    while (Date.now() < deadline && await portOpen(world.port)) await new Promise(resolve => setTimeout(resolve, 1000));
+    if (await portOpen(world.port)) throw new Error('The CoA world is still stopping; try Stop all on the home page.');
+    return realmsStatus();
+  });
+  handle('realms:modules', key => realms.modulesOf(serverPath(), text(key, 12)));
+  handle('realms:module', (key, id, state) => realms.setModule(serverPath(), text(key, 12), text(id, 20), text(state, 4)));
+  handle('realms:options', async (key, options) => { if (text(key, 12) === 'coa') { await realms.setCoaAutostart(serverPath(), options?.autostart === true); return realmsStatus(); } await realms.setOptions(serverPath(), text(key, 12), { autostart: options?.autostart, bots: options?.bots }); return realmsStatus(); });
+  handle('realms:purge', async key => { await realmBase(false); await realms.purgeBots(serverPath(), text(key, 12)); return realmsStatus(); });
+  handle('realms:disable', async (key, off) => { await realmBase(false); await realms.setDisabled(serverPath(), text(key, 12), off === true); return realmsStatus(); });
+  handle('realms:openLogs', async key => { const error = await shell.openPath(path.join(serverPath(), 'Royaumes', text(key, 12).replace(/[^a-z]/g, ''), 'Logs')); if (error) throw new Error(error); });
   handle('repack:account', (name, password, gm) => requireControl().createAccount(text(name, 20), text(password, 20), gm === true));
   // The server's logs (CoreLogs): the console scrolls too fast, the files keep everything.
   handle('repack:openLogs', async () => {
@@ -937,9 +993,12 @@ function registerIpc() {
   });
 
   // ---- settings of the server (.conf) ----
-  handle('srvconf:overview', () => serverTools().config.overview());
-  handle('srvconf:save', async changes => {
+  // A realm other than CoA: the same page, its values inherited from CoA, its own, or set by its game mode.
+  const realmKey = value => (realms.MODES[text(value, 12)] ? text(value, 12) : '');
+  handle('srvconf:overview', async realm => { const overview = await serverTools().config.overview(); return realmKey(realm) ? realms.settingsOf(serverPath(), realmKey(realm), overview) : overview; });
+  handle('srvconf:save', async (changes, realm) => {
     if (!Array.isArray(changes)) throw new Error('Nothing to save.');
+    if (realmKey(realm)) return realms.saveSettings(serverPath(), realmKey(realm), changes.slice(0, 200).map(change => ({ file: text(change?.file, 80), key: text(change?.key, 100), value: text(change?.value, 400), reset: change?.reset === true })));
     return serverTools().config.save(changes.slice(0, 500).map(change => ({ file: text(change?.file, 80), key: text(change?.key, 100), value: text(change?.value, 400), kind: text(change?.kind, 10) })));
   });
   handle('srvconf:backups', () => serverTools().config.backups());
@@ -952,6 +1011,7 @@ function registerIpc() {
   handle('backup:restore', async name => {
     await ensureMysql();
     const world = config.server.services.find(service => service.id === 'world');
+    await realms.stopAll(serverPath());
     return serverTools().backup.restore(text(name, 80), { worldPort: world?.port });
   });
   handle('backup:remove', name => serverTools().backup.remove(text(name, 80)));
