@@ -358,7 +358,7 @@ label.switch input:checked + span::after { background: #fff; }
 .home-account-form button { grid-column: 1 / -1; justify-self: end; }
 @media (max-width: 1100px) { .live-body { grid-template-columns: 1fr; } }
 /* Home: help and Discord above the server card, the patch note column narrower with its title inside. */
-.classic-hero > .news-links { position: absolute; top: -44px; right: 4px; display: flex; gap: 14px; }
+.classic-hero > .news-links { position: absolute; top: -44px; right: 56px; display: flex; gap: 14px; }
 .news-row > .news-links { justify-self: end; }
 .news-live { grid-template-columns: minmax(0, 300px) minmax(0, 1fr); }
 .news-art { position: relative; }

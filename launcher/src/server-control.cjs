@@ -215,8 +215,11 @@ class ServerControl {
     return (service.alternatives || []).find(item => fs.existsSync(path.join(this.root, item.exists)))?.label || '';
   }
 
+  // The worldserver applies the updates of the auth database too: the authserver starts once the world is up
+  // (an authserver of CoA Bots 2.6 stops at start when its new tables are not there yet).
   async startAll() {
-    for (const service of this.services) await this.start(service.id);
+    const order = [...this.services.filter(service => service.id !== 'auth'), ...this.services.filter(service => service.id === 'auth')];
+    for (const service of order) await this.start(service.id);
   }
 
   // Finds the process listening on a port and returns it only if it lives in the repack folder.

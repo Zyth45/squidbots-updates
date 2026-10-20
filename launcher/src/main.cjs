@@ -898,8 +898,9 @@ function registerIpc() {
   handle('repack:start', async id => { await network.applyNetwork(serverPath()).catch(() => {}); await modules.keepRotationOff(serverPath()); await quietLogs(serverPath()); if (id === 'all') {
       // CoA left out of "Start all" when the player chose so and a realm starts with the server: MySQL and the authserver only.
       const skipCoa = await realms.skipCoaAtStart(serverPath()).catch(() => false);
-      try { if (skipCoa) { await requireControl().start('mysql'); await requireControl().start('auth'); } else await requireControl().startAll(); }
-      finally { realms.startMarked(serverPath()).catch(() => {}); }
+      // The authserver after a worldserver: the world applies the updates of the auth database.
+      if (skipCoa) { await requireControl().start('mysql'); await realms.startMarked(serverPath()).catch(() => {}); await requireControl().start('auth'); }
+      else { try { await requireControl().startAll(); } finally { realms.startMarked(serverPath()).catch(() => {}); } }
     } else await requireControl().start(text(id, 30)); return serverInfo(); });
   handle('repack:stop', async id => { if (id === 'all' || id === 'world' || id === 'mysql') await realms.stopAll(serverPath()); if (id === 'all') await requireControl().stopAll(); else await requireControl().stop(text(id, 30)); return serverInfo(); });
   handle('repack:tail', id => requireControl().tail(text(id, 30)));
@@ -912,22 +913,29 @@ function registerIpc() {
     const info = world?.state === 'running' ? await live.raCommand(serverPath(), 'server info', 6000).then(live.parseInfo).catch(() => null) : null;
     return { id: 1, state: world?.state || 'stopped', worldPort: world?.port, bots: Number.isFinite(bots) ? bots : null, players: info?.players ?? null, autostart: await realms.coaAutostart(serverPath()) };
   };
-  const realmsStatus = async () => { if (!serverPath()) throw new Error('Choose the server folder first.'); return { ...(await realms.status(serverPath())), coa: await coaRealm() }; };
+  const realmsStatus = async () => {
+    // Screenshot tours only (--smoke): made-up realms, like COA_SMOKE_LIVE for the home page.
+    if (smokeDir && process.env.COA_SMOKE_REALMS) return JSON.parse(process.env.COA_SMOKE_REALMS);
+    if (!serverPath()) throw new Error('Choose the server folder first.');
+    return { ...(await realms.status(serverPath())), coa: await coaRealm() };
+  };
   // MySQL (and the authserver to log in) of the repack, started through its own scripts when needed.
   const realmBase = async withAuth => { const c = requireControl(); await c.start('mysql'); if (withAuth) await c.start('auth'); };
   handle('realms:status', realmsStatus);
   handle('realms:create', async (key, options) => {
     await realmBase(false);
     await realms.create(serverPath(), text(key, 12), { bots: Number(options?.bots) || undefined, notify: line => send('realms:progress', line) });
-    if (options?.start === true) { await realmBase(true); await realms.start(serverPath(), text(key, 12)); }
+    if (options?.start === true) { await realms.start(serverPath(), text(key, 12)); await requireControl().start('auth'); }
     return realmsStatus();
   });
   handle('realms:start', async key => {
     await network.applyNetwork(serverPath()).catch(() => {});
-    await realmBase(true);
+    await realmBase(false);
     // The CoA realm alone (its own world through the repack's scripts), without the realms marked to start with the server.
     if (text(key, 12) === 'coa') { if (await realms.anotherStarting(serverPath(), '')) throw new Error('A realm is starting: wait until it runs.'); await modules.keepRotationOff(serverPath()); await quietLogs(serverPath()); await requireControl().start('world'); }
     else await realms.start(serverPath(), text(key, 12));
+    // The authserver once a world is up (the world applies the auth database updates).
+    await requireControl().start('auth');
     return realmsStatus();
   });
   handle('realms:stop', async key => {

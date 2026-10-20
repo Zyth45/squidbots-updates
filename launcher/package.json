@@ -1,7 +1,7 @@
 {
   "name": "coa-launcher-lite",
   "productName": "CoA Launcher Lite",
-  "version": "0.3.32",
+  "version": "0.3.33",
   "description": "Open-source game launcher: signed client updates, addons, and a local server (repack + bots) with backups and upgrades.",
   "license": "MIT",
   "author": "CoA Launcher Lite contributors",
