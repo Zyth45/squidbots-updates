@@ -203,7 +203,7 @@ test('start with the server: a realm waits its turn, and is left stopped when me
   list = (await realms.status(root, { live: false })).realms;
   assert.deepStrictEqual(list.map(realm => realm.state), ['stopped', 'stopped']);
   assert.deepStrictEqual(list[0].skipped, { reason: 'memory', need: realms.neededMb(150), free: 1000 });
-  assert.strictEqual(realms.neededMb(300), 6500);
+  assert.strictEqual(realms.neededMb(300), 6600);
 });
 
 test('bots in game of a realm come from its own status file, and only while it is fresh', () => {
@@ -215,4 +215,22 @@ test('bots in game of a realm come from its own status file, and only while it i
   fs.writeFileSync(path.join(logs, 'bot-status.json'), JSON.stringify({ at: Date.now() / 1000 - 3600, bots: [{}] }));
   assert.strictEqual(realms.botsOnline(root, 'wildcard'), null);
   assert.strictEqual(realms.botsOnline(root, 'reborn'), null);
+});
+
+test('home page figures: realms added up with CoA, or alone when CoA is stopped', () => {
+  const live = require('../src/live.cjs');
+  const wildcard = { key: 'wildcard', state: 'running', players: 2, online: 140, bots: 150, memory: 3e9, tick: 80, tickMean: 75 };
+  const reborn = { key: 'reborn', state: 'running', players: 1, online: 100, bots: 150, memory: 2e9, tick: 60 };
+  const off = { key: 'reborn', state: 'stopped', players: 9, memory: 9e9 };
+  const coa = () => ({ running: true, players: 4, memory: 6e9, tick: 50, bots: { count: 300, inCombat: 5, target: 300 } });
+  const both = live.withRealms(coa(), [wildcard, reborn]);
+  assert.deepStrictEqual(both.realms, { count: 3, players: 7, bots: 540 });
+  assert.strictEqual(both.memory, 11e9);
+  assert.strictEqual(both.tick, 50);
+  const alone = live.withRealms({ running: false }, [wildcard, off]);
+  assert.strictEqual(alone.running, true);
+  assert.strictEqual(alone.realmOnly, 'wildcard');
+  assert.deepStrictEqual([alone.players, alone.bots.count, alone.bots.target, alone.memory, alone.tickMean], [2, 140, 150, 3e9, 75]);
+  assert.strictEqual(alone.realms, null);
+  assert.deepStrictEqual(live.withRealms({ running: false }, [off]), { running: false });
 });

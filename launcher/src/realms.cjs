@@ -195,6 +195,7 @@ async function status(root, { live: withLive = true } = {}) {
       after: queued ? queue.current : '', skipped: !open && !pid ? skipped.get(key) || null : null,
       firstStart: !saved.startedOnce, worldPort: p.worldPort, raPort: p.raPort, bots, online: open ? botsOnline(root, key) : null,
       changed, autostart: saved.autostart === true, players: info?.players ?? null, characters: info?.characters ?? null, uptime: info?.uptime || '',
+      tick: info?.tick ?? null, tickMean: info?.tickMean ?? null, pid: pid || null,
     });
   }
   // Realms made before (a beta) stay reachable even on an older CoA Bots, to stop or remove them.
@@ -513,9 +514,9 @@ async function queueMarked(root) {
   queue.current = 'coa';
 }
 
-// Memory a world needs, from the number of its bots (measured on the LAPTOP: CoA with 300 bots ≈ 6.6 GB, Wildcard
-// with 150 ≈ 3.5 GB and growing): about 2 GB plus 15 MB per bot. Free memory is what Windows reports now.
-const neededMb = bots => Math.round(2000 + 15 * Math.max(0, Number(bots) || 0));
+// Memory a world needs, from the number of its bots (measured: a world with its maps ≈ 4.5 to 5.8 GB before any bot,
+// CoA with 300 bots ≈ 6.6 GB on the LAPTOP): about 4.5 GB plus 7 MB per bot. Free memory is what Windows reports now.
+const neededMb = bots => Math.round(4500 + 7 * Math.max(0, Number(bots) || 0));
 async function memoryFor(root, key) {
   const realm = (await status(root, { live: false })).realms.find(item => item.key === key);
   if (!realm) throw new Error('Unknown realm.');

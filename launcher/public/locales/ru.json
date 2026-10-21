@@ -1033,5 +1033,8 @@
   "realms.memoryTitle": "Мало свободной памяти",
   "realms.memoryBody": "{name} нужно около {need} ГБ вместе с ботами, а свободно {free} ГБ. Весь ПК может замедлиться. Сначала остановите другой мир или уменьшите ботов — или запустите всё равно.",
   "realms.startAnyway": "Всё равно запустить",
-  "live.allRealms": "Все миры ({n}): {players} игроков · {bots} ботов в игре"
+  "live.allRealms": "Все миры ({n}): {players} игроков · {bots} ботов в игре",
+  "home.runningRealms": "Ваш сервер работает ({realms}). Игроки подключаются к {address}.",
+  "realms.failedMemory": "{name} не запущен: мало свободной памяти.",
+  "realms.failed": "{name} не запустился: {error}"
 }

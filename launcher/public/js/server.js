@@ -491,8 +491,22 @@ Object.assign(App.actions, {
   }),
   'service-start': button => guard(async () => { App.state.server = await App.api.startService(button.dataset.id); App.refresh('server'); probeRealm(); }, button),
   'service-stop': button => guard(async () => { App.state.server = await App.api.stopService(button.dataset.id); App.refresh('server'); }, button),
-  'service-start-all': button => guard(async () => { App.state.server = await App.api.startService('all'); App.refresh('server'); toast(t('server.allGood', 'Everything is running'), 'success'); probeRealm(); }, button),
-  'service-stop-all': button => guard(async () => { App.state.server = await App.api.stopService('all'); App.refresh('server'); }, button),
+  'service-start-all': button => guard(async () => {
+    // Starting the server takes a while (with realms: MySQL, their worlds, then the login): the home page says so meanwhile.
+    App.state.startingAll = true;
+    App.render();
+    try { App.state.server = await App.api.startService('all'); }
+    finally { App.state.startingAll = false; App.render(); if (typeof loadRealms === 'function') loadRealms(); }
+    App.refresh('server');
+    toast(t('server.allGood', 'Everything is running'), 'success');
+    probeRealm();
+  }, button),
+  'service-stop-all': button => guard(async () => {
+    App.state.stoppingAll = true;
+    App.render();
+    try { App.state.server = await App.api.stopService('all'); }
+    finally { App.state.stoppingAll = false; App.render(); if (typeof loadRealms === 'function') loadRealms(); }
+  }, button),
   'service-log': button => guard(async () => {
     const text = await App.api.serviceLog(button.dataset.id);
     dialog.open(`${dialog.header(t('server.logOf', 'Log: {name}', { name: button.dataset.id }))}<div class="dialog-content"><pre class="log">${esc(text || t('server.noLog', 'Nothing logged yet.'))}</pre></div>`, 'wide');

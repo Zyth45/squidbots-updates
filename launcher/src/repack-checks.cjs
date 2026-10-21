@@ -179,7 +179,10 @@ async function repackChecks({ root, add, mysqlQuery, services }) {
     try {
       const [flag] = await mysqlQuery('SELECT flag FROM acore_auth.realmlist WHERE id = 1');
       const value = Number(flag);
-      add('database', 'realm.flag', value === 2 || value === 3 ? 'bad' : 'ok', { flag: value }, value === 2 || value === 3 ? 'fix:realm-flag' : '');
+      // Offline is what the CoA realm shows while its world is stopped (the other realms may run alone): a problem
+      // only when its world runs.
+      const offline = value === 2 || value === 3;
+      if (worldUp || !offline) add('database', 'realm.flag', offline ? 'bad' : 'ok', { flag: value }, offline ? 'fix:realm-flag' : '');
       const [address] = await mysqlQuery('SELECT address FROM acore_auth.realmlist WHERE id = 1');
       add('database', 'realm.address', 'info', { address: address || '?' });
     } catch {}

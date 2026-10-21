@@ -123,6 +123,7 @@ contextBridge.exposeInMainWorld('launcher', Object.freeze({
   realmsMemory: key => call('realms:memory', key),
   realmsModule: (key, id, state) => call('realms:module', key, id, state),
   onRealmsProgress: on('realms:progress'),
+  onRealmsFailed: on('realms:failed'),
   serviceLog: id => call('repack:tail', id),
   createGameAccount: (name, password, gm) => call('repack:account', name, password, gm === true),
   openServerFolder: () => call('repack:openFolder'),

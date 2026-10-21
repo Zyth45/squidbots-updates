@@ -90,6 +90,41 @@ function processStats(pid) {
   });
 }
 
+// Memory of one process (the world of a realm), without touching the CPU reading of the CoA world.
+function processMemory(pid) {
+  return new Promise(resolve => {
+    const script = `$p = Get-Process -Id ${Number(pid)} -ErrorAction SilentlyContinue; if ($p) { $p.WorkingSet64 }`;
+    execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], { windowsHide: true, timeout: 8000 }, (error, out) => {
+      const bytes = Number(String(out || '').trim());
+      resolve(error || !Number.isFinite(bytes) || bytes <= 0 ? null : bytes);
+    });
+  });
+}
+
+// The home page figures with the extra realms that run (list from realms.status, with .memory): players, bots and
+// memory of every world added up, the tick of the CoA world; CoA stopped, the figures of the realms alone.
+function withRealms(stats, list) {
+  const others = (list || []).filter(realm => realm.state === 'running');
+  if (!others.length) return stats;
+  const sum = field => others.reduce((total, realm) => total + (realm[field] || 0), 0);
+  const memory = sum('memory') + (stats.running ? stats.memory || 0 : 0);
+  if (stats.running) {
+    // Players, bots and memory of every world added up; the tick stays the CoA one (each world has its own).
+    stats.realms = { count: others.length + 1, players: sum('players') + (stats.players || 0), bots: sum('online') + (stats.bots?.count || 0) };
+    stats.memory = memory || stats.memory;
+    return stats;
+  }
+  // CoA stopped, realms running: the figures are theirs, the tick that of the first one running.
+  const main = others[0];
+  return {
+    running: true, realmOnly: main.key, consoleBusy: false, at: Date.now(),
+    players: sum('players'), characters: sum('characters'), tick: main.tick, tickMean: main.tickMean, uptime: main.uptime,
+    memory: memory || null, cpu: null,
+    bots: { count: sum('online'), inCombat: null, target: sum('bots') || null },
+    realms: others.length > 1 ? { count: others.length, players: sum('players'), bots: sum('online') } : null,
+  };
+}
+
 function botsTarget(root) {
   try {
     const conf = fs.readFileSync(path.join(root, 'CoA-Bots', 'Core', 'configs', 'modules', 'playerbots.conf'), 'utf8');
@@ -129,4 +164,4 @@ function forceStopWorld(root) {
   }));
 }
 
-module.exports = { raCommand, parseInfo, stats, forceStopWorld };
+module.exports = { raCommand, parseInfo, stats, forceStopWorld, processMemory, withRealms };

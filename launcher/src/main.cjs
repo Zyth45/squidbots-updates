@@ -165,6 +165,8 @@ async function serverInfo() {
     details: folder ? inspectRepack(folder) : null,
     bots: bots ? { name: config.server.bots.name, description: config.server.bots.description, ...(await bots.info(folder)) } : null,
     canPurgeBots: !!config.server.commands.purgeBots,
+    // The extra realms whose world runs or starts: the home page counts the server as running with them alone.
+    realmsOn: folder ? (await realms.status(folder, { live: false }).catch(() => ({ realms: [] }))).realms.filter(realm => ['running', 'starting'].includes(realm.state)).map(realm => ({ key: realm.key, state: realm.state })) : [],
   };
 }
 
@@ -850,11 +852,11 @@ function registerIpc() {
     // The other realms that run, added up for the home page (the tiles stay those of the CoA realm).
     // Their consoles are asked at most every 15 s (a world loaded with bots answers slowly).
     if (!liveRealms.at || Date.now() - liveRealms.at > 15000 || liveRealms.root !== serverPath()) {
-      liveRealms = { at: Date.now(), root: serverPath(), list: (await realms.status(serverPath()).catch(() => ({ realms: [] }))).realms };
+      const list = (await realms.status(serverPath()).catch(() => ({ realms: [] }))).realms;
+      for (const realm of list) if (realm.state === 'running' && realm.pid) realm.memory = await live.processMemory(realm.pid);
+      liveRealms = { at: Date.now(), root: serverPath(), list };
     }
-    const others = liveRealms.list.filter(realm => realm.state === 'running');
-    if (others.length) stats.realms = { count: others.length + (stats.running ? 1 : 0), players: others.reduce((sum, realm) => sum + (realm.players || 0), 0) + (stats.players || 0), bots: others.reduce((sum, realm) => sum + (realm.online || 0), 0) + (stats.bots?.count || 0) };
-    return stats;
+    return live.withRealms(stats, liveRealms.list);
   });
   handle('console:run', async (command, realm) => {
     if (!serverPath()) throw new Error('Choose the server folder first.');
@@ -909,15 +911,17 @@ function registerIpc() {
     return serverInfo();
   });
   handle('repack:pause', () => { repackUpdater?.cancel(); bots?.updater.cancel(); });
-  handle('repack:start', async id => { await network.applyNetwork(serverPath()).catch(() => {}); await modules.keepRotationOff(serverPath()); await quietLogs(serverPath()); if (id === 'all') {
+  handle('repack:start', async id => { if (id === 'all') baseByRealm = false; await network.applyNetwork(serverPath()).catch(() => {}); await modules.keepRotationOff(serverPath()); await quietLogs(serverPath()); if (id === 'all') {
       // CoA left out of "Start all" when the player chose so and a realm starts with the server: MySQL and the authserver only.
       const skipCoa = await realms.skipCoaAtStart(serverPath()).catch(() => false);
       await realms.queueMarked(serverPath()).catch(() => {});
       // The authserver after a worldserver: the world applies the updates of the auth database.
-      if (skipCoa) { await requireControl().start('mysql'); await realms.startMarked(serverPath()).catch(() => {}); await requireControl().start('auth'); }
-      else { try { await requireControl().startAll(); } finally { realms.startMarked(serverPath()).catch(() => {}); } }
+      // A realm that did not start says why on the page (not enough memory, an error of its world).
+      const startRealms = () => realms.startMarked(serverPath()).then(failed => { if (failed.length) send('realms:failed', failed); }).catch(error => send('realms:failed', [{ key: '', error: error.message }]));
+      if (skipCoa) { await requireControl().start('mysql'); await startRealms(); await requireControl().start('auth'); }
+      else { try { await requireControl().startAll(); } finally { startRealms(); } }
     } else await requireControl().start(text(id, 30)); return serverInfo(); });
-  handle('repack:stop', async id => { if (id === 'all' || id === 'world' || id === 'mysql') await realms.stopAll(serverPath()); if (id === 'all') await requireControl().stopAll(); else await requireControl().stop(text(id, 30)); return serverInfo(); });
+  handle('repack:stop', async id => { if (id === 'all') baseByRealm = false; if (id === 'all' || id === 'world' || id === 'mysql') await realms.stopAll(serverPath()); if (id === 'all') await requireControl().stopAll(); else await requireControl().stop(text(id, 30)); return serverInfo(); });
   handle('repack:tail', id => requireControl().tail(text(id, 30)));
   // ---- extra realms (Wildcard, Warcraft Reborn) beside the CoA realm: same MySQL, authserver and bot worldserver
   // The CoA realm (the repack's own world) beside the extra ones, for the Realms page.
@@ -953,8 +957,22 @@ function registerIpc() {
     } else await withMysql(() => realms.create(serverPath(), text(key, 12), { bots: Number(options?.bots) || undefined, notify: line => send('realms:progress', line) }));
     return realmsStatus();
   });
+  // MySQL and the authserver started by a realm's own Start (the server was stopped): stopped again with the last world
+  // stopped from a card, so the home page does not stay on "2 of 3 services running". "Start the server" keeps them.
+  let baseByRealm = false;
+  const mysqlRunning = async () => (await requireControl().status()).some(service => service.id === 'mysql' && service.state === 'running');
+  const releaseBase = async () => {
+    if (!baseByRealm) return;
+    const c = requireControl();
+    const world = (await c.status()).some(service => /world/i.test(service.id) && ['running', 'starting'].includes(service.state));
+    const realmOn = (await realms.status(serverPath(), { live: false })).realms.some(realm => ['running', 'starting'].includes(realm.state));
+    if (world || realmOn) return;
+    baseByRealm = false;
+    await c.stopAll().catch(() => {});
+  };
   handle('realms:start', async key => {
     await network.applyNetwork(serverPath()).catch(() => {});
+    if (!(await mysqlRunning())) baseByRealm = true;
     await realmBase(false);
     // The CoA realm alone (its own world through the repack's scripts), without the realms marked to start with the server.
     if (text(key, 12) === 'coa') { if (await realms.anotherStarting(serverPath(), '')) throw new Error('A realm is starting: wait until it runs.'); await modules.keepRotationOff(serverPath()); await quietLogs(serverPath()); await requireControl().start('world'); }
@@ -964,7 +982,7 @@ function registerIpc() {
     return realmsStatus();
   });
   handle('realms:stop', async key => {
-    if (text(key, 12) !== 'coa') { await realms.stop(serverPath(), text(key, 12)); return realmsStatus(); }
+    if (text(key, 12) !== 'coa') { await realms.stop(serverPath(), text(key, 12)); await releaseBase(); return realmsStatus(); }
     // The CoA world alone, by its console: MySQL and the authserver stay for the other realms (the repack's supervisor
     // ends with its world). Stop all, on the home page, still stops everything.
     const world = requireControl().services.find(service => /world/i.test(service.id));
@@ -972,6 +990,7 @@ function registerIpc() {
     const deadline = Date.now() + 120000;
     while (Date.now() < deadline && await portOpen(world.port)) await new Promise(resolve => setTimeout(resolve, 1000));
     if (await portOpen(world.port)) throw new Error('The CoA world is still stopping; try Stop all on the home page.');
+    await releaseBase();
     return realmsStatus();
   });
   handle('realms:memory', key => realms.memoryFor(serverPath(), text(key, 12)));

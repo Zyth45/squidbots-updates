@@ -31,6 +31,8 @@ const REALMS_INFO = {
 };
 const realmEmblem = (key, size = 56) => `<span class="realm-emblem realm-${key} s${size}">${REALM_EMBLEMS[key] || ''}</span>`;
 const realmTitle = key => REALMS_INFO[key]?.title || key;
+// Short names, for the lights of the home page.
+const realmShort = key => ({ coa: 'CoA', wildcard: 'Wildcard', reborn: 'Reborn' }[key] || key);
 
 async function loadRealms() {
   const before = !!App.state.realms?.available;
@@ -38,7 +40,15 @@ async function loadRealms() {
   // The Realms tab exists only from CoA Bots 2.6 (or when realms were made): redraw the tabs when that changes.
   if (!!App.state.realms?.available !== before) { App.render(); return; }
   if (['realms', 'server', 'console', 'modules'].includes(App.state.tab)) App.refresh(App.state.tab);
+  // A realm started or stopped from its card: the home page (status line, lights, Start/Stop) follows.
+  const worlds = list => (list || []).filter(realm => ['running', 'starting'].includes(realm.state)).map(realm => `${realm.key}:${realm.state}`).sort().join(',');
+  if (App.state.server && worlds(App.state.realms?.realms) !== worlds(App.state.server.realmsOn)) {
+    App.state.server = await App.api.serverInfo().catch(() => App.state.server);
+    if (App.state.tab === 'home') App.refresh('home');
+  }
 }
+// The home page reads the realms too (every 10 s): a realm started from its card shows there without visiting its tab.
+setInterval(() => { if (App.state.tab === 'home' && App.state.realms?.available && !App.state.realmBusy) loadRealms(); }, 10000);
 
 // Every realm in the order of the page: CoA first, then the extra ones (created or not).
 function realmList() {
@@ -78,8 +88,8 @@ function realmNote(realm, working) {
 
 function realmCard(realm, busy) {
   const info = REALMS_INFO[realm.key];
-  const working = busy === realm.key;
-  const head = `<header>${realmEmblem(realm.key, 56)}<div class="realm-name"><h2>${esc(info.title)}</h2><small>${esc(info.sub)}</small></div>${realmStatePill(realm.state === 'absent' ? 'disabled' : working && realm.state === 'stopped' ? 'starting' : realm.state === 'stopped' && realm.skipped ? 'lowmem' : realm.state, realm)}</header>
+  const working = busy === realm.key || (App.state.stoppingAll && ['running', 'starting'].includes(realm.state));
+  const head = `<header>${realmEmblem(realm.key, 56)}<div class="realm-name"><h2>${esc(info.title)}</h2><small>${esc(info.sub)}</small></div>${realmStatePill(realm.state === 'absent' ? 'disabled' : working && (App.state.realmBusyKind === 'stop' || App.state.stoppingAll) ? 'stopping' : working && realm.state === 'stopped' ? 'starting' : realm.state === 'stopped' && realm.skipped ? 'lowmem' : realm.state, realm)}</header>
     ${realmNote(realm, working) || `<p class="realm-text">${esc(t(info.textKey, info.text))}</p>`}`;
   if (realm.state === 'absent') {
     const r = App.state.realms;
@@ -157,11 +167,12 @@ setInterval(() => {
   loadRealms();
 }, 2000);
 
-async function realmAction(key, work) {
+async function realmAction(key, work, kind = '') {
   App.state.realmBusy = key;
+  App.state.realmBusyKind = kind;
   App.refresh(App.state.tab);
   try { await work(); }
-  finally { App.state.realmBusy = ''; await loadRealms(); }
+  finally { App.state.realmBusy = ''; App.state.realmBusyKind = ''; await loadRealms(); }
 }
 
 Object.assign(App.actions, {
@@ -186,7 +197,7 @@ Object.assign(App.actions, {
   }, button),
   'realm-stop': button => guard(async () => {
     const key = button.dataset.key;
-    await realmAction(key, () => App.api.realmsStop(key));
+    await realmAction(key, () => App.api.realmsStop(key), 'stop');
     toast(t('realms.stopped2', '{name} is stopped.', { name: realmTitle(key) }), 'success');
   }, button),
   'realm-auto': input => guard(async () => { await App.api.realmsOptions(input.dataset.key, { autostart: input.checked }); await loadRealms(); }),
@@ -273,4 +284,13 @@ Object.assign(App.actions, {
     App.refresh('modules');
     loadRealms();
   }, button),
+});
+
+// "Start the server" could not start a realm: say which and why (the card also says it for the memory).
+App.api.onRealmsFailed?.(failed => {
+  for (const item of failed || []) {
+    const name = item.key ? realmTitle(item.key) : t('tab.realms', 'Realms');
+    toast(item.error === 'memory' ? t('realms.failedMemory', '{name} was not started: not enough free memory.', { name }) : t('realms.failed', '{name} did not start: {error}', { name, error: translateError(item.error) }), 'error');
+  }
+  loadRealms();
 });

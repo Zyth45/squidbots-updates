@@ -259,29 +259,35 @@ function homeView() {
       <div class="button-row"><button class="button ghost" data-action="home-import">${icon('folder')}${esc(t('home.haveZip', 'I have the zip: import it'))}</button><button class="button ghost" data-action="server-choose">${icon('folder')}${esc(t('home.haveServer', 'I already have a server folder'))}</button></div></div></section>${feedNewsRow()}</div>`;
   }
   const services = info.services || [];
+  // CoA world stopped, one or more realms running on MySQL and the login: the server runs, with them.
+  const realmsOn = (info.realmsOn || []).filter(realm => realm.state === 'running');
+  const baseOn = ['mysql', 'auth'].every(id => services.find(service => service.id === id)?.state === 'running');
+  const realmsOnly = realmsOn.length > 0 && baseOn && services.find(service => /world/i.test(service.id))?.state !== 'running';
   const running = services.filter(service => service.state === 'running').length;
-  const moving = services.find(service => service.state === 'starting' || service.state === 'stopping');
-  const all = services.length && running === services.length;
+  const moving = App.state.stoppingAll ? { state: 'stopping' } : App.state.startingAll ? { state: 'starting' } : services.find(service => service.state === 'starting' || service.state === 'stopping');
+  const all = (services.length && running === services.length) || realmsOnly;
   const foreign = services.find(service => service.state === 'foreign');
   // The world runs but its console does not answer (bots being created at a first start): stopping would only
   // time out, so the button waits.
-  const busy = all && s.live?.running && s.live.consoleBusy;
+  const busy = all && !realmsOnly && s.live?.running && s.live.consoleBusy;
   // Silent for more than 20 minutes: not bot creation any more, the world is stuck (a shutdown that never ends).
   const stuck = busy && s.live.busyFor > 20 * 60 * 1000;
   const button = moving ? ['refresh', moving.state === 'starting' ? t('server.startingAll', 'Starting the server…') : t('server.stoppingAll', 'Stopping the server…'), '', 'busy']
     : stuck ? ['warning', t('home.forceStop', 'Force the world to stop'), 'world-force-stop', 'ready']
     : busy ? ['refresh', t('home.botsCreating', 'Bots on the way…'), '', 'busy']
     : running ? ['pause', t('home.stop', 'Stop the server'), 'service-stop-all', 'ready'] : ['play', t('home.start', 'Start the server'), 'service-start-all', 'update'];
-  const status = stuck ? t('home.stuckText', 'The world has not answered for {n} minutes: it is stuck. Force it to stop, then start the server again.', { n: Math.round(s.live.busyFor / 60000) })
+  const status = App.state.stoppingAll ? t('server.stoppingAll', 'Stopping the server…') : App.state.startingAll ? t('server.startingAll', 'Starting the server…') : stuck ? t('home.stuckText', 'The world has not answered for {n} minutes: it is stuck. Force it to stop, then start the server again.', { n: Math.round(s.live.busyFor / 60000) })
     : busy ? t('home.botsCreatingText', 'The server is creating its bots (about 10 minutes at a first start). Do not close it: it can be stopped as soon as it answers again.')
     : foreign ? t('home.foreign', '{name}: port {port} is taken by another program.', { name: foreign.name, port: foreign.port })
     // The address the players use: this PC, or the one given in "Who can join" when the server is open.
-    : all ? t('home.runningAt', 'Your server is running. Players connect to {address}.', { address: `${s.network?.mode === 'open' ? s.network.address : '127.0.0.1'}${info.ports?.auth && info.ports.auth !== 3724 ? `:${info.ports.auth}` : ''}` }) : running ? t('server.partial', '{n} of {total} services running', { n: running, total: services.length }) : t('server.allStopped', 'The server is stopped');
+    : all ? t(realmsOnly ? 'home.runningRealms' : 'home.runningAt', realmsOnly ? 'Your server is running ({realms}). Players connect to {address}.' : 'Your server is running. Players connect to {address}.', { realms: realmsOn.map(realm => realmTitle(realm.key)).join(', '), address: `${s.network?.mode === 'open' ? s.network.address : '127.0.0.1'}${info.ports?.auth && info.ports.auth !== 3724 ? `:${info.ports.auth}` : ''}` }) : running ? t('server.partial', '{n} of {total} services running', { n: running, total: services.length }) : t('server.allStopped', 'The server is stopped');
   const v = s.verify;
   const verifyText = s.verifying ? t('verify.running', 'Checking…') : !v ? t('verify.never', 'Not checked yet') : v.summary.bad ? t('verify.bad', '{n} problem(s) to fix', { n: v.summary.bad }) : v.summary.warn ? t('verify.warn', '{n} point(s) to look at', { n: v.summary.warn }) : t('verify.ok', 'All good');
   const verifyState = !v ? '' : v.summary.bad ? 'bad' : v.summary.warn ? 'warn' : 'ok';
   const dash = s.dashboard;
-  const lights = services.map(service => `<span class="mini-service"><span class="light ${service.state === 'running' ? 'on' : service.state === 'starting' || service.state === 'stopping' ? 'busy' : 'off'}"></span>${esc(service.name)}</span>`).join('');
+  const lights = services.map(service => `<span class="mini-service"><span class="light ${service.state === 'running' ? 'on' : service.state === 'starting' || service.state === 'stopping' ? 'busy' : 'off'}"></span>${esc(/world/i.test(service.id) && App.state.realms?.available ? realmShort('coa') : service.name)}</span>`).join('')
+    // A light for each realm whose world runs or starts.
+    + (info.realmsOn || []).map(realm => `<span class="mini-service"><span class="light ${realm.state === 'running' && !App.state.stoppingAll ? 'on' : 'busy'}"></span>${esc(realmShort(realm.key))}</span>`).join('');
   const menu = [['srv-tab', 'services', t('home.menuServices', 'Services one by one')], ['srv-tab', 'backups', t('srv.tab.backups', 'Backups')], ['server-folder', '', t('home.menuFolder', 'Open the server folder')],
     ['instance-new', '', t('home.menuNew', 'Create a new server (clean instance)…')], ['instance-add', '', t('home.menuAdd', 'Add a repack folder I unpacked…')], ['instance-pick', '', t('home.menuSwitch', 'My servers…')]];
   return `<div class="page classic">
@@ -348,9 +354,9 @@ function liveView() {
   // Bots still logging in (fewer than the number set): the server is slower meanwhile, and that is expected.
   const arriving = l.bots?.target && l.bots.count < Math.floor(l.bots.target * 0.95);
   if (!arriving) App.state.waitClosed = false;
-  return `<section class="live"><h3>${esc(t('live.title', 'Server live'))}${l.realms ? `<span class="live-realms">${icon('globe')}${esc(t('live.allRealms', 'All {n} realms: {players} players · {bots} bots in game', { n: l.realms.count, players: l.realms.players, bots: l.realms.bots }))}</span>` : ''}${arriving ? `<span class="live-arriving" title="${esc(t('live.arrivingHint', 'While they log in, the server is slower (high tick): this is normal. Wait a few minutes until all of them are there.'))}">${icon('bot')}${esc(t('live.arrivingTitle', 'The bots are arriving in your realm: {count} / {target}', { count: l.bots.count, target: l.bots.target }))}${progressBar({ total: l.bots.target, completed: l.bots.count }).html}</span>` : ''}</h3><div class="live-body"><div class="live-grid">
+  return `<section class="live"><h3>${esc(t('live.title', 'Server live'))}${l.realmOnly && !l.realms ? `<span class="live-realms">${realmEmblem(l.realmOnly, 16)}${esc(realmTitle(l.realmOnly))}</span>` : ''}${l.realms ? `<span class="live-realms">${icon('globe')}${esc(t('live.allRealms', 'All {n} realms: {players} players · {bots} bots in game', { n: l.realms.count, players: l.realms.players, bots: l.realms.bots }))}</span>` : ''}${arriving ? `<span class="live-arriving" title="${esc(t('live.arrivingHint', 'While they log in, the server is slower (high tick): this is normal. Wait a few minutes until all of them are there.'))}">${icon('bot')}${esc(t('live.arrivingTitle', 'The bots are arriving in your realm: {count} / {target}', { count: l.bots.count, target: l.bots.target }))}${progressBar({ total: l.bots.target, completed: l.bots.count }).html}</span>` : ''}</h3><div class="live-body"><div class="live-grid">
     ${tile('user', t('live.players', 'Players'), dash(l.players))}
-    ${tile('bot', t('live.bots', 'Bots in game'), l.bots ? String(l.bots.count) : '—', l.bots ? t('live.inCombat', '{n} in combat', { n: l.bots.inCombat }) : '')}
+    ${tile('bot', t('live.bots', 'Bots in game'), l.bots ? String(l.bots.count) : '—', l.bots && Number.isFinite(l.bots.inCombat) ? t('live.inCombat', '{n} in combat', { n: l.bots.inCombat }) : '')}
     ${tile('refresh', t('live.tick', 'Tick'), tick === null || tick === undefined ? '—' : `${tick} ms`, arriving && tick > 150 ? t('live.tickLoading', 'bots arriving') : tick > 150 ? t('live.tickSlow', 'slow') : tick !== null && tick !== undefined ? t('live.tickOk', 'smooth') : '')}
     ${tile('database', t('live.memory', 'Memory'), l.memory ? formatBytes(l.memory) : '—')}
   </div>${homeAccount()}</div>${arriving && !App.state.waitClosed ? `<p class="live-wait live-toast">${icon('info')}<span>${esc(t('live.waitLogin', 'Wait a little before logging in: the server is bringing its bots into the world. The game is slower until they are all there.'))}</span><button class="icon-button" data-action="live-wait-close" title="${esc(t('common.close', 'Close'))}">${icon('close')}</button></p>` : ''}</section>`;

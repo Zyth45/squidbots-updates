@@ -1033,5 +1033,8 @@
   "realms.memoryTitle": "Peu de mémoire libre",
   "realms.memoryBody": "{name} demande environ {need} Go avec ses bots, et {free} Go sont libres. Tout le PC risque de ralentir. Arrêtez d'abord un autre royaume ou baissez ses bots, ou démarrez quand même.",
   "realms.startAnyway": "Démarrer quand même",
-  "live.allRealms": "Les {n} royaumes : {players} joueurs · {bots} bots en jeu"
+  "live.allRealms": "Les {n} royaumes : {players} joueurs · {bots} bots en jeu",
+  "home.runningRealms": "Votre serveur tourne ({realms}). Les joueurs se connectent à {address}.",
+  "realms.failedMemory": "{name} n'a pas été démarré : pas assez de mémoire libre.",
+  "realms.failed": "{name} n'a pas démarré : {error}"
 }
