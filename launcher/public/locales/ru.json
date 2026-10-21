@@ -1036,5 +1036,6 @@
   "live.allRealms": "Все миры ({n}): {players} игроков · {bots} ботов в игре",
   "home.runningRealms": "Ваш сервер работает ({realms}). Игроки подключаются к {address}.",
   "realms.failedMemory": "{name} не запущен: мало свободной памяти.",
-  "realms.failed": "{name} не запустился: {error}"
+  "realms.failed": "{name} не запустился: {error}",
+  "component.needsBots": "Нужен CoA Bots {need} на сервере (у вас {have}): сначала обновите сервер."
 }

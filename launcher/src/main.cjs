@@ -609,6 +609,7 @@ function registerIpc() {
     if (!serverPath() || !offer) throw new Error('No new version of this component.');
     if (componentsBusy) throw new Error('A component is already being installed.');
     if (offer.minLauncher && repackUpdate.compareVersions(app.getVersion(), offer.minLauncher) < 0) throw new Error(`This needs launcher ${offer.minLauncher} or newer: update the launcher first (Settings > About).`);
+    if (components.blocker(serverPath(), offer)) throw new Error(`This needs CoA Bots ${offer.minBots} or newer on the server: update the server first.`);
     if (update.busy) throw new Error('An update is running.');
     componentsBusy = true;
     let restart = false;

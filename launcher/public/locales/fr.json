@@ -1036,5 +1036,6 @@
   "live.allRealms": "Les {n} royaumes : {players} joueurs · {bots} bots en jeu",
   "home.runningRealms": "Votre serveur tourne ({realms}). Les joueurs se connectent à {address}.",
   "realms.failedMemory": "{name} n'a pas été démarré : pas assez de mémoire libre.",
-  "realms.failed": "{name} n'a pas démarré : {error}"
+  "realms.failed": "{name} n'a pas démarré : {error}",
+  "component.needsBots": "Demande CoA Bots {need} sur le serveur (vous avez {have}) : mettez d'abord le serveur à jour."
 }

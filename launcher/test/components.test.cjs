@@ -56,3 +56,21 @@ test('the addon folder is replaced as a whole (a removed file goes away)', async
   try { assert.equal(await components.install(root, offer, { cacheDir: tmp(), backupDir: tmp(), fetchImpl: fetch }), '2.5'); } finally { server.close(); }
   assert.ok(!fs.existsSync(path.join(root, 'CoA-Bots/Client/Interface/AddOns/SquidBotsLite/Old.lua')));
 });
+
+test('an addon for a newer CoA Bots waits: shown, never installed on an older server', () => {
+  const root = tmp();
+  write(root, { 'CoA-Bots/Client/Interface/AddOns/SquidBotsLite/SquidBotsLite.toc': '## Version: 2.6\n', 'CoA-Bots/release.json': JSON.stringify({ version: '2.5' }) });
+  const offer = components.clean('addon', { name: 'addon', version: '2.6.1', url: 'https://x.test/a.zip', sha256: 'a'.repeat(64), size: 10, minBots: '2.6' });
+  assert.equal(offer.minBots, '2.6');
+  let item = components.status(root, { addon: offer })[0];
+  assert.deepEqual([item.available, item.waiting], [false, { minBots: '2.6', bots: '2.5' }]);
+  assert.equal(components.blocker(root, offer), 'bots');
+  write(root, { 'CoA-Bots/release.json': JSON.stringify({ version: '2.6' }) });
+  item = components.status(root, { addon: offer })[0];
+  assert.deepEqual([item.available, item.waiting], [true, null]);
+  write(root, { 'CoA-Bots/release.json': JSON.stringify({ version: '2.7-beta1' }) });
+  assert.equal(components.blocker(root, offer), '');
+  write(root, { 'CoA-Bots/release.json': '' });
+  assert.equal(components.blocker(root, offer), 'bots');
+  assert.equal(components.blocker(root, { ...offer, minBots: '' }), '');
+});

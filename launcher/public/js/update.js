@@ -307,11 +307,13 @@ function launcherFirst(u) {
 App.state.components = null;
 const COMPONENT_LABEL = { addon: 'SquidBots addon', dashboard: 'Bots dashboard' };
 function componentCards() {
-  const list = (App.state.components?.list || []).filter(item => item.available);
+  const list = (App.state.components?.list || []).filter(item => item.available || item.waiting);
   if (!list.length) return '';
   const first = ['downloading', 'downloaded'].includes(App.state.launcherUpdate?.phase);
   return list.map(item => {
     const label = t(`component.${item.name}`, COMPONENT_LABEL[item.name] || item.name);
+    // Newer, but for a newer server: said, without a button (the server update brings it, or allows it).
+    if (item.waiting) return `<div class="update-card component-card waiting">${icon(item.name === 'addon' ? 'addons' : 'chart')}<span><strong>${esc(t('component.title', '{name} {version}', { name: label, version: item.version }))}</strong><small>${esc(t('component.needsBots', 'Needs CoA Bots {need} on the server (you have {have}): update the server first.', { need: item.waiting.minBots, have: item.waiting.bots || '—' }))}</small></span></div>`;
     const text = first ? t('component.launcherFirst', 'Install the new launcher first.') : t('component.available', 'Version {version} (you have {have}): a few seconds, the server is not touched.', { version: item.version, have: item.installed === '0' ? '—' : item.installed });
     const action = first ? '' : `<button class="button primary small" data-action="component-install" data-id="${esc(item.name)}" ${App.state.components.busy ? 'disabled' : ''}>${esc(t('update.see', 'Update'))}</button>`;
     return `<div class="update-card new component-card">${icon(item.name === 'addon' ? 'addons' : 'chart')}<span><strong>${esc(t('component.title', '{name} {version}', { name: label, version: item.version }))}</strong><small>${esc(text)}</small></span>${action}</div>`;

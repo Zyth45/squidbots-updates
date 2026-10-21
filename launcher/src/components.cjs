@@ -21,7 +21,7 @@ function clean(name, data) {
   if (!data || typeof data !== 'object' || data.name !== name) throw new Error(`The ${name} list is malformed.`);
   if (!VERSION.test(data.version || '')) throw new Error(`The ${name} list has no final version.`);
   if (!/^[0-9a-f]{64}$/.test(data.sha256 || '') || !(data.size > 0) || !URL_OK.test(data.url || '')) throw new Error(`The ${name} list has no valid file.`);
-  return { name, version: data.version, url: data.url, sha256: data.sha256, size: Number(data.size), notes: String(data.notes || '').slice(0, 4000), minLauncher: VERSION.test(data.minLauncher || '') ? data.minLauncher : '' };
+  return { name, version: data.version, url: data.url, sha256: data.sha256, size: Number(data.size), notes: String(data.notes || '').slice(0, 4000), minLauncher: VERSION.test(data.minLauncher || '') ? data.minLauncher : '', minBots: VERSION.test(data.minBots || '') ? data.minBots : '' };
 }
 
 // The version in the repack: the addon's .toc, the dashboard's VERSION file (none = older than 2.2.2).
@@ -32,12 +32,26 @@ function installed(root, name) {
   } catch { return name === 'dashboard' && fsSync.existsSync(path.join(root, ...DASHBOARD_DIR)) ? '0' : ''; }
 }
 
+// The CoA Bots version of the server (CoA-Bots\release.json): a component may need a given one (the addon talks to the
+// bots module of its version: an addon 2.6.1 must not reach a 2.5 server).
+function botsVersion(root) {
+  try { return String(JSON.parse(fsSync.readFileSync(path.join(root, 'CoA-Bots', 'release.json'), 'utf8').replace(/^\uFEFF/, '')).version || ''); } catch { return ''; }
+}
+// Why a newer component cannot be installed on this server yet ('' when it can).
+function blocker(root, offer) {
+  if (!offer?.minBots) return '';
+  const bots = botsVersion(root);
+  return bots && compareVersions(bots.replace(/[^\d.].*$/, ''), offer.minBots) >= 0 ? '' : 'bots';
+}
+
 function status(root, lists) {
   return NAMES.map(name => {
     const here = root ? installed(root, name) : '';
     const offer = lists[name] || null;
-    const available = !!(offer && here && compareVersions(offer.version, here) > 0);
-    return { name, installed: here, version: offer?.version || '', available, notes: available ? offer.notes : '', minLauncher: offer?.minLauncher || '' };
+    const newer = !!(offer && here && compareVersions(offer.version, here) > 0);
+    const blocked = newer ? blocker(root, offer) : '';
+    // A newer copy the server is too old for is shown as waiting, never installed.
+    return { name, installed: here, version: offer?.version || '', available: newer && !blocked, waiting: blocked ? { minBots: offer.minBots, bots: botsVersion(root) } : null, notes: newer ? offer.notes : '', minLauncher: offer?.minLauncher || '' };
   });
 }
 
@@ -80,4 +94,4 @@ async function install(root, offer, { cacheDir, backupDir, fetchImpl }) {
   } finally { await fs.rm(stage, { recursive: true, force: true }); }
 }
 
-module.exports = { NAMES, clean, installed, status, install };
+module.exports = { NAMES, clean, installed, status, install, blocker, botsVersion };
