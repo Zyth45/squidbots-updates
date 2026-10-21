@@ -185,3 +185,34 @@ test('a switched-off realm never starts, not even with the server', async () => 
   assert.strictEqual(await realms.skipCoaAtStart(root), false);
   assert.strictEqual((await realms.status(root, { live: false })).realms[0].state, 'disabled');
 });
+
+test('start with the server: a realm waits its turn, and is left stopped when memory is too low', async () => {
+  const root = repack();
+  for (const key of ['wildcard', 'reborn']) {
+    const dir = realmFolder(root, key, { autostart: true });
+    fs.mkdirSync(path.join(dir, 'configs'));
+    fs.writeFileSync(path.join(dir, 'configs', 'worldserver.conf'), '');
+    fs.writeFileSync(path.join(dir, 'settings.json'), JSON.stringify({ 'playerbots.conf': { 'AiPlayerbot.MaxRandomBots': '150' } }));
+  }
+  await realms.queueMarked(root);
+  let list = (await realms.status(root, { live: false })).realms;
+  assert.deepStrictEqual(list.map(realm => `${realm.state}:${realm.after}`), ['queued:coa', 'queued:coa']);
+  assert.strictEqual(list[0].firstStart, true);
+  const failed = await realms.startMarked(root, { freeMb: () => 1000 });
+  assert.deepStrictEqual(failed.map(item => item.error), ['memory', 'memory']);
+  list = (await realms.status(root, { live: false })).realms;
+  assert.deepStrictEqual(list.map(realm => realm.state), ['stopped', 'stopped']);
+  assert.deepStrictEqual(list[0].skipped, { reason: 'memory', need: realms.neededMb(150), free: 1000 });
+  assert.strictEqual(realms.neededMb(300), 6500);
+});
+
+test('bots in game of a realm come from its own status file, and only while it is fresh', () => {
+  const root = repack();
+  const logs = path.join(realmFolder(root, 'wildcard'), 'Logs');
+  fs.mkdirSync(logs);
+  fs.writeFileSync(path.join(logs, 'bot-status.json'), JSON.stringify({ at: Date.now() / 1000, bots: [{}, {}, {}] }));
+  assert.strictEqual(realms.botsOnline(root, 'wildcard'), 3);
+  fs.writeFileSync(path.join(logs, 'bot-status.json'), JSON.stringify({ at: Date.now() / 1000 - 3600, bots: [{}] }));
+  assert.strictEqual(realms.botsOnline(root, 'wildcard'), null);
+  assert.strictEqual(realms.botsOnline(root, 'reborn'), null);
+});

@@ -334,7 +334,7 @@ dialog::backdrop { background: var(--backdrop); backdrop-filter: blur(3px); }
 .realm-card.on { border-color: color-mix(in srgb, var(--realm) 60%, transparent); box-shadow: 0 0 0 1px color-mix(in srgb, var(--realm) 25%, transparent), 0 10px 40px -18px var(--realm); }
 .realm-card.on::before { opacity: 1; }
 .realm-card header { display: flex; align-items: flex-start; gap: 14px; }
-.realm-card header .pill { margin-left: auto; align-self: flex-start; }
+.realm-card header .pill { margin-left: auto; align-self: flex-start; white-space: nowrap; }
 .realm-name h2 { font: 700 19px var(--display); line-height: 1.2; letter-spacing: .02em; margin: 0; color: var(--text); }
 .realm-name small { color: var(--realm); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; font-size: 11px; }
 .realm-text { color: var(--muted); margin: 0; line-height: 1.5; }
@@ -391,3 +391,10 @@ dialog::backdrop { background: var(--backdrop); backdrop-filter: blur(3px); }
 .module-origin .origin { margin-left: 0; }
 .realm-more small.muted { font-size: 12px; }
 .grid-2.modules.realm-mods { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+.realm-note { font-weight: 500; }
+.realm-note.warn { color: var(--warn); }
+.realm-note.info { color: var(--realm); }
+.realm-note.bad { color: var(--bad); }
+.realm-stats dd small { font: 600 12px var(--body, inherit); color: var(--faint); margin-left: 2px; }
+.live-realms { display: inline-flex; gap: 6px; align-items: center; margin-left: auto; font: 500 12.5px var(--body, inherit); letter-spacing: 0; text-transform: none; color: var(--muted); }
+.live-realms .icon { width: 15px; height: 15px; color: var(--accent); }

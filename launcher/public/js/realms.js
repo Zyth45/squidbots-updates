@@ -48,8 +48,9 @@ function realmList() {
 }
 const createdRealms = () => realmList().filter(realm => realm.main || !['absent', 'disabled'].includes(realm.state));
 
-function realmStatePill(state) {
-  const map = { running: ['ok', 'realms.running', 'Running'], starting: ['warn', 'realms.starting', 'Starting…'], stopping: ['warn', 'realms.stopping', 'Stopping…'], stopped: ['', 'realms.stopped', 'Stopped'], disabled: ['', 'realms.disabled', 'Switched off'], foreign: ['bad', 'realms.foreign', 'Port used by another program'] };
+function realmStatePill(state, realm) {
+  if (state === 'queued') return `<span class="pill warn"><i class="state-dot"></i>${esc(t('realms.queued', 'After {name}', { name: realmTitle(realm?.after || 'coa') }))}</span>`;
+  const map = { lowmem: ['bad', 'realms.lowMemory', 'Low memory'], running: ['ok', 'realms.running', 'Running'], starting: ['warn', 'realms.starting', 'Starting…'], stopping: ['warn', 'realms.stopping', 'Stopping…'], stopped: ['', 'realms.stopped', 'Stopped'], disabled: ['', 'realms.disabled', 'Switched off'], foreign: ['bad', 'realms.foreign', 'Port used by another program'] };
   const [kind, key, text] = map[state] || map.stopped;
   return `<span class="pill ${kind}"><i class="state-dot"></i>${esc(t(key, text))}</span>`;
 }
@@ -66,11 +67,20 @@ function realmBanner(key, text) {
   return `<div class="realm-banner realm-${key}">${realmEmblem(key, 30)}<div><strong>${esc(realmTitle(key))}</strong><span>${esc(text)}</span></div></div>`;
 }
 
+// The line under the name says what is going on when it matters more than the description of the mode.
+function realmNote(realm, working) {
+  const line = (kind, text) => `<p class="realm-text realm-note ${kind}">${esc(text)}</p>`;
+  if (realm.state === 'queued') return line('warn', t('realms.queuedText', 'Starts after {name}: the worlds start one after the other.', { name: realmTitle(realm.after || 'coa') }));
+  if ((realm.state === 'starting' || working) && realm.firstStart) return line('info', t('realms.firstStart', 'First start: a few minutes (auction house, new bots). The next ones are quicker.'));
+  if (realm.state === 'stopped' && realm.skipped?.reason === 'memory') return line('bad', t('realms.lowMemoryText', 'Not started with the server: {free} GB free, about {need} GB needed. Stop a realm or lower its bots.', { free: (realm.skipped.free / 1024).toFixed(1), need: (realm.skipped.need / 1024).toFixed(1) }));
+  return '';
+}
+
 function realmCard(realm, busy) {
   const info = REALMS_INFO[realm.key];
   const working = busy === realm.key;
-  const head = `<header>${realmEmblem(realm.key, 56)}<div class="realm-name"><h2>${esc(info.title)}</h2><small>${esc(info.sub)}</small></div>${realmStatePill(realm.state === 'absent' ? 'disabled' : working && realm.state === 'stopped' ? 'starting' : realm.state)}</header>
-    <p class="realm-text">${esc(t(info.textKey, info.text))}</p>`;
+  const head = `<header>${realmEmblem(realm.key, 56)}<div class="realm-name"><h2>${esc(info.title)}</h2><small>${esc(info.sub)}</small></div>${realmStatePill(realm.state === 'absent' ? 'disabled' : working && realm.state === 'stopped' ? 'starting' : realm.state === 'stopped' && realm.skipped ? 'lowmem' : realm.state, realm)}</header>
+    ${realmNote(realm, working) || `<p class="realm-text">${esc(t(info.textKey, info.text))}</p>`}`;
   if (realm.state === 'absent') {
     const r = App.state.realms;
     const creatable = r.supported && realm.ready;
@@ -92,11 +102,11 @@ function realmCard(realm, busy) {
     </article>`;
   }
   const on = ['running', 'starting'].includes(realm.state) || working;
-  const stat = (label, value, hint) => `<div${hint ? ` title="${esc(hint)}"` : ''}><dt>${esc(label)}</dt><dd>${value === null || value === undefined || value === '' ? '—' : esc(String(value))}</dd></div>`;
-  const stats = `<dl class="realm-stats">${stat(t('realms.players', 'Players'), realm.state === 'running' ? realm.players : null)}${stat(t('realms.bots', 'Bots'), realm.bots)}${stat(t('realms.port', 'Port'), realm.worldPort, t('realms.portHint', 'The game reaches this realm on this port (the realm list gives it to the client).'))}</dl>`;
+  const stat = (label, value, hint, of) => `<div${hint ? ` title="${esc(hint)}"` : ''}><dt>${esc(label)}</dt><dd>${value === null || value === undefined || value === '' ? '—' : esc(String(value))}${of ? `<small>/${esc(String(of))}</small>` : ''}</dd></div>`;
+  const stats = `<dl class="realm-stats">${stat(t('realms.players', 'Players'), realm.state === 'running' ? realm.players : null)}${realm.state === 'running' && Number.isFinite(realm.online) ? stat(t('realms.bots', 'Bots'), realm.online, t('realms.botsHint', 'Bots in game now, out of the number set for this realm.'), realm.bots) : stat(t('realms.bots', 'Bots'), realm.bots)}${stat(t('realms.port', 'Port'), realm.worldPort, t('realms.portHint', 'The game reaches this realm on this port (the realm list gives it to the client).'))}</dl>`;
   const startStop = on
     ? `<button class="button ghost small" data-action="realm-stop" data-key="${realm.key}" ${busy || realm.state === 'starting' ? 'disabled' : ''}>${icon('pause')}${esc(t('realms.stop', 'Stop'))}</button>`
-    : `<button class="button primary small" data-action="realm-start" data-key="${realm.key}" ${busy ? 'disabled' : ''}>${icon('play')}${esc(t('realms.start', 'Start'))}</button>`;
+    : `<button class="button primary small" data-action="realm-start" data-key="${realm.key}" ${busy || realm.state === 'queued' ? 'disabled' : ''}>${icon('play')}${esc(t('realms.start', 'Start'))}</button>`;
   const more = realm.main
     ? `<label class="realm-auto"><input type="checkbox" data-action="realm-auto" data-key="coa" ${realm.autostart !== false ? 'checked' : ''}>${esc(t('realms.autostart', 'Start with the server'))}</label><small class="muted">${esc(t('realms.mainFoot', 'Its settings are the base of the other realms.'))}</small>`
     : `<label class="realm-auto"><input type="checkbox" data-action="realm-auto" data-key="${realm.key}" ${realm.autostart ? 'checked' : ''}>${esc(t('realms.autostart', 'Start with the server'))}</label>
@@ -133,7 +143,19 @@ App.pages.realms = {
 // The page follows the realms while it is shown (states, players), without redrawing during an action.
 setInterval(() => { if (App.state.tab === 'realms' && !App.state.realmBusy && App.state.server?.path && !$('#dialog').open) loadRealms(); }, 8000);
 // Known once a server is chosen, so the tab shows up (or not) without visiting a page first.
-setInterval(() => { if (!App.state.realms && App.state.server?.path) loadRealms(); }, 2000);
+// Read again every 15 s while the tab is hidden or unreadable (a server updated to 2.6, another server chosen):
+// the tab appears without restarting the launcher.
+let realmsCheckedAt = 0;
+let realmsRoot = '';
+setInterval(() => {
+  const root = App.state.server?.path;
+  if (!root || App.state.realmBusy) return;
+  const stale = !App.state.realms || realmsRoot !== root || ((!App.state.realms.available || App.state.realms.error) && Date.now() - realmsCheckedAt > 15000);
+  if (!stale) return;
+  realmsCheckedAt = Date.now();
+  realmsRoot = root;
+  loadRealms();
+}, 2000);
 
 async function realmAction(key, work) {
   App.state.realmBusy = key;
@@ -154,6 +176,10 @@ Object.assign(App.actions, {
   }, button),
   'realm-start': button => guard(async () => {
     const key = button.dataset.key;
+    if (key !== 'coa') {
+      const memory = await App.api.realmsMemory(key).catch(() => null);
+      if (memory && !memory.enough && !await confirmDialog({ title: t('realms.memoryTitle', 'Not much free memory'), body: esc(t('realms.memoryBody', '{name} needs about {need} GB with its bots, and {free} GB are free. The whole PC may slow down. Stop another realm or lower its bots first, or start anyway.', { name: realmTitle(key), need: (memory.need / 1024).toFixed(1), free: (memory.free / 1024).toFixed(1) })), confirm: t('realms.startAnyway', 'Start anyway'), danger: true })) return;
+    }
     toast(t('realms.startingLong', 'Starting {name}… the first start with bots takes a few minutes.', { name: realmTitle(key) }));
     await realmAction(key, () => App.api.realmsStart(key));
     toast(t('realms.started', '{name} is running.', { name: realmTitle(key) }), 'success');

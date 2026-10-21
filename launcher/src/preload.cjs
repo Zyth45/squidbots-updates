@@ -120,6 +120,7 @@ contextBridge.exposeInMainWorld('launcher', Object.freeze({
   realmsPurge: key => call('realms:purge', key),
   realmsDisable: (key, off) => call('realms:disable', key, off === true),
   realmsModules: key => call('realms:modules', key),
+  realmsMemory: key => call('realms:memory', key),
   realmsModule: (key, id, state) => call('realms:module', key, id, state),
   onRealmsProgress: on('realms:progress'),
   serviceLog: id => call('repack:tail', id),

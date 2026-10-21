@@ -18,6 +18,7 @@ const { portOpen } = require('./server-control.cjs');
 const { validate } = require('./server-config.cjs');
 const CATALOG = require('./data/server-settings.json');
 const live = require('./live.cjs');
+const os = require('node:os');
 
 // Keys by settings file (the file names of the Server settings page).
 const MODES = {
@@ -187,7 +188,14 @@ async function status(root, { live: withLive = true } = {}) {
     if (!Number.isFinite(bots)) bots = Number(confValue(await fsp.readFile(path.join(BOTS_CONFIGS(root), 'modules', 'playerbots.conf'), 'utf8').catch(() => ''), BOT_COUNT[1])) || null;
     let info = null;
     if (open && withLive) info = await live.raCommand(root, 'server info', 6000, p.raPort).then(live.parseInfo).catch(() => null);
-    list.push({ key, id: saved.id, name: saved.name || m.name, state: open ? 'running' : pid ? 'starting' : saved.disabled ? 'disabled' : 'stopped', worldPort: p.worldPort, raPort: p.raPort, bots, changed, autostart: saved.autostart === true, players: info?.players ?? null, characters: info?.characters ?? null, uptime: info?.uptime || '' });
+    const queued = !open && !pid && !saved.disabled && queue.waiting.includes(key);
+    list.push({
+      key, id: saved.id, name: saved.name || m.name,
+      state: open ? 'running' : pid ? 'starting' : saved.disabled ? 'disabled' : queued ? 'queued' : 'stopped',
+      after: queued ? queue.current : '', skipped: !open && !pid ? skipped.get(key) || null : null,
+      firstStart: !saved.startedOnce, worldPort: p.worldPort, raPort: p.raPort, bots, online: open ? botsOnline(root, key) : null,
+      changed, autostart: saved.autostart === true, players: info?.players ?? null, characters: info?.characters ?? null, uptime: info?.uptime || '',
+    });
   }
   // Realms made before (a beta) stay reachable even on an older CoA Bots, to stop or remove them.
   return { supported, available: supported || list.some(realm => realm.state !== 'absent'), version, realms: list };
@@ -438,8 +446,9 @@ async function start(root, key, { timeout = 1200 } = {}) {
   await sql(root, `UPDATE acore_auth.realmlist r JOIN acore_auth.realmlist c ON c.id = 1 SET r.port = ${saved.worldPort}, r.address = c.address, r.localAddress = c.localAddress WHERE r.id = ${saved.id}`).catch(() => {});
   const child = launch(root, key, 'started by the launcher');
   const deadline = Date.now() + timeout * 1000;
+  skipped.delete(key);
   while (Date.now() < deadline) {
-    if (await portOpen(saved.worldPort)) return;
+    if (await portOpen(saved.worldPort)) { await markStarted(root, key); return; }
     if (!pidAlive(child.pid)) throw new Error(`${saved.name} stopped while starting. Look at Royaumes\\${key}\\Logs.`);
     await new Promise(resolve => setTimeout(resolve, 2000));
   }
@@ -487,13 +496,67 @@ async function stopAll(root) {
   for (const key of Object.keys(MODES)) await stop(root, key);
 }
 
-// Realms marked to start with the server.
-async function startMarked(root) {
+// ---------------------------------------------------------------- queue, memory, bots in game
+// The realms waiting their turn after "Start all" (they start one after the other, CoA first): shown on their card.
+const queue = { waiting: [], current: '' };
+// Realms "Start all" left stopped, and why (not enough free memory).
+const skipped = new Map();
+
+async function markedRealms(root) {
+  const keys = [];
+  for (const key of Object.keys(MODES)) { const saved = await realmFile(root, key); if (saved?.autostart && !saved.disabled) keys.push(key); }
+  return keys;
+}
+// Called before the CoA world starts, so the cards say they wait for it.
+async function queueMarked(root) {
+  queue.waiting = await markedRealms(root);
+  queue.current = 'coa';
+}
+
+// Memory a world needs, from the number of its bots (measured on the LAPTOP: CoA with 300 bots ≈ 6.6 GB, Wildcard
+// with 150 ≈ 3.5 GB and growing): about 2 GB plus 15 MB per bot. Free memory is what Windows reports now.
+const neededMb = bots => Math.round(2000 + 15 * Math.max(0, Number(bots) || 0));
+async function memoryFor(root, key) {
+  const realm = (await status(root, { live: false })).realms.find(item => item.key === key);
+  if (!realm) throw new Error('Unknown realm.');
+  const need = neededMb(realm.bots);
+  const free = Math.round(os.freemem() / 1048576);
+  return { need, free, enough: free >= need };
+}
+
+async function markStarted(root, key) {
+  const file = path.join(dirOf(root, key), 'realm.json');
+  const saved = await readJson(file);
+  if (saved && !saved.startedOnce) { saved.startedOnce = true; await fsp.writeFile(file, JSON.stringify(saved, null, 2)); }
+}
+
+// The bots of a realm in game, from the status file its bots module writes (Logs/bot-status.json in its folder).
+function botsOnline(root, key) {
+  try {
+    const data = JSON.parse(fs.readFileSync(path.join(dirOf(root, key), 'Logs', 'bot-status.json'), 'utf8'));
+    if (!Array.isArray(data.bots) || (data.at && Date.now() / 1000 - Number(data.at) > 300)) return null;
+    return data.bots.length;
+  } catch { return null; }
+}
+
+// Realms marked to start with the server, one after the other. A realm is left stopped when the free memory is
+// clearly too low for it (it would make the whole PC swap); its card says so.
+async function startMarked(root, { freeMb = () => os.freemem() / 1048576 } = {}) {
   const failed = [];
-  for (const key of Object.keys(MODES)) {
-    const saved = await realmFile(root, key);
-    if (saved?.autostart && !saved.disabled) await start(root, key).catch(error => failed.push({ key, error: error.message }));
-  }
+  queue.waiting = await markedRealms(root);
+  try {
+    for (const key of [...queue.waiting]) {
+      queue.current = key;
+      queue.waiting = queue.waiting.filter(item => item !== key);
+      const realm = (await status(root, { live: false })).realms.find(item => item.key === key);
+      if (realm && realm.state === 'stopped' && freeMb() < neededMb(realm.bots)) {
+        skipped.set(key, { reason: 'memory', need: neededMb(realm.bots), free: Math.round(freeMb()) });
+        failed.push({ key, error: 'memory' });
+        continue;
+      }
+      await start(root, key).catch(error => failed.push({ key, error: error.message }));
+    }
+  } finally { queue.waiting = []; queue.current = ''; }
   return failed;
 }
 
@@ -523,4 +586,4 @@ async function setOptions(root, key, { autostart } = {}) {
   return saved;
 }
 
-module.exports = { MODES, setDisabled, versionReady, modulesOf, setModule, coaAutostart, setCoaAutostart, skipCoaAtStart, anotherStarting, refreshBotConfigs, status, create, start, stop, stopAll, startMarked, setOptions, settingsOf, saveSettings, purgeBots, writeConfigs, setKey };
+module.exports = { MODES, queueMarked, memoryFor, neededMb, botsOnline, setDisabled, versionReady, modulesOf, setModule, coaAutostart, setCoaAutostart, skipCoaAtStart, anotherStarting, refreshBotConfigs, status, create, start, stop, stopAll, startMarked, setOptions, settingsOf, saveSettings, purgeBots, writeConfigs, setKey };

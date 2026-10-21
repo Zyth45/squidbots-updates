@@ -1023,5 +1023,15 @@
   "realms.activateTitle": "Activer le royaume {name} ?",
   "realms.activateBody": "La première fois, ses deux bases sont créées (ses personnages et ses bots, environ une minute) et il est ajouté à la liste des royaumes du jeu. Vos personnages et vos bots de Conquest of Azeroth ne sont pas touchés. Vous pourrez le désactiver à tout moment.",
   "realms.activated": "{name} est activé : démarrez-le, puis choisissez-le dans la liste des royaumes du jeu.",
-  "realms.nothingDeleted": "Rien n'est supprimé : réactivez-le quand vous voulez."
+  "realms.nothingDeleted": "Rien n'est supprimé : réactivez-le quand vous voulez.",
+  "realms.queued": "Après {name}",
+  "realms.lowMemory": "Mémoire faible",
+  "realms.queuedText": "Démarre après {name} : les mondes démarrent l'un après l'autre.",
+  "realms.firstStart": "Premier démarrage : quelques minutes (hôtel des ventes, création des bots). Les suivants sont plus rapides.",
+  "realms.lowMemoryText": "Pas démarré avec le serveur : {free} Go libres, il en faut environ {need}. Arrêtez un royaume ou baissez ses bots.",
+  "realms.botsHint": "Bots en jeu maintenant, sur le nombre réglé pour ce royaume.",
+  "realms.memoryTitle": "Peu de mémoire libre",
+  "realms.memoryBody": "{name} demande environ {need} Go avec ses bots, et {free} Go sont libres. Tout le PC risque de ralentir. Arrêtez d'abord un autre royaume ou baissez ses bots, ou démarrez quand même.",
+  "realms.startAnyway": "Démarrer quand même",
+  "live.allRealms": "Les {n} royaumes : {players} joueurs · {bots} bots en jeu"
 }
