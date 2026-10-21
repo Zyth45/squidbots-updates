@@ -37,7 +37,7 @@
 :root[data-palette="abyss"] ::-webkit-scrollbar-thumb:hover { background: rgba(66, 240, 223, .55); }
 :root[data-palette="abyss"] .update-card { background: color-mix(in srgb, var(--accent) 12%, rgba(5, 10, 13, .72)); }
 :root[data-palette="abyss"] .update-card.bad { background: color-mix(in srgb, var(--bad) 12%, rgba(5, 10, 13, .72)); }
-:root[data-palette="abyss"] .play-game { color: #041e2e; background: linear-gradient(180deg, #ffe39a, #e8b04e 55%, #23b5bd); }
+:root[data-palette="abyss"] .play-game { color: #062940; }
 :root[data-palette="abyss"][data-palette]:is([data-theme]) { --accent: #3fe0c5; --accent-deep: #0e6c63; --accent-ink: #032320; --accent-glow: rgba(63, 224, 197, .38); --mote: #7ff5e3; --squid-deep: #22103a; --squid-tip: #6f3a98; --cta: linear-gradient(180deg, #5fe3d0 0%, #1d9e9c 45%, #0c6672 100%); --cta-ink: #f2fffd; --cta-edge: rgba(170, 255, 240, .45); --cta-glow: rgba(40, 200, 190, .35); --squid-sucker: #d5a0cc; --text: #e4f3f4; --muted: #92b3ba; --faint: #5d7f88; }
 :root[data-palette="abyss"][data-palette]:is([data-theme]) body { background: radial-gradient(90% 70% at 35% 0%, #0b3a52, #020a11 72%); }
 :root[data-palette="abyss"][data-palette]:is([data-theme]) .button.primary { background: linear-gradient(180deg, #2fb8ad, #0f7480); border-color: #3fd0c0; color: #f2fffd; }

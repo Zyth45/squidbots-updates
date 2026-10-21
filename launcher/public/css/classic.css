@@ -421,8 +421,8 @@ label.switch input:checked + span::after { background: #fff; }
 }
 /* Home: the gold Play button beside the server button; dimmed while no game folder is known. */
 .play-game { display: inline-flex; align-items: center; gap: 8px; height: 52px; padding: 0 18px; border-radius: 12px; flex: none;
-  font: 700 17px var(--display); letter-spacing: .08em; text-transform: uppercase; color: #2a1606;
-  background: linear-gradient(180deg, #ffe39a, #e8b04e 55%, #b97a22); border: 1px solid #ffd27a;
+  font: 700 17px var(--display); letter-spacing: .08em; text-transform: uppercase; color: #3a2408;
+  background: linear-gradient(180deg, #ffe39a, #e8b04e 55%, #b5852b); border: 1px solid #ffd27a;
   box-shadow: 0 8px 22px rgba(232, 176, 78, .35), 0 0 0 1px rgba(255, 240, 200, .35) inset; }
 .play-game .icon { width: 20px; height: 20px; }
 .play-game:hover { filter: brightness(1.08); }
