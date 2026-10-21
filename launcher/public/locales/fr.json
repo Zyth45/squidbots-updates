@@ -1037,5 +1037,9 @@
   "home.runningRealms": "Votre serveur tourne ({realms}). Les joueurs se connectent à {address}.",
   "realms.failedMemory": "{name} n'a pas été démarré : pas assez de mémoire libre.",
   "realms.failed": "{name} n'a pas démarré : {error}",
-  "component.needsBots": "Demande CoA Bots {need} sur le serveur (vous avez {have}) : mettez d'abord le serveur à jour."
+  "component.needsBots": "Demande CoA Bots {need} sur le serveur (vous avez {have}) : mettez d'abord le serveur à jour.",
+  "home.play": "Jouer",
+  "home.playIn": "Lancer le jeu : {path}",
+  "home.playPick": "Choisissez le dossier de votre jeu (celui avec Ascension.exe), puis jouez",
+  "home.playStarted": "Le jeu démarre."
 }

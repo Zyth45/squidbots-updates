@@ -724,6 +724,18 @@ function registerIpc() {
     return folder;
   }
   handle('update:pickClient', async () => (await pickClient()) ?? (settings.installPaths.addon || ''));
+  // Play: starts the game client of this PC (the folder chosen for the addon), asked once when none is known.
+  handle('game:play', async () => {
+    const known = settings.installPaths.addon;
+    const client = known && addonSync.isClient(known) ? known : await pickClient();
+    if (!client) return { started: false };
+    const exe = ['Ascension.exe', 'Wow.exe', 'WoW.exe'].map(name => path.join(client, name)).find(file => fs_exists(file));
+    if (!exe) throw new Error('No Ascension.exe or Wow.exe in the game folder.');
+    const child = require('node:child_process').spawn(exe, [], { cwd: client, detached: true, stdio: 'ignore', windowsHide: false });
+    child.on('error', () => {});
+    child.unref();
+    return { started: true, client };
+  });
   // The game client also needs its realmlist on this server: 127.0.0.1 here, or the address given to the
   // other PCs (and any address of this PC) when the server is open, always with the login port.
   const clientRealmlist = async client => {
@@ -1413,6 +1425,10 @@ function supportReport() {
 let notesCache = { at: 0, list: [] };
 const plain = line => line.replace(/\*\*|`/g, '').trim();
 function noteSummary(body) {
+  // The title line of the notes ("## v2.6 — Three realms… (October 2026) — release main-…") says it best.
+  const head = /^##\s+(.+)$/m.exec(body)?.[1];
+  // The card already shows "CoA Bots 2.6" and the date: the version, the month and the release id are left out.
+  if (head) return plain(head).replace(/\s*[—-]\s*release\s+\S+\s*$/i, '').replace(/^v?[\d.]+\s*[—-]\s*/, '').replace(/\s*\([A-Za-z]+ \d{4}\)\s*$/, '').slice(0, 300);
   const bold = [...body.matchAll(/^\s*[-*] \*\*(.+?)\*\*/gm)].map(m => plain(m[1]).replace(/[.:]$/, ''));
   if (bold.length) return bold.slice(0, 4).join(' · ');
   return plain(body.split(/\r?\n/).find(line => line.trim() && !line.startsWith('#')) || '').slice(0, 300);

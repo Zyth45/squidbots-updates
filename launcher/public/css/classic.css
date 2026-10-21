@@ -419,3 +419,21 @@ label.switch input:checked + span::after { background: #fff; }
   :root[data-theme="classic"] .tabs .tab .icon, :root[data-theme="classic"] .tabs-right .tab .icon { display: none; }
   :root[data-theme="classic"] .tabs .tab, :root[data-theme="classic"] .tabs-right .tab { padding-left: 8px; padding-right: 8px; }
 }
+/* Home: the gold Play button beside the server button; dimmed while no game folder is known. */
+.play-game { display: inline-flex; align-items: center; gap: 8px; height: 52px; padding: 0 18px; border-radius: 12px; flex: none;
+  font: 700 17px var(--display); letter-spacing: .08em; text-transform: uppercase; color: #2a1606;
+  background: linear-gradient(180deg, #ffe39a, #e8b04e 55%, #b97a22); border: 1px solid #ffd27a;
+  box-shadow: 0 8px 22px rgba(232, 176, 78, .35), 0 0 0 1px rgba(255, 240, 200, .35) inset; }
+.play-game .icon { width: 20px; height: 20px; }
+.play-game:hover { filter: brightness(1.08); }
+.play-game.unset { filter: grayscale(.85) brightness(.75); box-shadow: none; }
+.play-game.unset:hover { filter: grayscale(.4) brightness(.9); }
+.title-row { display: flex; align-items: center; gap: 14px; }
+.title-tools { display: flex; gap: 8px; }
+.title-tools .gear-settings { width: 40px; height: 40px; flex: none; border-radius: 10px; border: 1px solid var(--line-strong); background: var(--panel); }
+.title-tools .gear-settings .icon { width: 18px; height: 18px; }
+.title-tools .gear-settings:hover { border-color: var(--accent); color: var(--accent); }
+/* Small tools inside a home card, right before its arrow: the update check (Core), the server settings (CoA Bots). */
+.side-card .card-tool { display: grid; place-items: center; width: 28px; height: 28px; margin-left: auto; margin-right: 4px; flex: none; border-radius: 8px; border: 1px solid var(--line-strong); color: var(--muted); }
+.side-card .card-tool .icon { width: 15px; height: 15px; }
+.side-card .card-tool:hover { border-color: var(--accent); color: var(--accent); background: var(--tint); }

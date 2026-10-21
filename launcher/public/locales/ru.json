@@ -1037,5 +1037,9 @@
   "home.runningRealms": "Ваш сервер работает ({realms}). Игроки подключаются к {address}.",
   "realms.failedMemory": "{name} не запущен: мало свободной памяти.",
   "realms.failed": "{name} не запустился: {error}",
-  "component.needsBots": "Нужен CoA Bots {need} на сервере (у вас {have}): сначала обновите сервер."
+  "component.needsBots": "Нужен CoA Bots {need} на сервере (у вас {have}): сначала обновите сервер.",
+  "home.play": "Играть",
+  "home.playIn": "Запустить игру: {path}",
+  "home.playPick": "Выберите папку игры (с Ascension.exe), затем играйте",
+  "home.playStarted": "Игра запускается."
 }

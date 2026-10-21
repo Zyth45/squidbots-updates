@@ -301,12 +301,13 @@ function homeView() {
           <button class="split-more" data-action="play-menu" aria-label="${esc(t('classic.more', 'More'))}">${icon('chevron')}</button>
           <div class="split-menu" id="play-menu" hidden>${menu.map(([action, id, label]) => `<button data-action="${action}" ${id ? `data-id="${id}"` : ''}>${esc(label)}</button>`).join('')}</div>
         </div>
-        <button class="icon-button gear-settings" data-action="srv-tab" data-id="settings" title="${esc(t('srv.tab.settings', 'Server settings'))}" aria-label="${esc(t('srv.tab.settings', 'Server settings'))}">${icon('settings')}</button>${s.config.hasUpdates ? `<button class="icon-button gear-settings" data-action="update-check" title="${esc(t('settings.checkRepack', 'Check for a repack and bots update'))}" aria-label="${esc(t('settings.checkRepack', 'Check for a repack and bots update'))}">${icon('refresh')}</button>` : ''}</div>
+        ${playButton()}
+      </div>
         <span class="chip classic-folder" title="${esc(info.path)}">${icon('folder')}<span>${esc(info.path)}</span></span>
       </div>
       <aside class="classic-side">${updateCard()}${componentCards()}
-        <button class="side-card" ${s.update?.state?.state === 'available' ? 'data-action="update-open"' : 'data-tab="verify"'}>${icon('layers')}<span><strong>${esc(t('home.core', 'Core'))}</strong><small>${esc(shortRelease(info.details?.release || info.version) || '—')}</small></span>${s.updates.core || s.update?.state?.state === 'available' ? '<i class="dot"></i>' : icon('next')}</button>
-        <button class="side-card" data-tab="verify">${icon('bot')}<span><strong>CoA Bots</strong><small>${esc(info.bots?.installed ? `${info.bots.version}${info.bots.builtFor ? ` · ${shortRelease(info.bots.builtFor)}` : ''}` : t('bots.notInstalled', 'Not installed'))}</small></span>${s.updates.bots ? '<i class="dot"></i>' : icon('next')}</button>
+        <button class="side-card" ${s.update?.state?.state === 'available' ? 'data-action="update-open"' : 'data-tab="verify"'}>${icon('layers')}<span><strong>${esc(t('home.core', 'Core'))}</strong><small>${esc(shortRelease(info.details?.release || info.version) || '—')}</small></span>${s.config.hasUpdates ? `<span class="card-tool" role="button" data-action="update-check" title="${esc(t('settings.checkRepack', 'Check for a repack and bots update'))}">${icon('refresh')}</span>` : ''}${s.updates.core || s.update?.state?.state === 'available' ? '<i class="dot"></i>' : icon('next')}</button>
+        <button class="side-card" data-tab="verify">${icon('bot')}<span><strong>CoA Bots</strong><small>${esc(info.bots?.installed ? `${info.bots.version}${info.bots.builtFor ? ` · ${shortRelease(info.bots.builtFor)}` : ''}` : t('bots.notInstalled', 'Not installed'))}</small></span><span class="card-tool" role="button" data-action="srv-tab" data-id="settings" title="${esc(t('srv.tab.settings', 'Server settings'))}">${icon('settings')}</span>${s.updates.bots ? '<i class="dot"></i>' : icon('next')}</button>
         <button class="side-card verify-card ${verifyState}" data-tab="verify">${icon('shield')}<span><strong>${esc(t('tab.verify', 'Verification'))}</strong><small>${esc(verifyText)}</small></span>${icon('next')}</button>
         ${addonCard()}
         ${newerRepack(info) ? `<button class="side-card" data-action="repack-newer">${icon('download')}<span><strong>${esc(t('home.newRepack', 'New repack available'))}</strong><small>${esc(newerRepack(info).name || newerRepack(info).release)}</small></span><i class="dot"></i></button>` : ''}
@@ -326,6 +327,18 @@ function newerRepack(info) {
   const day = release => /^main-(d{8})-/.exec(release)?.[1] || '';
   return day(repack.release) > day(info.details.release) ? repack : null;
 }
+
+// Play: the game client of this PC. Dimmed while no game folder is known; a click then asks for it.
+function playButton() {
+  const client = App.state.addon?.client;
+  return `<button class="play-game${client ? '' : ' unset'}" data-action="game-play" title="${esc(client ? t('home.playIn', 'Start the game: {path}', { path: client }) : t('home.playPick', 'Choose your game folder (the one with Ascension.exe), then play'))}">${icon('play')}<span>${esc(t('home.play', 'Play'))}</span></button>`;
+}
+App.actions['game-play'] = button => guard(async () => {
+  const result = await App.api.gamePlay();
+  if (!result?.started) return;
+  toast(t('home.playStarted', 'The game is starting.'), 'success');
+  if (typeof refreshAddon === 'function') refreshAddon(true);
+}, button);
 
 // News written by the realm owner in the feed (feed.json on the download server).
 function homeLinks() {
