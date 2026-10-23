@@ -20,6 +20,15 @@
       }
     },
     {
+      "id": "collections",
+      "icon": "star",
+      "label": {
+        "en": "Collections and mounts",
+        "fr": "Collections et montures",
+        "ru": "Коллекции и маунты"
+      }
+    },
+    {
       "id": "rates",
       "icon": "chart",
       "label": {
@@ -1586,6 +1595,168 @@
         "fr": "Multiplicateur (1 par défaut, inchangé). Difficulté normale seulement : héroïque, mythique, champs de bataille, arènes, familiers, invocations et mannequins ne changent jamais.",
         "ru": "Множитель (по умолчанию 1, без изменений). Только обычная сложность: героик, мифик, поля боя, арены, питомцы, призванные существа и манекены не меняются."
       }
+    },
+    {
+      "key": "CoA.UnlockLocalAppearanceCatalog",
+      "file": "coa.conf",
+      "group": "collections",
+      "kind": "bool",
+      "when": "restart",
+      "label": {
+        "en": "Every appearance unlocked from the start",
+        "fr": "Toutes les apparences débloquées d'office",
+        "ru": "Все облики открыты сразу"
+      },
+      "help": {
+        "en": "On: the wardrobe has every appearance at once. Off: your players collect appearances as they play (keep \"Collect appearances of looted items\" on). Turned on, the collection tables stay empty: what was picked up before is not caught up if you turn it off later.",
+        "fr": "Activé : la garde-robe a toutes les apparences dès le départ. Désactivé : vos joueurs collectionnent les apparences au fil du jeu (gardez « Collecter les apparences des objets obtenus » activé). Activé, les tables de collection restent vides : ce qui a été ramassé avant n'est pas rattrapé si vous le désactivez plus tard.",
+        "ru": "Включено: в гардеробе сразу все облики. Выключено: игроки собирают облики по ходу игры (оставьте «Собирать облики полученных предметов» включённым). Включено — таблицы коллекции остаются пустыми: собранное раньше не восстановится, если позже выключить."
+      }
+    },
+    {
+      "key": "CoA.UnlockAllVanity",
+      "file": "coa.conf",
+      "group": "collections",
+      "kind": "bool",
+      "when": "restart",
+      "label": {
+        "en": "Whole vanity collection owned from the start",
+        "fr": "Toute la collection vanity possédée d'office",
+        "ru": "Вся коллекция vanity сразу"
+      },
+      "help": {
+        "en": "On: every item of the vanity collection is owned at once. Off: your players earn them in game. Turned on, the collection tables stay empty: what was picked up before is not caught up if you turn it off later.",
+        "fr": "Activé : tous les objets de la collection vanity sont possédés d'office. Désactivé : vos joueurs les gagnent en jeu. Activé, les tables de collection restent vides : ce qui a été ramassé avant n'est pas rattrapé si vous le désactivez plus tard.",
+        "ru": "Включено: все предметы коллекции vanity сразу ваши. Выключено: игроки получают их в игре. Включено — таблицы коллекции остаются пустыми: собранное раньше не восстановится, если позже выключить."
+      }
+    },
+    {
+      "key": "CoA.AutoCollectAppearances",
+      "file": "coa.conf",
+      "group": "collections",
+      "kind": "bool",
+      "when": "restart",
+      "label": {
+        "en": "Collect appearances of looted items",
+        "fr": "Collecter les apparences des objets obtenus",
+        "ru": "Собирать облики полученных предметов"
+      },
+      "help": {
+        "en": "An appearance joins the wardrobe when a character gets the item. Keep it on: it is what makes collecting as you play work.",
+        "fr": "Une apparence entre dans la garde-robe quand le personnage obtient l'objet. À garder activé : c'est lui qui rend la collecte au fil du jeu possible.",
+        "ru": "Облик попадает в гардероб, когда персонаж получает предмет. Оставьте включённым: без этого сбор по ходу игры не работает."
+      }
+    },
+    {
+      "key": "CoA.LearnOwnedCompanions",
+      "file": "coa.conf",
+      "group": "collections",
+      "kind": "bool",
+      "when": "restart",
+      "label": {
+        "en": "Mounts and pets owned are learned for good",
+        "fr": "Montures et mascottes possédées apprises pour de bon",
+        "ru": "Имеющиеся маунты и питомцы изучаются навсегда"
+      },
+      "help": {
+        "en": "A mount or pet a character owns is learned for good, as in the CoA collection. Off: it stays an item in the bags.",
+        "fr": "Une monture ou une mascotte possédée est apprise définitivement, comme dans la collection CoA. Désactivé : elle reste un objet dans les sacs.",
+        "ru": "Имеющийся маунт или питомец изучается навсегда, как в коллекции CoA. Выключено — остаётся предметом в сумке."
+      }
+    },
+    {
+      "key": "CoA.MaxRidingFromStart",
+      "file": "coa.conf",
+      "group": "collections",
+      "kind": "bool",
+      "when": "restart",
+      "label": {
+        "en": "Riding 300 from level 1",
+        "fr": "Équitation 300 dès le niveau 1",
+        "ru": "Верховая езда 300 с 1 уровня"
+      },
+      "help": {
+        "en": "On: every character rides at full speed from level 1. Off: riding is learned at the trainer, as in the original game.",
+        "fr": "Activé : chaque personnage monte à pleine vitesse dès le niveau 1. Désactivé : l'équitation s'apprend chez le maître, comme dans le jeu d'origine.",
+        "ru": "Включено: каждый персонаж ездит на полной скорости с 1 уровня. Выключено: езда изучается у учителя, как в оригинале."
+      }
+    },
+    {
+      "key": "CoA.CollectionsForBots",
+      "file": "coa.conf",
+      "group": "collections",
+      "kind": "choice",
+      "when": "restart",
+      "choices": [
+        {
+          "value": "0",
+          "label": {
+            "en": "Never",
+            "fr": "Jamais",
+            "ru": "Никогда"
+          }
+        },
+        {
+          "value": "1",
+          "label": {
+            "en": "Your characters added as bots",
+            "fr": "Vos personnages ajoutés comme bots",
+            "ru": "Ваши персонажи, добавленные как боты"
+          }
+        },
+        {
+          "value": "2",
+          "label": {
+            "en": "Every bot",
+            "fr": "Tous les bots",
+            "ru": "Все боты"
+          }
+        }
+      ],
+      "label": {
+        "en": "Collections for bots",
+        "fr": "Collections pour les bots",
+        "ru": "Коллекции для ботов"
+      },
+      "help": {
+        "en": "Bots wear transmog and use the collections of their account. Keep CoA.RandomBotAccountPrefix (coa.conf) equal to AiPlayerbot.RandomBotAccountPrefix (playerbots.conf).",
+        "fr": "Les bots portent leur transmog et utilisent les collections de leur compte. Gardez CoA.RandomBotAccountPrefix (coa.conf) égal à AiPlayerbot.RandomBotAccountPrefix (playerbots.conf).",
+        "ru": "Боты носят трансмог и используют коллекции своего аккаунта. CoA.RandomBotAccountPrefix (coa.conf) должен совпадать с AiPlayerbot.RandomBotAccountPrefix (playerbots.conf)."
+      }
+    },
+    {
+      "key": "AiPlayerbot.SyncLevelWithPlayers",
+      "file": "playerbots.conf",
+      "group": "levels",
+      "kind": "bool",
+      "when": "restart",
+      "label": {
+        "en": "New bots not above the players",
+        "fr": "Nouveaux bots pas au-dessus des joueurs",
+        "ru": "Новые боты не выше игроков"
+      },
+      "help": {
+        "en": "Only when a bot is created: its level stays at most the highest player's + 3. It does not cap bots afterwards: with level brackets on, bots keep moving between level ranges.",
+        "fr": "Seulement à la création d'un bot : son niveau reste au plus celui du joueur le plus haut + 3. Il ne bride pas les bots ensuite : avec les tranches de niveau, les bots continuent de changer de tranche.",
+        "ru": "Только при создании бота: его уровень не выше самого высокого игрока + 3. Потом ботов не ограничивает: с диапазонами уровней боты продолжают переходить между ними."
+      }
+    },
+    {
+      "key": "AiPlayerbot.LevelBrackets.FreshStart",
+      "file": "playerbots.conf",
+      "group": "levels",
+      "kind": "bool",
+      "when": "restart",
+      "label": {
+        "en": "Bots of the lowest bracket start fresh",
+        "fr": "Les bots de la tranche la plus basse repartent de zéro",
+        "ru": "Боты нижнего диапазона начинают заново"
+      },
+      "help": {
+        "en": "A bot moved into the lowest level range starts again at the first level, at the starting zone of its race: this is what fills the starting zones.",
+        "fr": "Un bot qui entre dans la tranche la plus basse repart au premier niveau, dans la zone de départ de sa race : c'est ce qui repeuple les zones de début.",
+        "ru": "Бот, попавший в нижний диапазон, начинает с первого уровня в стартовой зоне своей расы: так заполняются стартовые зоны."
+      }
     }
   ],
   "overrides": [
@@ -1672,6 +1843,19 @@
         "en": "LLM chat is off, so this has no effect.",
         "fr": "La discussion IA est désactivée : sans effet.",
         "ru": "Чат ИИ выключен — не действует."
+      }
+    },
+    {
+      "if": {
+        "AiPlayerbot.SyncLevelWithPlayers": "1"
+      },
+      "warn": [
+        "AiPlayerbot.LevelBrackets.Enabled"
+      ],
+      "text": {
+        "en": "\"New bots not above the players\" only sets the level of a bot when it is created: level brackets still move bots between ranges every 5 minutes.",
+        "fr": "« Nouveaux bots pas au-dessus des joueurs » ne fixe le niveau qu'à la création d'un bot : les tranches de niveau déplacent toujours des bots toutes les 5 minutes.",
+        "ru": "«Новые боты не выше игроков» задаёт уровень только при создании бота: диапазоны уровней всё равно перемещают ботов каждые 5 минут."
       }
     }
   ],
