@@ -191,7 +191,8 @@ async function status(root, { live: withLive = true } = {}) {
     const queued = !open && !pid && !saved.disabled && queue.waiting.includes(key);
     list.push({
       key, id: saved.id, name: saved.name || m.name,
-      state: open ? 'running' : pid ? 'starting' : saved.disabled ? 'disabled' : queued ? 'queued' : 'stopped',
+      // A world being stopped still has its process (its port may already be closed): it is « stopping », not « starting ».
+      state: stopping.has(key) && (open || pid) ? 'stopping' : open ? 'running' : pid ? 'starting' : saved.disabled ? 'disabled' : queued ? 'queued' : 'stopped',
       after: queued ? queue.current : '', skipped: !open && !pid ? skipped.get(key) || null : null,
       firstStart: !saved.startedOnce, worldPort: p.worldPort, raPort: p.raPort, bots, online: open ? botsOnline(root, key) : null,
       changed, autostart: saved.autostart === true, players: info?.players ?? null, characters: info?.characters ?? null, uptime: info?.uptime || '',
@@ -516,11 +517,16 @@ async function anotherStarting(root, except) {
   return '';
 }
 
+const stopping = new Set();
 async function stop(root, key) {
   const saved = await realmFile(root, key);
   if (!saved) return;
   const pid = await processOf(root, key);
   if (!pid && !(await portOpen(saved.worldPort))) return;
+  stopping.add(key);
+  try { await stopWorld(root, key, saved, pid); } finally { stopping.delete(key); }
+}
+async function stopWorld(root, key, saved, pid) {
   // The repack's RA account (Settings/repack.json) is an account of the shared auth database: valid on every realm.
   await live.raCommand(root, 'server shutdown 1s 0', 20000, saved.raPort).catch(() => {});
   const deadline = Date.now() + 120 * 1000;

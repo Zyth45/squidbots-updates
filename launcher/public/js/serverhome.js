@@ -394,10 +394,19 @@ async function refreshLive() {
   if (App.state.tab !== 'home' || $('#dialog').open || document.querySelector('.split-menu:not([hidden])')) return;
   // An account being typed is kept: only the figures are redrawn.
   const form = $('#home-account');
-  const typing = form && (form.contains(document.activeElement) || [...form.querySelectorAll('input')].some(input => input.value));
-  const grid = $('.live .live-grid');
-  if (typing && grid && App.state.live?.running) { const fresh = document.createElement('div'); fresh.innerHTML = liveView(); const next = fresh.querySelector('.live-grid'); if (next) grid.replaceWith(next); }
-  else App.render();
+  // (A checkbox always has a value: only the text fields count.)
+  const typing = form && (form.contains(document.activeElement) || [...form.querySelectorAll('input:not([type=checkbox])')].some(input => input.value));
+  const live = $('section.live');
+  if (typing && live && App.state.live?.running) {
+    // The figures, the title with the bots arriving and the wait notice are redrawn; the account card stays.
+    const fresh = document.createElement('div');
+    fresh.innerHTML = liveView();
+    for (const part of ['h3', '.live-grid']) { const next = fresh.querySelector(`section.live ${part}`); const now = live.querySelector(part); if (next && now) now.replaceWith(next); }
+    const toast = fresh.querySelector('.live-toast');
+    live.querySelector('.live-toast')?.remove();
+    if (toast) live.append(toast);
+    if (typeof applyBars === 'function') applyBars(live);
+  } else App.render();
 }
 setInterval(refreshLive, 10000);
 setTimeout(refreshLive, 1500);
@@ -405,11 +414,35 @@ setTimeout(refreshLive, 1500);
 // ---------------------------------------------------------------- console
 App.state.consoleLog = [];
 const CONSOLE_QUICK = ['server info', 'account onlinelist', 'saveall', 'playerbots rndbot stats'];
+// The console page: the server commands, or SQL on the repack databases (for what the support asks).
+function consoleTabs() {
+  const mode = App.state.consoleMode || 'commands';
+  return `<nav class="subtabs console-modes">${[['commands', 'terminal', t('console.modeCommands', 'Server commands')], ['sql', 'database', t('console.modeSql', 'SQL')]].map(([id, iconName, label]) => `<button class="subtab${mode === id ? ' active' : ''}" data-action="console-mode" data-id="${id}">${icon(iconName)}<span>${esc(label)}</span></button>`).join('')}</nav>`;
+}
+App.state.sql = { query: '', allow: false, results: null, error: '', busy: false };
+const SQL_QUICK = [
+  ['console.sqlManastorm', 'Check Manastorm', 'SELECT guid, id, map FROM acore_world.gameobject WHERE guid IN (6901535, 6901536);\nSELECT * FROM acore_world.manastorm_hub_return;'],
+  ['console.sqlRealms', 'Realms', 'SELECT id, name, address, port, flag FROM acore_auth.realmlist;'],
+  ['console.sqlAccounts', 'Accounts', 'SELECT id, username, last_login FROM acore_auth.account WHERE username NOT LIKE \'RNDBOT%\' ORDER BY id;'],
+];
+function sqlView() {
+  const q = App.state.sql;
+  const table = result => `<div class="sql-result"><code class="console-cmd">${esc(result.statement.slice(0, 160))}</code>${result.columns.length ? `<div class="sql-table-wrap"><table class="sql-table"><thead><tr>${result.columns.map(col => `<th>${esc(col)}</th>`).join('')}</tr></thead><tbody>${result.rows.map(row => `<tr>${row.map(cell => `<td class="${cell === null ? 'null' : ''}">${esc(cell === null ? 'NULL' : cell)}</td>`).join('')}</tr>`).join('')}</tbody></table></div><small class="muted">${esc(t('console.sqlRows', '{n} row(s)', { n: result.total }))}${result.total > result.rows.length ? ` · ${esc(t('console.sqlFirst', 'first {n} shown', { n: result.rows.length }))}` : ''}</small>` : `<small class="muted">${esc(t('console.sqlDone', 'Done (no rows returned).'))}</small>`}</div>`;
+  const results = q.error ? `<pre class="bad">${esc(q.error)}</pre>` : q.results ? `${q.results.backup ? `<p class="muted small">${icon('database')}${esc(t('console.sqlBackup', 'A backup was made first: {name} (Management > Backups).', { name: q.results.backup }))}</p>` : ''}${q.results.results.map(table).join('')}<div class="button-row"><button class="button ghost small" data-action="sql-copy">${icon('copy')}${esc(t('console.sqlCopy', 'Copy the result'))}</button></div>` : `<p class="muted">${esc(t('console.sqlEmpty', 'Type a query, for example one the support sent you, then Run.'))}</p>`;
+  return `<section class="panel console-panel sql-panel"><header><h2>${icon('database')}${esc(t('console.sqlTitle', 'SQL'))}</h2><div class="button-row">${SQL_QUICK.map(([key, label], index) => `<button class="button ghost small" data-action="sql-quick" data-index="${index}">${esc(t(key, label))}</button>`).join('')}</div></header>
+    <p class="muted small">${esc(t('console.sqlHint', 'Queries on the databases of this server (acore_auth, acore_characters, acore_world, acore_playerbots). Reading only (SELECT, SHOW, DESCRIBE) unless you allow changes below. MySQL is started if needed.'))}</p>
+    <textarea id="sql-input" class="sql-input" spellcheck="false" rows="5" placeholder="SELECT * FROM acore_auth.realmlist;">${esc(q.query)}</textarea>
+    <div class="sql-bar"><label class="check"><input type="checkbox" id="sql-allow" ${q.allow ? 'checked' : ''}><span>${esc(t('console.sqlAllow', 'Allow changes (a backup is made first)'))}</span></label><span class="spacer"></span><button class="button primary small" data-action="sql-run" ${q.busy ? 'disabled' : ''}>${icon('play')}${esc(q.busy ? t('console.sqlRunning', 'Running…') : t('console.sqlRun', 'Run'))}</button></div>
+    <div class="sql-results">${results}</div>
+  </section>`;
+}
+
 function consoleView() {
+  if ((App.state.consoleMode || 'commands') === 'sql') return `<div class="page classic">${consoleTabs()}${sqlView()}</div>`;
   const log = App.state.consoleLog.map(entry => `<div class="console-entry"><code class="console-cmd">${entry.realm ? realmEmblem(entry.realm, 16) : ''}AC&gt; ${esc(entry.command)}</code><pre class="${entry.error ? 'bad' : ''}">${esc(entry.output)}</pre></div>`).join('');
   const realm = App.state.consoleRealm || 'coa';
   if (!App.state.realms && App.state.server?.path) loadRealms();
-  return `<div class="page classic">${realmPicker(realm, 'console-realm')}${createdRealms().length > 1 ? realmBanner(realm, t('realms.consoleOn', 'The commands go to this realm only.')) : ''}<section class="panel console-panel">
+  return `<div class="page classic"><div class="srv-tabs-row console-row">${consoleTabs()}${realmPicker(realm, 'console-realm')}</div>${createdRealms().length > 1 ? realmBanner(realm, t('realms.consoleOn', 'The commands go to this realm only.')) : ''}<section class="panel console-panel">
     <header><h2>${icon('terminal')}${esc(t('console.title', 'World console'))}</h2><div class="button-row">${CONSOLE_QUICK.map(command => `<button class="button ghost small" data-action="console-quick" data-command="${esc(command)}">${esc(command)}</button>`).join('')}</div></header>
     <p class="muted small">${esc(t('console.hint', 'The server commands, as in World_Console.bat (the worldserver must run). Up and down arrows bring back the last commands.'))}</p>
     <div class="console-log" id="console-log">${log || `<p class="muted">${esc(t('console.empty', 'Type a command below, for example server info.'))}</p>`}</div>
@@ -432,6 +465,26 @@ async function consoleSend(command) {
   catch (error) { entry.output = translateError(error.message); entry.error = true; }
   if (App.state.tab === 'console') App.render();
 }
+Object.assign(App.actions, {
+  'console-mode': button => { App.state.consoleMode = button.dataset.id; App.render(); },
+  'sql-quick': button => { const item = SQL_QUICK[Number(button.dataset.index)]; if (item) { App.state.sql.query = item[2]; App.render(); } },
+  'sql-run': button => guard(async () => {
+    const q = App.state.sql;
+    q.query = $('#sql-input')?.value || q.query;
+    q.allow = !!$('#sql-allow')?.checked;
+    if (q.allow && !(await confirmDialog({ title: t('console.sqlConfirmTitle', 'Run with changes allowed?'), body: esc(t('console.sqlConfirmBody', 'A query that changes the databases cannot be undone by itself: a backup of the databases is made first, restore it from Management > Backups if needed.')), confirm: t('console.sqlRun', 'Run') }))) return;
+    q.busy = true; q.error = ''; App.render();
+    try { q.results = await App.api.sqlRun(q.query, q.allow); }
+    catch (error) { q.results = null; q.error = translateError(error.message); }
+    finally { q.busy = false; if (App.state.tab === 'console') App.render(); }
+  }, button),
+  'sql-copy': () => {
+    const r = App.state.sql.results;
+    if (!r) return;
+    const text = r.results.map(item => [item.statement, item.columns.join('\t'), ...item.rows.map(row => row.map(cell => cell === null ? 'NULL' : cell).join('\t'))].join('\n')).join('\n\n');
+    navigator.clipboard.writeText(text).then(() => toast(t('console.sqlCopied', 'Copied: paste it on Discord.'), 'success')).catch(() => {});
+  },
+});
 App.pages.console = {
   render: consoleView,
   mount() {
@@ -440,7 +493,9 @@ App.pages.console = {
     const input = $('#console-input');
     if (!input || input.dataset.bound) return;
     input.dataset.bound = '1';
-    input.focus();
+    // The page stays at its top (the SQL / commands switch), the cursor goes in the field.
+    input.focus({ preventScroll: true });
+    $('#view')?.scrollTo({ top: 0 });
     $('#console-form').addEventListener('submit', event => { event.preventDefault(); const value = input.value; input.value = ''; consoleSend(value); });
     input.addEventListener('keydown', event => {
       if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;

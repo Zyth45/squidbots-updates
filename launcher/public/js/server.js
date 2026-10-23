@@ -10,7 +10,7 @@ const SERVICE_STATE = {
   foreign: ['busy', () => t('server.foreign', 'Port used by another program')],
   unknown: ['unknown', () => t('server.unknown', 'Unknown')],
 };
-const SRV_TABS = [['services', 'layers', 'srv.tab.services', 'Services'], ['install', 'download', 'srv.tab.install', 'Installation'], ['backups', 'database', 'srv.tab.backups', 'Backups'],['settings', 'settings', 'srv.tab.settings', 'Server settings']];
+const SRV_TABS = [['settings', 'settings', 'srv.tab.settings', 'Server settings'], ['services', 'layers', 'srv.tab.services', 'Services'], ['install', 'download', 'srv.tab.install', 'Installation'], ['backups', 'database', 'srv.tab.backups', 'Backups']];
 const UPGRADE_STEPS = [['stop', 'srv.step.stop', 'Stop the server'], ['install', 'srv.step.install', 'Install the new version'], ['prepare', 'srv.step.prepare', 'Create its database'], ['bots', 'srv.step.bots', 'Put the bots back'], ['migrate', 'srv.step.migrate', 'Copy accounts, characters and bots'], ['settings', 'srv.step.settings', 'Carry your settings over'], ['switch', 'srv.step.switch', 'Switch to the new version']];
 const pendingKey = (file, key) => `${file}|${key}`;
 const worldRunning = info => (info?.services || []).some(service => service.id === 'world' && service.state === 'running');
@@ -326,7 +326,9 @@ function settingsView() {
   const info = App.state.server || {};
   const realmKey = conf.realm?.key || '';
   const realmOn = realmKey && realmList().some(realm => realm.key === realmKey && realm.state === 'running');
-  const purge = realmKey ? `<button class="button ghost small" data-action="realm-purge" data-key="${realmKey}" ${realmOn ? 'disabled' : ''}>${icon('bot')}${esc(t('realms.purge', 'Recreate its bots'))}</button>` : info.bots?.installed && info.canPurgeBots ? `<button class="button ghost small" data-action="purge-bots" ${worldRunning(info) ? `disabled title="${esc(t('server.purgeStop', 'Stop the server first.'))}"` : `title="${esc(t('conf.purgeHint', 'Recreate the random bots (after changing their number, classes or levels): your characters stay. The server must be stopped.'))}"`}>${icon('bot')}${esc(t('server.purge', 'Recreate the bots'))}</button>` : '';
+  // While its bots are being recreated (a few minutes), the button says so.
+  const purging = realmKey && App.state.realmBusy === realmKey;
+  const purge = realmKey ? `<button class="button ghost small" data-action="realm-purge" data-key="${realmKey}" ${realmOn || purging ? 'disabled' : ''}>${icon(purging ? 'refresh' : 'bot')}${esc(purging ? t('realms.purging', 'Recreating its bots…') : t('realms.purge', 'Recreate its bots'))}</button>` : info.bots?.installed && info.canPurgeBots ? `<button class="button ghost small" data-action="purge-bots" ${worldRunning(info) ? `disabled title="${esc(t('server.purgeStop', 'Stop the server first.'))}"` : `title="${esc(t('conf.purgeHint', 'Recreate the random bots (after changing their number, classes or levels): your characters stay. The server must be stopped.'))}"`}>${icon('bot')}${esc(t('server.purge', 'Recreate the bots'))}</button>` : '';
   const logs = `<button class="button ghost small" data-action="open-logs" title="${esc(t('conf.logsHint', 'The server logs (Server.log, errors, bots): the console scrolls too fast, these files keep everything.'))}">${icon('book')}${esc(t('conf.openLogs', 'Open the logs'))}</button>`;
   const bar = `<div class="conf-bar${count ? ' dirty' : ''}" id="conf-bar"><span>${esc(count ? t('conf.pending', '{n} unsaved change(s)', { n: count }) : t('conf.savedShort', 'All saved.'))}</span><span class="spacer"></span>${count ? `<button class="button ghost small" data-action="conf-discard">${esc(t('conf.discard', 'Discard'))}</button><button class="button primary small" data-action="conf-save">${esc(t('common.save', 'Save'))}</button>${(realmKey ? realmOn : worldRunning(App.state.server)) ? `<button class="button primary small" data-action="conf-save-restart">${esc(t('conf.saveRestart', 'Save and restart'))}</button>` : ''}` : realmKey ? `<button class="button ghost small" data-action="realm-logs" data-key="${realmKey}">${icon('book')}${esc(t('conf.openLogs', 'Open the logs'))}</button>${purge}` : `${logs}${purge}<button class="button ghost small" data-action="conf-history" title="${esc(t('conf.saved', 'Saved. A copy of each file is kept before any change.'))}">${icon('refresh')}${esc(t('conf.history', 'History'))}</button>`}</div>`;
   const tabs = groups.map(group => ({ id: group.id, icon: group.icon, label: loc(group.label) }));
@@ -345,7 +347,7 @@ function settingsView() {
   const banner = !others ? '' : realmBanner(key, realmKey
     ? t('realms.confRealm', 'Values marked "as CoA" follow Conquest of Azeroth. Change one and it becomes this realm\'s own; the lock marks the rules of its game mode.')
     : t('realms.confCoa', 'These values are also those of the other realms, except the ones a realm changes for itself.'));
-  return `${realmPicker(key, 'conf-realm')}${banner}${bar}<div class="conf-layout">${nav}<div class="conf-pane">${body}</div></div>`;
+  return `${banner}${bar}<div class="conf-layout">${nav}<div class="conf-pane">${body}</div></div>`;
 }
 
 // Where a value of a realm comes from: Conquest of Azeroth, the realm itself (back to CoA in one click), or its mode.
@@ -393,7 +395,7 @@ App.pages.server = {
     if (!info.path && s.srvTab !== 'install') s.srvTab = 'install';
     const tabs = `<nav class="subtabs">${SRV_TABS.filter(([id]) => id !== 'settings' || info.path).map(([id, iconName, key, fallback]) => `<button class="subtab${s.srvTab === id ? ' active' : ''}" data-action="srv-tab" data-id="${id}" ${!info.path && id !== 'install' ? 'disabled' : ''}>${icon(iconName)}<span>${esc(t(key, fallback))}</span>${id === 'settings' && Object.keys(s.pending).length ? `<em>${Object.keys(s.pending).length}</em>` : ''}${id === 'settings' && isNew('settings') ? newDot() : ''}${(id === 'upgrade' && s.updates.core) || (id === 'install' && s.updates.bots) ? '<i class="dot"></i>' : ''}</button>`).join('')}</nav>`;
     const view = { services: servicesView, install: installView, backups: backupsView, upgrade: upgradeView, modules: modulesView, settings: settingsView }[s.srvTab];
-    return `<div class="page server"><div class="page-head"><div><span class="eyebrow">${esc(t('server.eyebrow', 'On this PC'))}</span><h1>${esc(t('server.title', 'Local server'))}</h1></div></div>${updateBanner()}${tabs}<div class="srv-body">${view(info)}</div></div>`;
+    return `<div class="page server"><div class="page-head"><div><span class="eyebrow">${esc(t('server.eyebrow', 'On this PC'))}</span><h1>${esc(t('server.title', 'Local server'))}</h1></div></div>${updateBanner()}<div class="srv-tabs-row">${tabs}${s.srvTab === 'settings' && info.path && App.state.conf && !App.state.conf.error ? realmPicker(App.state.conf.realm?.key || 'coa', 'conf-realm') : ''}</div><div class="srv-body">${view(info)}</div></div>`;
   },
   mount() { if (!App.state.server) loadServer(); },
 };
@@ -578,7 +580,8 @@ Object.assign(App.actions, {
   'open-logs': button => guard(() => App.api.openLogs(), button),
   'purge-bots': button => guard(async () => {
     if (!await confirmDialog({ title: t('server.purgeTitle', 'Recreate the random bots?'), body: esc(t('server.purgeBody', 'Every random bot is deleted and created again at the next start. Your own characters are not touched.')), confirm: t('server.purge', 'Recreate the bots'), danger: true })) return;
-    await App.api.purgeBots();
+    const release = holdDialog(t('server.purgingTitle', 'Recreating the bots'), t('server.purgingBody', 'The server starts, deletes the random bots and stops by itself: a few minutes. Keep the launcher open.'));
+    try { await App.api.purgeBots(); } finally { release(); }
     toast(t('server.purged', 'Random bots deleted. They come back at the next start.'), 'success');
   }, button),
   'server-choose': button => guard(async () => { const info = await App.api.chooseServer(); if (info) { Object.assign(App.state, { server: info, serverCheck: null, botsCheck: null, conf: null, backups: null, upgrade: null, verify: null, network: null, botsError: '', pending: {} }); App.refresh('server'); if (info.installed) checkServer(false, true).catch(() => {}); } }, button),

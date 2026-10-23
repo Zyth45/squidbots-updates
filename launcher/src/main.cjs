@@ -29,6 +29,7 @@ const repackUpdate = require('./repack-update.cjs');
 const addonSync = require('./addon-sync.cjs');
 const manastormClient = require('./manastorm-client.cjs');
 const components = require('./components.cjs');
+const sqlConsole = require('./sql-console.cjs');
 const tweaks = require('./repack-tweaks.cjs');
 const live = require('./live.cjs');
 const modules = require('./modules.cjs');
@@ -627,6 +628,9 @@ function registerIpc() {
   });
   // Download, check, apply. Each step stops at the first error; the tool says whether anything was changed.
   handle('update:run', async () => {
+    // The launcher first: a new launcher (found now if it was not looked for yet) is installed before any repack update.
+    if (!demoUpdate() && ['idle', 'checking'].includes(launcherUpdates.status.phase)) await launcherUpdates.check().catch(() => {});
+    if (!demoUpdate() && ['downloading', 'downloaded'].includes(launcherUpdates.status.phase)) throw new Error('A new launcher is on its way: install it first (it restarts the launcher), then update the server.');
     if (demoUpdate()) {
       update.busy = true;
       const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -1010,7 +1014,13 @@ function registerIpc() {
   handle('realms:modules', key => realms.modulesOf(serverPath(), text(key, 12)));
   handle('realms:module', (key, id, state) => realms.setModule(serverPath(), text(key, 12), text(id, 20), text(state, 4)));
   handle('realms:options', async (key, options) => { if (text(key, 12) === 'coa') { await realms.setCoaAutostart(serverPath(), options?.autostart === true); return realmsStatus(); } await realms.setOptions(serverPath(), text(key, 12), { autostart: options?.autostart, bots: options?.bots }); return realmsStatus(); });
-  handle('realms:purge', async key => { await withMysql(() => realms.purgeBots(serverPath(), text(key, 12))); return realmsStatus(); });
+  let purging = '';
+  const onePurge = async (name, work) => {
+    if (purging) throw new Error(`The bots of ${purging} are being recreated: wait until it is done.`);
+    purging = name;
+    try { return await withMysql(work); } finally { purging = ''; }
+  };
+  handle('realms:purge', async key => { await onePurge(realms.MODES[text(key, 12)]?.title || key, () => realms.purgeBots(serverPath(), text(key, 12))); return realmsStatus(); });
   handle('realms:disable', async (key, off) => { await withMysql(() => realms.setDisabled(serverPath(), text(key, 12), off === true)); return realmsStatus(); });
   handle('realms:openLogs', async key => { const error = await shell.openPath(path.join(serverPath(), 'Royaumes', text(key, 12).replace(/[^a-z]/g, ''), 'Logs')); if (error) throw new Error(error); });
   handle('repack:account', (name, password, gm) => requireControl().createAccount(text(name, 20), text(password, 20), gm === true));
@@ -1029,7 +1039,7 @@ function registerIpc() {
     const found = requireControl();
     if (!config.server.commands.purgeBots || !inspectRepack(serverPath()).bots) throw new Error('The bots are not installed in this server.');
     if ((await found.status()).some(service => service.id === 'world' && service.state !== 'stopped')) throw new Error('Stop the worldserver first.');
-    return found.run(config.server.commands.purgeBots, 'purge-bots');
+    return onePurge('Conquest of Azeroth', () => found.run(config.server.commands.purgeBots, 'purge-bots'));
   });
 
   // ---- the bot package ----
@@ -1072,6 +1082,15 @@ function registerIpc() {
 
   // ---- backups ----
   const ensureMysql = async () => { const found = serverControl(); if (found && config.server.services.some(service => service.id === 'mysql')) await found.start('mysql'); };
+  // SQL for the support: reading only, unless the player allowed changes (then a backup of the databases comes first).
+  handle('sql:run', async (query, allowChanges) => {
+    if (!serverPath()) throw new Error('Choose the server folder first.');
+    const { writes } = sqlConsole.check(String(query || '').slice(0, 20000), allowChanges === true);
+    await ensureMysql();
+    let backup = '';
+    if (writes) backup = (await serverTools().backup.create({ label: 'before-sql', includeWorld: true, reason: 'automatic' }))?.name || 'done';
+    return { ...(await sqlConsole.run(serverPath(), String(query).slice(0, 20000), { allowChanges: allowChanges === true })), backup };
+  });
   handle('backup:list', () => serverTools().backup.list());
   handle('backup:create', async options => { await ensureMysql(); return serverTools().backup.create({ label: text(options?.label, 40), includeWorld: options?.includeWorld === true }); });
   handle('backup:restore', async name => {
@@ -1533,7 +1552,7 @@ async function main() {
     if (window && !window.isMinimized() && found) send('repack:services', await found.status().catch(() => []));
   }, 5000).unref();
   app.on('before-quit', () => { control?.shutdownOnExit(); dashboard.stop(); if (dashboardWindow && !dashboardWindow.isDestroyed()) dashboardWindow.destroy(); });
-  setTimeout(() => launcherUpdates.check(), 8000).unref();
+  setTimeout(() => launcherUpdates.check(), 1500).unref();
   // A new launcher and the news are looked for every 30 minutes (two small signed files).
   setInterval(() => launcherUpdates.check(), 30 * 60 * 1000).unref();
   setTimeout(() => refreshFeed(), 3000).unref();

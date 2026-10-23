@@ -85,6 +85,7 @@ contextBridge.exposeInMainWorld('launcher', Object.freeze({
   modulesMultiracePlan: on => call('modules:multiracePlan', on),
   modulesClientPatch: on => call('modules:clientPatch', on),
   consoleRun: (command, realm) => call('console:run', command, realm || ''),
+  sqlRun: (query, allowChanges) => call('sql:run', query, allowChanges === true),
   addonSetup: useSuggested => call('addon:setup', useSuggested),
   addonInstall: () => call('addon:install'),
   addonRealmlist: () => call('addon:realmlist'),

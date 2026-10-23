@@ -119,6 +119,7 @@ App.smoke = step => {
   $('#settings-button').title = t('settings.title', 'Settings');
   document.documentElement.lang = data.settings.language;
   $('#app-name').textContent = data.config.appName;
+  document.body.insertAdjacentHTML('beforeend', `<div class="app-version" aria-hidden="true">v${esc(data.version)}</div>`);
   document.title = data.config.appName;
   Ocean.start($('#ocean'), data.settings.reduceMotion || data.smoke || matchMedia('(prefers-reduced-motion: reduce)').matches);
   subscribe();

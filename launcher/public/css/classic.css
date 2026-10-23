@@ -437,3 +437,28 @@ label.switch input:checked + span::after { background: #fff; }
 .side-card .card-tool { display: grid; place-items: center; width: 28px; height: 28px; margin-left: auto; margin-right: 4px; flex: none; border-radius: 8px; border: 1px solid var(--line-strong); color: var(--muted); }
 .side-card .card-tool .icon { width: 15px; height: 15px; }
 .side-card .card-tool:hover { border-color: var(--accent); color: var(--accent); background: var(--tint); }
+/* The launcher version, small, in the bottom right corner. */
+.app-version { position: fixed; right: 12px; bottom: 6px; z-index: 5; font: 11px var(--body); color: var(--faint); opacity: .8; pointer-events: none; }
+/* Console: SQL mode. */
+.console-modes { margin-bottom: 14px; }
+.sql-input { width: 100%; min-height: 110px; resize: vertical; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line-strong); background: var(--input); color: var(--text); font: 12.5px/1.5 var(--mono); }
+.sql-bar { display: flex; align-items: center; gap: 10px; }
+.sql-results { display: grid; gap: 14px; }
+.sql-result { display: grid; gap: 6px; }
+.sql-table-wrap { overflow: auto; max-height: 320px; border: 1px solid var(--line); border-radius: 8px; }
+.sql-table { border-collapse: collapse; font: 12px var(--mono); width: max-content; min-width: 100%; }
+.sql-table th, .sql-table td { padding: 4px 10px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+.sql-table th { position: sticky; top: 0; background: var(--panel-solid); color: var(--gold); }
+.sql-table td.null { color: var(--faint); font-style: italic; }
+/* The console fits the window: the SQL / commands switch and the field stay in sight. */
+.console-log { height: max(200px, calc(100vh - 470px)); }
+/* Settings: the realm choice on the row of the sub-tabs, to save room. */
+.srv-tabs-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.srv-tabs-row > *:not(.subtabs) { margin: 0; }
+.console-row { margin-bottom: 14px; }
+.console-row .console-modes, .srv-tabs-row .realm-picker { margin-bottom: 0; }
+.srv-tabs-row .realm-picker { width: auto; flex: none; }
+/* Realm cards never wider than their column (a long state pill used to push the card out). */
+.realm-card { min-width: 0; }
+.realm-card header .pill { flex: none; max-width: 48%; overflow: hidden; text-overflow: ellipsis; }
+.realm-name { min-width: 0; }

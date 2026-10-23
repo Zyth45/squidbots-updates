@@ -23,7 +23,7 @@ const App = {
   state: {
     tab: 'play', config: null, settings: null, client: null, check: null, realm: null,
     addons: null, addonQuery: '', addonsLoading: false,
-    server: null, serverCheck: null, botsCheck: null, srvTab: 'services',
+    server: null, serverCheck: null, botsCheck: null, srvTab: 'settings',
     conf: null, pending: {}, backups: null, upgrade: null, upgradeLog: [], upgradeStep: '', upgradeLastStep: '', upgradeRunning: false,
     oldRepack: null, oldCheck: null, upgradeFolder: '', task: null, launcherUpdate: null,
     updates: { core: null, bots: null },
@@ -34,7 +34,7 @@ const App = {
     if (App.state.tab === 'addons' && !isClassic()) App.state.tab = 'play';
     // Server edition: Home, Realms, Modules on the left of the crest; Verification, Management and Console on its right.
     const serverTabs = [['home', 'home', t('tab.home', 'Home')], ...(App.state.realms?.available ? [['realms', 'globe', t('tab.realms', 'Realms')]] : []), ['modules', 'addons', t('tab.modules', 'Modules')]];
-    const rightTabs = [['verify', 'shield', t('tab.verify', 'Verification')], ['server', 'layers', t('tab.manage', 'Management')], ['console', 'terminal', t('tab.console', 'Console')]];
+    const rightTabs = [['verify', 'shield', t('tab.verify', 'Verification')], ['server', 'settings', t('tab.settings', 'Settings')], ['console', 'terminal', t('tab.console', 'Console')]];
     if (App.state.config.edition === 'server' && ![...serverTabs, ...rightTabs].some(([id]) => id === App.state.tab)) App.state.tab = 'home';
     $('#tabs').innerHTML = (App.state.config.edition === 'server' ? serverTabs : [['play', 'play', t('tab.play', 'Play')], ...(isClassic() && App.state.config.game.hasAddons ? [['addons', 'addons', t('addon.title', 'Addons')]] : []), ...(App.state.config.server ? [['server', 'layers', t('tab.server', 'Local server')]] : [])]
       ).map(([id, iconName, label]) => `<button class="tab${App.state.tab === id ? ' active' : ''}" data-tab="${id}">${icon(iconName)}<span>${esc(label)}</span>${(id === 'server' || id === 'home') && hasUpdates() && !(App.state.config.edition === 'server' && id === 'server') ? `<i class="dot" title="${esc(t('updates.dot', 'A new version is available'))}"></i>` : (id === 'modules' && isNew('modules')) || (id === 'realms' && isNew('realms')) ? newDot() : ''}</button>`).join('');
@@ -105,6 +105,16 @@ const dialog = {
     return `<header class="dialog-head"><div><h2>${esc(title)}</h2>${subtitle ? `<p>${esc(subtitle)}</p>` : ''}</div><button class="icon-button" data-action="dialog-close" aria-label="${esc(t('common.close', 'Close'))}">${icon('close')}</button></header><div class="inline-error" data-error hidden></div>`;
   },
 };
+
+// A dialog that cannot be closed while a long task runs (recreating the bots); closed by its caller.
+function holdDialog(title, body) {
+  const element = $('#dialog');
+  $('#dialog-body').innerHTML = `<header class="dialog-head"><div><h2>${esc(title)}</h2></div></header><div class="dialog-content"><div class="task-line">${icon('refresh')}<span>${esc(body)}</span></div></div>`;
+  const block = event => event.preventDefault();
+  element.addEventListener('cancel', block);
+  if (!element.open) element.showModal();
+  return () => { element.removeEventListener('cancel', block); element.close(); };
+}
 
 function confirmDialog({ title, body, confirm, danger = false }) {
   return new Promise(resolve => {

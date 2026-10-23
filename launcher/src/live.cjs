@@ -135,7 +135,8 @@ function botsTarget(root) {
 function botsInGame(root) {
   const status = readJson(path.join(root, 'Core', 'Logs', 'bot-status.json'));
   if (!status || !Array.isArray(status.bots)) return null;
-  const fresh = !status.at || Date.now() / 1000 - Number(status.at) < 300;
+  // The world writes it every 5 s: older than a minute, it is the one of a world that stopped (not shown).
+  const fresh = !status.at || Date.now() / 1000 - Number(status.at) < 60;
   return fresh ? { count: status.bots.length, inCombat: status.bots.filter(bot => bot.combat).length, target: botsTarget(root) } : null;
 }
 

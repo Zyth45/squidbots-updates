@@ -59,7 +59,7 @@ function realmList() {
 const createdRealms = () => realmList().filter(realm => realm.main || !['absent', 'disabled'].includes(realm.state));
 
 function realmStatePill(state, realm) {
-  if (state === 'queued') return `<span class="pill warn"><i class="state-dot"></i>${esc(t('realms.queued', 'After {name}', { name: realmTitle(realm?.after || 'coa') }))}</span>`;
+  if (state === 'queued') return `<span class="pill warn"><i class="state-dot"></i>${esc(t('realms.queuedShort', 'Waiting'))}</span>`;
   const map = { lowmem: ['bad', 'realms.lowMemory', 'Low memory'], running: ['ok', 'realms.running', 'Running'], starting: ['warn', 'realms.starting', 'Starting…'], stopping: ['warn', 'realms.stopping', 'Stopping…'], stopped: ['', 'realms.stopped', 'Stopped'], disabled: ['', 'realms.disabled', 'Switched off'], foreign: ['bad', 'realms.foreign', 'Port used by another program'] };
   const [kind, key, text] = map[state] || map.stopped;
   return `<span class="pill ${kind}"><i class="state-dot"></i>${esc(t(key, text))}</span>`;
@@ -205,7 +205,8 @@ Object.assign(App.actions, {
   'realm-purge': button => guard(async () => {
     const key = button.dataset.key;
     if (!await confirmDialog({ title: t('realms.purgeTitle', 'Recreate the bots of {name}?', { name: realmTitle(key) }), body: esc(t('realms.purgeBody', 'The random bots of this realm are deleted (players are not touched); they are made again at its next start. The bots of the other realms stay.')), confirm: t('realms.purge', 'New bots'), danger: true })) return;
-    await realmAction(key, () => App.api.realmsPurge(key));
+    const release = holdDialog(t('server.purgingTitle', 'Recreating the bots'), t('realms.purgingLong', 'Recreating the bots of {name}: the realm starts, deletes them and stops by itself (a few minutes).', { name: realmTitle(key) }));
+    try { await realmAction(key, () => App.api.realmsPurge(key)); } finally { release(); }
     toast(t('realms.purged', 'Done: the bots come back at the next start.'), 'success');
   }, button),
   'realm-disable': button => guard(async () => {

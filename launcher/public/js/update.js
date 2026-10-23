@@ -294,6 +294,8 @@ function versionBelow(a, b) {
 }
 function launcherFirst(u) {
   const phase = App.state.launcherUpdate?.phase;
+  // Not looked for yet: the repack update waits a few seconds, the launcher comes first.
+  if (phase === 'idle' || phase === 'checking') return t('update.launcherChecking', 'Looking for a new launcher first…');
   if (phase === 'downloaded') return t('update.launcherReady', 'A new launcher is ready: restart it first, then update the server.');
   if (phase === 'downloading') return t('update.launcherComing', 'A new launcher is being downloaded: install it first, then update the server.');
   const need = u.manifest?.minLauncher;
