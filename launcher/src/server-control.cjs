@@ -65,7 +65,8 @@ function portOpen(port) {
 }
 
 class ServerControl {
-  constructor({ root, services, commands = {}, notify = () => {} }) {
+  constructor({ root, services, commands = {}, notify = () => {}, onAuthStarted = null }) {
+    this.onAuthStarted = onAuthStarted;
     this.root = path.resolve(root);
     this.services = services;
     this.commands = commands;
@@ -175,6 +176,7 @@ class ServerControl {
       try { await this.run({ ...start, timeout: Math.max(start.timeout, service.startTimeout) }, id); }
       finally { this.states.delete(id); await this.emit(); }
       if (!(await portOpen(service.port))) throw new Error(`${service.name} did not open port ${service.port}. Look at its log.`);
+      if (id === 'auth') await this.onAuthStarted?.().catch(() => {});
       return;
     }
     const exe = this.resolve(service.exe);
@@ -195,7 +197,7 @@ class ServerControl {
     const deadline = Date.now() + service.startTimeout * 1000;
     while (Date.now() < deadline) {
       if (!this.children.has(id)) throw new Error(`${service.name} stopped while starting. Look at its log.`);
-      if (await portOpen(service.port)) { this.states.delete(id); await this.emit(); return; }
+      if (await portOpen(service.port)) { this.states.delete(id); await this.emit(); if (id === 'auth') await this.onAuthStarted?.().catch(() => {}); return; }
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
     this.states.delete(id);

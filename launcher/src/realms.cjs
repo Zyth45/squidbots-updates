@@ -587,4 +587,16 @@ async function setOptions(root, key, { autostart } = {}) {
   return saved;
 }
 
-module.exports = { MODES, queueMarked, memoryFor, neededMb, botsOnline, setDisabled, versionReady, modulesOf, setModule, coaAutostart, setCoaAutostart, skipCoaAtStart, anotherStarting, refreshBotConfigs, status, create, start, stop, stopAll, startMarked, setOptions, settingsOf, saveSettings, purgeBots, writeConfigs, setKey };
+// The authserver marks every realm offline when it starts (flag | 2); a world puts its own line back only at its next
+// periodic update (about 10 minutes). The worlds start before the authserver (CoA Bots 2.6), so right after the
+// authserver is up, the realms whose world port answers are put back online at once.
+async function onlineRunning(root) {
+  const rows = (await sql(root, 'SELECT id, port FROM acore_auth.realmlist WHERE flag & 2')).split(/\r?\n/).filter(Boolean).map(line => line.split('\t').map(Number));
+  const up = [];
+  for (const [id, port] of rows) if (port && (await listening(port))) up.push(id);
+  if (up.length) await sql(root, `UPDATE acore_auth.realmlist SET flag = flag & ~2 WHERE id IN (${up.join(',')})`);
+  return up;
+}
+const listening = port => new Promise(resolve => { const socket = require('node:net').connect({ host: '127.0.0.1', port }); const done = ok => { socket.destroy(); resolve(ok); }; socket.setTimeout(1500, () => done(false)); socket.once('connect', () => done(true)); socket.once('error', () => done(false)); });
+
+module.exports = { onlineRunning, MODES, queueMarked, memoryFor, neededMb, botsOnline, setDisabled, versionReady, modulesOf, setModule, coaAutostart, setCoaAutostart, skipCoaAtStart, anotherStarting, refreshBotConfigs, status, create, start, stop, stopAll, startMarked, setOptions, settingsOf, saveSettings, purgeBots, writeConfigs, setKey };

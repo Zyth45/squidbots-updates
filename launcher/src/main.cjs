@@ -123,7 +123,7 @@ function serverControl() {
   const services = config.server.services.map(service => ({ ...service, port: ports[service.id] || service.port }));
   const key = `${path.resolve(serverPath())}|${services.map(service => service.port).join(',')}`;
   if (!control || control.key !== key) {
-    control = new ServerControl({ root: serverPath(), services, commands: config.server.commands, notify: status => send('repack:services', status) });
+    control = new ServerControl({ root: serverPath(), services, commands: config.server.commands, notify: status => send('repack:services', status), onAuthStarted: () => realms.onlineRunning(serverPath()) });
     control.key = key;
   }
   control.withBots = settings.modules?.squidbots !== false;
