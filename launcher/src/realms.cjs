@@ -433,6 +433,42 @@ async function setDisabled(root, key, off) {
 }
 
 // ---------------------------------------------------------------- start / stop
+// The bot tables CoA Bots ships (CoA-Bots/Database/playerbots/custom: rotations, Reborn builds and mystic enchants):
+// a CoA Bots update imports them into acore_playerbots only, so a realm made before it misses a new table (the
+// Reborn mystic enchants of 2.7: its world stops at start) or keeps old rows. Before a realm starts, each of these
+// tables that is missing or differs from acore_playerbots is copied over from it (structure and rows).
+const KEEP_ROWS = new Set(['playerbots_custom_strategy']);
+function shippedTables(root) {
+  const dir = path.join(root, 'CoA-Bots', 'Database', 'playerbots', 'custom');
+  const names = new Set();
+  for (const file of fs.existsSync(dir) ? fs.readdirSync(dir).filter(name => name.endsWith('.sql')) : []) {
+    const text = fs.readFileSync(path.join(dir, file), 'utf8');
+    for (const m of text.matchAll(/\b(?:CREATE\s+TABLE(?:\s+IF\s+NOT\s+EXISTS)?|INSERT(?:\s+IGNORE)?\s+INTO|REPLACE\s+INTO|UPDATE|DELETE\s+FROM)\s+`?([A-Za-z_][\w]*)`?/gi)) {
+      const table = m[1].toLowerCase();
+      if (table.startsWith('playerbots_') && !/_bak_/.test(table)) names.add(table);
+    }
+  }
+  return [...names];
+}
+async function syncShippedTables(root, key) {
+  const botsDb = `acore_playerbots_${key}`;
+  const wanted = shippedTables(root);
+  if (!wanted.length) return [];
+  const list = names => names.map(name => `'${name}'`).join(',');
+  const inCoa = new Set((await sql(root, `SELECT table_name FROM information_schema.tables WHERE table_schema = 'acore_playerbots' AND table_name IN (${list(wanted)})`)).split(/\r?\n/).filter(Boolean));
+  const tables = wanted.filter(name => inCoa.has(name));
+  if (!tables.length) return [];
+  const sums = async db => new Map((await sql(root, `CHECKSUM TABLE ${tables.map(name => `${db}.${name}`).join(', ')}`).catch(() => '')).split(/\r?\n/).filter(Boolean).map(line => line.split('\t')).map(([name, sum]) => [name.split('.').pop(), sum]));
+  const theirs = await sums('acore_playerbots');
+  const mine = await sums(botsDb);
+  // The strategies a player made with `cs` live in playerbots_custom_strategy, per realm: that table is only made when
+  // it is missing, never copied over; the data tables (Reborn builds, mystic enchants) follow acore_playerbots.
+  const missing = name => !mine.get(name) || mine.get(name) === 'NULL';
+  const stale = tables.filter(name => missing(name) || (!KEEP_ROWS.has(name) && mine.get(name) !== theirs.get(name)));
+  if (stale.length) await copyDump(root, ['--skip-triggers', 'acore_playerbots', ...stale], botsDb);
+  return stale;
+}
+
 async function start(root, key, { timeout = 1200 } = {}) {
   const saved = await realmFile(root, key);
   if (!saved) throw new Error('Create the realm first.');
@@ -442,6 +478,7 @@ async function start(root, key, { timeout = 1200 } = {}) {
   if (await portOpen(saved.raPort)) throw new Error(`Port ${saved.raPort} is already used by another program.`);
   if (await anotherStarting(root, key)) throw new Error('Another realm is starting: wait until it runs (two worlds must never apply their updates at the same time).');
   await refreshBotConfigs(root);
+  await syncShippedTables(root, key);
   await writeConfigs(root, key, saved);
   // The realmlist follows the port (the address follows the CoA realm, set by the network choice).
   await sql(root, `UPDATE acore_auth.realmlist r JOIN acore_auth.realmlist c ON c.id = 1 SET r.port = ${saved.worldPort}, r.address = c.address, r.localAddress = c.localAddress WHERE r.id = ${saved.id}`).catch(() => {});
@@ -599,4 +636,4 @@ async function onlineRunning(root) {
 }
 const listening = port => new Promise(resolve => { const socket = require('node:net').connect({ host: '127.0.0.1', port }); const done = ok => { socket.destroy(); resolve(ok); }; socket.setTimeout(1500, () => done(false)); socket.once('connect', () => done(true)); socket.once('error', () => done(false)); });
 
-module.exports = { onlineRunning, MODES, queueMarked, memoryFor, neededMb, botsOnline, setDisabled, versionReady, modulesOf, setModule, coaAutostart, setCoaAutostart, skipCoaAtStart, anotherStarting, refreshBotConfigs, status, create, start, stop, stopAll, startMarked, setOptions, settingsOf, saveSettings, purgeBots, writeConfigs, setKey };
+module.exports = { onlineRunning, shippedTables, syncShippedTables, MODES, queueMarked, memoryFor, neededMb, botsOnline, setDisabled, versionReady, modulesOf, setModule, coaAutostart, setCoaAutostart, skipCoaAtStart, anotherStarting, refreshBotConfigs, status, create, start, stop, stopAll, startMarked, setOptions, settingsOf, saveSettings, purgeBots, writeConfigs, setKey };

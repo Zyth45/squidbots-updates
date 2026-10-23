@@ -234,3 +234,12 @@ test('home page figures: realms added up with CoA, or alone when CoA is stopped'
   assert.strictEqual(alone.realms, null);
   assert.deepStrictEqual(live.withRealms({ running: false }, [off]), { running: false });
 });
+
+test('the bot tables shipped by CoA Bots are the ones a realm keeps in step with acore_playerbots', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ship-'));
+  const dir = path.join(root, 'CoA-Bots', 'Database', 'playerbots', 'custom');
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, 'a.sql'), 'CREATE TABLE IF NOT EXISTS `playerbots_coa_wcr_enchants` (id INT);\nCREATE TABLE IF NOT EXISTS playerbots_custom_strategy_bak_v21 LIKE x;');
+  fs.writeFileSync(path.join(dir, 'b.sql'), "DELETE FROM playerbots_custom_strategy WHERE 1;\nINSERT INTO `playerbots_coa_wcr_builds` VALUES (1);\nUPDATE characters SET x=1;");
+  assert.deepEqual(realms.shippedTables(root).sort(), ['playerbots_coa_wcr_builds', 'playerbots_coa_wcr_enchants', 'playerbots_custom_strategy']);
+});
