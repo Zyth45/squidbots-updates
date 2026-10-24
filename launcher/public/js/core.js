@@ -10,7 +10,14 @@ const loc = value => (value && typeof value === 'object' ? value[I18N.lang] || v
 // What's new: a red dot on the places a launcher update changed, until the player has opened them once.
 // Raise a number when its place changes again in a later launcher.
 const NEW_SPOTS = { modules: 1, settings: 1, realms: 1 };
-const seenSpots = () => { try { return JSON.parse(localStorage.getItem('seenSpots') || '{}'); } catch { return {}; } };
+const seenSpots = () => {
+  try {
+    const saved = localStorage.getItem('seenSpots');
+    // First launch: everything counts as seen.
+    if (saved === null) { localStorage.setItem('seenSpots', JSON.stringify(NEW_SPOTS)); return { ...NEW_SPOTS }; }
+    return JSON.parse(saved || '{}');
+  } catch { return {}; }
+};
 const isNew = id => (NEW_SPOTS[id] || 0) > (seenSpots()[id] || 0);
 function markSeen(id) {
   if (!isNew(id)) return;

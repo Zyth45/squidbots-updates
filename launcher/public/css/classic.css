@@ -462,3 +462,32 @@ label.switch input:checked + span::after { background: #fff; }
 .realm-card { min-width: 0; }
 .realm-card header .pill { flex: none; max-width: 48%; overflow: hidden; text-overflow: ellipsis; }
 .realm-name { min-width: 0; }
+/* Requirements and advised bots, at the top of the bots population. */
+.ram-advice { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; margin: 0 0 12px; border: 1px solid var(--line); border-radius: 10px; background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.ram-advice p { margin: 4px 0 0; font-size: 12.5px; color: var(--muted); }
+.ram-advice.warn { border-color: color-mix(in srgb, var(--bad, #e05d5d) 60%, transparent); }
+.ram-advice .bad { color: var(--bad, #e05d5d); }
+
+/* An Ascension client too old for this server, under the play row. */
+.client-old { display: flex; gap: 8px; align-items: center; margin: 8px 0 0; font-size: 12.5px; color: var(--warn); }
+/* « Start from a fresh world », under the recipes of the bots population. */
+.fresh-world { display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 10px 12px; margin: -4px 0 14px; border: 1px dashed var(--line); border-radius: 10px; }
+.fresh-world small { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; }
+.fresh-world .button { flex: none; }
+/* Memory in one line; the recipe of a fresh world carries its « remake the bots » link. */
+.ram-line { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; margin: 0 0 10px; font-size: 12.5px; color: var(--muted); cursor: help; }
+.ram-line .icon { width: 15px; height: 15px; }
+.ram-line.warn { color: var(--warn); }
+.ram-line strong { flex-basis: 100%; font-weight: 600; }
+.recipe-cell { display: grid; gap: 4px; align-content: start; }
+.recipe-cell .recipe { height: 100%; }
+.fresh-link { justify-self: start; font-size: 12px; padding: 2px 4px; }
+
+/* A launcher option shown on the page it belongs to (Services). */
+.page-option { margin: 0 0 12px; }
+/* Export / import of a character: what each list is. */
+.chars-label { display: block; margin: 0 0 6px; font-size: 12.5px; color: var(--muted); }
+#chars-name, #chars-account { min-width: 260px; }
+/* A setting with a small action beside it (Test). */
+.check-with { display: flex; align-items: center; gap: 10px; }
+.check-with .check { flex: 1; }

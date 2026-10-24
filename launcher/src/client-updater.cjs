@@ -87,7 +87,7 @@ class ClientUpdater {
     await new Journal(root, this.area, { rules: this.rules }).recover();
     const previous = await readJson(await this.meta(root, STATE));
     // A download host replaying an older signed release must not roll the game back.
-    if (previous?.publishedAt && manifest.publishedAt && manifest.publishedAt < previous.publishedAt) {
+    if (previous?.publishedAt && (!manifest.publishedAt || manifest.publishedAt < previous.publishedAt)) {
       return { manifest, ahead: { version: previous.version, publishedAt: previous.publishedAt }, selected: [], changes: [], removals: [], kept: [], current: [], bytes: 0 };
     }
     const known = new Map((previous?.files || []).map(file => [file.path.toLowerCase(), file]));

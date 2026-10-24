@@ -49,6 +49,8 @@ function cleanManifest(data) {
     from: (Array.isArray(data.from) ? data.from : []).filter(item => RELEASE.test(item)),
     publishedAt: text(data.publishedAt, 40),
     notes: text(data.notes, 60000),
+    // The same notes in French and Russian, when the release has them.
+    notesI18n: Object.fromEntries(['fr', 'ru'].filter(lang => typeof data.notesI18n?.[lang] === 'string').map(lang => [lang, text(data.notesI18n[lang], 60000)])),
     notice: typeof data.notice === 'string' ? { en: text(data.notice, 600) } : data.notice && typeof data.notice === 'object' ? Object.fromEntries(['en', 'fr', 'ru'].filter(lang => typeof data.notice[lang] === 'string').map(lang => [lang, text(data.notice[lang], 600)])) : null,
     diskBytes: Number.isSafeInteger(data.diskBytes) && data.diskBytes > 0 ? data.diskBytes : 0,
     minLauncher: /^\d+(\.\d+){0,3}$/.test(data.minLauncher || '') ? data.minLauncher : '',

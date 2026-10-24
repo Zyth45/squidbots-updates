@@ -33,3 +33,11 @@ test('a choice saved in the launcher is applied again after an update put the fi
   assert.match(read(root, 'Scripts/manage.py'), /name='Squid',address='192.168.1.83'/);
   assert.match(read(root, 'Settings/worldserver.conf.template'), /BindIP = "0.0.0.0"/);
 });
+
+test('the remote console stays on this PC, and no temporary file is left', async () => {
+  const root = repack();
+  fs.appendFileSync(path.join(root, 'Settings', 'worldserver.conf.template'), 'Ra.IP = "0.0.0.0"\n');
+  await network.saveNetwork(root, { mode: 'open', address: '192.168.1.83', name: 'Squid' });
+  assert.match(read(root, 'Settings/worldserver.conf.template'), /Ra\.IP = "127\.0\.0\.1"/);
+  assert.deepEqual(fs.readdirSync(path.join(root, 'Settings')).filter(name => name.includes('.tmp-')), []);
+});

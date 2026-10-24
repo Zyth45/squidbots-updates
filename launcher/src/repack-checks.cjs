@@ -114,7 +114,7 @@ async function repackChecks({ root, add, mysqlQuery, services }) {
   }
   // The level that counts is the one of the bot server's own config (generated from the template, level lowered there).
   const playerbotsLogger = confValue(await read(path.join(root, 'CoA-Bots/Core/configs/worldserver.conf')), 'Logger.playerbots') || confValue(worldTemplate, 'Logger.playerbots');
-  add('health', 'logs.size', big.length ? 'warn' : 'ok', { files: big.join(', '), level: playerbotsLogger || '' });
+  add('health', 'logs.size', big.length ? 'warn' : 'ok', { files: big.join(', '), level: playerbotsLogger || '' }, big.length ? 'logs-clean' : '');
   // S7 / entry 12: "Missing property" lines at the last start, the known harmless ones named as such.
   // Server.log keeps every start: only what follows the last one counts (an older core's lines are history).
   const sinceLastStart = text => { const at = text.lastIndexOf('AzerothCore rev.'); return at < 0 ? text : text.slice(at); };

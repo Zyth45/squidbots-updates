@@ -55,7 +55,14 @@ function onUpdateEvent(event) {
     if (event.phase === 'unpack') Object.assign(run, { step: 'unpack', done: 0, total: 0, line: t('update.unpackLine', 'Unpacking the update files…') });
     if (event.phase === 'check') run.step = 'check';
     if (event.phase === 'undo') run.step = 'undo';
-  } else if (event.event === 'bytes') Object.assign(run, { done: event.done, total: event.total });
+  } else if (event.event === 'bytes') {
+    // Speed over the last 10 seconds or so, for the time left.
+    const now = Date.now();
+    if (!run.mark || now - run.mark.at > 10000) run.mark = { at: now, done: event.done, prev: run.mark };
+    const from = run.mark.prev || run.mark;
+    run.speed = now > from.at ? ((event.done - from.done) * 1000) / (now - from.at) : 0;
+    Object.assign(run, { done: event.done, total: event.total });
+  }
   else if (event.event === 'unpack') Object.assign(run, { step: 'unpack', line: event.total > 1 ? t('update.unpackPart', 'Unpacking the update files: part {done} of {total}…', { done: event.done, total: event.total }) : t('update.unpackLine', 'Unpacking the update files…') });
   else if (event.event === 'step') { const step = updateStepOf(event.text) || run.step; if (step !== run.step) Object.assign(run, { done: 0, total: 0 }); run.step = step; run.line = event.text; if (step === 'test' && !run.testSince) run.testSince = Date.now(); }
   else if (event.event === 'progress') Object.assign(run, { done: event.done, total: event.total, line: event.text });
@@ -72,12 +79,20 @@ function updateLive() {
     ? `<li class="active">${icon('refresh')}<span>${esc(t('update.undoing', 'Putting the server back as it was'))}</span></li>`
     : UPDATE_STEPS.map(([id, iconName, label], index) => `<li class="${index < current ? 'done' : index === current ? 'active' : ''}">${icon(index < current ? 'check' : iconName)}<span>${esc(t(`update.step.${id}`, label))}</span></li>`).join('');
   return `<ol class="update-steps">${steps}</ol>
-    ${pct !== null && ['download', 'files'].includes(run.step) ? `${progressBar({ total: 100, completed: pct }).html}<small class="muted">${run.step === 'download' ? esc(`${formatBytes(run.done)} / ${formatBytes(run.total)}`) : `${pct} %`}</small>` : ''}
+    ${pct !== null && ['download', 'files'].includes(run.step) ? `${progressBar({ total: 100, completed: pct }).html}<small class="muted">${run.step === 'download' ? esc(`${formatBytes(run.done)} / ${formatBytes(run.total)}${downloadPace(run)}`) : `${pct} %`}</small>${run.step === 'download' ? ` <button class="button ghost small" data-action="update-cancel">${esc(t('update.cancel', 'Cancel'))}</button>` : ''}` : ''}
     <p class="update-line">${esc(run.step === 'test' && run.testSince ? testLine(run.testSince) : run.line || '')}</p>
     ${run.step !== 'test' && run.stepSince && Date.now() - run.stepSince > 10000 ? `<p class="muted small update-still">${icon('refresh')}${esc(t('update.stillWorking', 'Still working ({time}). Big updates take longer: do not close the launcher.', { time: elapsed(run.stepSince) }))}</p>` : ''}`;
 }
 
 // The test start: what it does and how long it has been running, in the player's words (not the tool's line).
+// « 12 MB/s · about 4 min left », once the speed is known.
+function downloadPace(run) {
+  if (!run.speed || run.speed < 1024) return '';
+  const left = Math.max(0, (run.total - run.done) / run.speed);
+  const time = left < 60 ? t('update.leftSeconds', 'less than a minute left') : t('update.leftMinutes', 'about {n} min left', { n: Math.ceil(left / 60) });
+  return ` · ${formatBytes(run.speed)}/s · ${time}`;
+}
+
 function elapsed(since) {
   const seconds = Math.floor((Date.now() - since) / 1000);
   return seconds < 60 ? `${seconds} s` : `${Math.floor(seconds / 60)} min ${String(seconds % 60).padStart(2, '0')} s`;
@@ -125,7 +140,7 @@ function showUpdate() {
       <ol class="notes"><li>${esc(t('update.what1', 'downloads the update and checks its signature;'))}</li><li>${esc(t('update.what2', 'makes a full backup (database and files);'))}</li><li>${esc(t('update.what3', 'stops the server cleanly, installs the new version and keeps your settings;'))}</li><li>${esc(t('update.what4', 'starts the server once to check it.'))}</li></ol>
       <div class="line-action">${icon('addons')}<span>${u.addonClient ? esc(t('update.addonTo', 'The SquidBots addon is also installed in your game: {path}', { path: u.addonClient })) : esc(t('update.addonNone', 'SquidBots addon: choose your game folder to install it too (otherwise it is left as it is).'))}</span><button class="button ghost small" data-action="update-client">${esc(u.addonClient ? t('update.addonChange', 'Change') : t('update.addonPick', 'Choose the game folder'))}</button></div>
       <p class="muted">${esc(t('update.time', 'About 5 to 20 minutes. If anything goes wrong, your server is put back as it was.'))}</p>
-      ${m?.notes ? `<details class="update-notes"><summary>${esc(t('update.notes', 'What is new'))}</summary><div class="patch-notes">${markdownLite(m.notes)}</div></details>` : ''}`;
+      ${m?.notes ? `<details class="update-notes"><summary>${esc(t('update.notes', 'What is new'))}</summary><div class="patch-notes">${markdownLite(m.notesI18n?.[App.state.settings.language] || m.notes)}</div></details>` : ''}`;
   const big = !running && u.state === 'available' && !u.last?.error ? bigUpdate(u) : null;
   if (big) body = big.html + body;
   const foot = running ? '' : u.state === 'available' && !u.last?.error && !big?.blocked
@@ -256,6 +271,7 @@ Object.assign(App.actions, {
   }, button),
   'update-open': () => showUpdate(),
   'update-start': () => runUpdate(() => App.api.updateRun()),
+  'update-cancel': async () => { if (await App.api.updateCancel().catch(() => false)) toast(t('update.cancelled', 'Download stopped. Nothing was changed; it goes on from there next time.')); },
   'update-undo': async () => {
     if (!await confirmDialog({ title: t('update.undo', 'Undo the update'), body: esc(t('update.undoConfirm', 'The server is stopped and put back exactly as it was before the update (database and files).')), confirm: t('update.undo', 'Undo the update'), danger: true })) return;
     await runUpdate(() => App.api.updateUndo('rollback'));

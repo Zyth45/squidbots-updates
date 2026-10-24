@@ -2,8 +2,9 @@
 // CoA Launcher Lite, main process: the game (install, update, addons, play) and a local server
 // (repack + bot package: services, updates, backups, upgrades). No account, no store, no web API:
 // every download is a signed static file.
-const { app, BrowserWindow, ipcMain, dialog, shell, protocol, net, session, clipboard } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, protocol, net, session, clipboard, Tray, Menu, Notification, nativeImage } = require('electron');
 const path = require('node:path');
+const os = require('node:os');
 const fs = require('node:fs/promises');
 const netSocket = require('node:net');
 const { pathToFileURL } = require('node:url');
@@ -263,7 +264,9 @@ function registerIpc() {
   handle('settings:save', async patch => {
     if (!patch || typeof patch !== 'object') throw new Error('Invalid settings.');
     const next = { ...settings };
-    for (const key of ['language', 'theme', 'channel', 'startPage', 'realmlist', 'minimizeOnLaunch', 'reduceMotion', 'autoCheckAddons', 'betaUpdates']) if (Object.hasOwn(patch, key)) next[key] = patch[key];
+    for (const key of ['language', 'theme', 'channel', 'startPage', 'realmlist', 'minimizeOnLaunch', 'reduceMotion', 'autoCheckAddons', 'betaUpdates', 'hideCloseNotice', 'trayOnClose', 'notifications', 'startWithWindows', 'startServerOnOpen', 'restartWorldOnCrash', 'dailyBackup']) if (Object.hasOwn(patch, key)) next[key] = patch[key];
+    // Start with Windows: the launcher opens in the background (in the notification area) at logon.
+    if (Object.hasOwn(patch, 'startWithWindows') && app.isPackaged) app.setLoginItemSettings({ openAtLogin: patch.startWithWindows === true, args: ['--hidden'] });
     const switching = Object.hasOwn(patch, 'channel') && patch.channel !== settings.channel;
     if (switching && (busyFiles || upgradeState.running || updater?.busy || repackUpdater?.busy || bots?.updater.busy || bots?.child)) throw new Error('Wait for the current operation to finish.');
     const saved = await persist(next);
@@ -432,12 +435,14 @@ function registerIpc() {
   handle('dashboard:status', () => dashboard.status(serverPath()));
   handle('dashboard:start', async () => { if (!serverPath()) throw new Error('Choose the server folder first.'); return dashboard.start(serverPath()); });
   handle('dashboard:stop', async () => { dashboard.stop(); return dashboard.status(serverPath()); });
-  handle('dashboard:open', async () => {
+  handle('dashboard:open', async realm => {
     const status = await dashboard.status(serverPath());
     if (!status.running) throw new Error('Start the dashboard first.');
     // The game folder chosen in "Your game" goes along (?client=), so the dashboard can fill it in (map extraction).
     const page = new URL(status.url);
     if (settings.installPaths.addon && fs_exists(settings.installPaths.addon)) page.searchParams.set('client', settings.installPaths.addon);
+    // A realm's card opens the dashboard on that realm (dashboard 2.8 and later; older ones ignore it).
+    if (/^[a-z]{3,12}$/.test(String(realm || ''))) page.searchParams.set('realm', realm);
     // In the player's own browser (bookmarks, tabs); the launcher's window only if Windows cannot open one.
     try { await shell.openExternal(page.toString()); } catch { openDashboardWindow(page.toString()); }
   });
@@ -454,7 +459,8 @@ function registerIpc() {
   handle('network:firewall', async () => {
     if (!serverPath()) throw new Error('Choose the server folder first.');
     const ports = inspectRepack(serverPath()).ports;
-    return network.openFirewall(serverPath(), { auth: ports.auth || 3724, world: ports.world || 8085 });
+    const extra = (await realms.status(serverPath(), { live: false }).catch(() => ({ realms: [] }))).realms.map(realm => realm.worldPort).filter(Boolean);
+    return network.openFirewall(serverPath(), { auth: ports.auth || 3724, world: ports.world || 8085, extra });
   });
   handle('updates:peek', () => (config.server ? peekUpdates({ folder: serverPath(), repack: repackUpdater, bots }) : { core: null, bots: null }));
   handle('repack:choose', async () => {
@@ -583,6 +589,8 @@ function registerIpc() {
     busyFiles = true;
     try {
       const { file, content } = pendingImport;
+      const again = await repackImport.hashZip(file, (done, total) => send('repack:import', { phase: 'hash', done, total }));
+      if (again.sha256 !== pendingImport.sha256) { pendingImport = null; throw new Error('The zip changed since it was checked: choose it again.'); }
       await repackImport.extractZip(file, target, { top: content.top, total: content.entries, onProgress: (done, total) => send('repack:import', { phase: 'extract', done, total }) });
       if (!inspectRepack(target).repack) throw new Error('The unpacked folder is not a complete repack.');
       await network.applyNetwork(target).catch(() => {});
@@ -626,6 +634,17 @@ function registerIpc() {
       return { version, game, state: componentsState() };
     } finally { componentsBusy = false; send('components:state', componentsState()); }
   });
+  // One heavy server operation at a time (update, restore of a backup, upgrade, recreating the bots): two of them
+  // together would stop, start or rewrite the same server under each other.
+  let serverJob = '';
+  let updateAbort = null;
+  const serverBusy = () => serverJob || (update.busy ? 'an update' : '') || (upgradeState.running ? 'an upgrade' : '');
+  const assertServerFree = () => { const busy = serverBusy(); if (busy) throw new Error(`Wait until ${busy} is done.`); };
+  const oneServerJob = async (name, work) => {
+    assertServerFree();
+    serverJob = name;
+    try { return await work(); } finally { serverJob = ''; }
+  };
   // Download, check, apply. Each step stops at the first error; the tool says whether anything was changed.
   handle('update:run', async () => {
     // The launcher first: a new launcher (found now if it was not looked for yet) is installed before any repack update.
@@ -648,6 +667,7 @@ function registerIpc() {
     const folder = serverPath();
     const state = repackUpdateState();
     if (update.busy) throw new Error('An update is already running.');
+    assertServerFree();
     if (state.state !== 'available') throw new Error('No update to install for this server.');
     if (update.manifest?.minLauncher && repackUpdate.compareVersions(app.getVersion(), update.manifest.minLauncher) < 0) throw new Error(`This update needs launcher ${update.manifest.minLauncher} or newer: update the launcher first (Settings > About).`);
     update.busy = true;
@@ -661,8 +681,10 @@ function registerIpc() {
       const wanted = repackUpdate.forRelease(update.manifest, state.here?.release);
       phase('download', { total: repackUpdate.packageSize(wanted) });
       const controller = new AbortController();
+      updateAbort = controller;
       const zip = await repackUpdate.fetchPackage(wanted, path.join(app.getPath('userData'), 'updates'), { fetchImpl: netFetch, signal: controller.signal, onBytes: have => send('update:event', { event: 'bytes', done: have, total: repackUpdate.packageSize(wanted) }) })
-        .catch(error => { throw Object.assign(new Error(error.message), { launcherCode: 'download' }); });
+        .catch(error => { throw Object.assign(new Error(error.message), { launcherCode: controller.signal.aborted ? 'cancelled' : 'download' }); });
+      updateAbort = null;
       phase('unpack');
       await repackUpdate.unpack(zip, folder, update.manifest.package.folder, (done, total) => send('update:event', { event: 'unpack', done, total })).catch(error => { throw Object.assign(new Error(error.message), { launcherCode: 'unpack' }); });
       phase('check');
@@ -674,8 +696,11 @@ function registerIpc() {
       }
       update.last = result;
     } catch (error) {
-      update.last = { code: 1, error: { code: error.launcherCode || 'launcher', text: error.message }, details: [], log: [], command: 'run' };
+      // Cancelled by the player: nothing was changed, the update is offered again (and its download goes on where it stopped).
+      update.last = error.launcherCode === 'cancelled' ? null : { code: 1, error: { code: error.launcherCode || 'launcher', text: error.message }, details: [], log: [], command: 'run' };
+      if (error.launcherCode === 'cancelled') realms.startMarked(folder).catch(() => {});
     } finally {
+      updateAbort = null;
       update.busy = false;
       update.phase = null;
     }
@@ -686,6 +711,8 @@ function registerIpc() {
     send('update:state', state2);
     return state2;
   });
+  // Only while it downloads: once unpacked, the tool's own steps run to their end (or put everything back).
+  handle('update:cancel', () => { if (update.phase === 'download' && updateAbort) updateAbort.abort(); return update.phase === 'download'; });
   // Undo (the latest backup of the update) or the end of a cut update: with the tool already in the repack.
   // The last update that can be undone: the update tool still in the repack and its backup (Backups\<version>-<date>).
   handle('update:undoInfo', async () => {
@@ -729,12 +756,16 @@ function registerIpc() {
   }
   handle('update:pickClient', async () => (await pickClient()) ?? (settings.installPaths.addon || ''));
   // Play: starts the game client of this PC (the folder chosen for the addon), asked once when none is known.
-  handle('game:play', async () => {
+  handle('game:play', async options => {
     const known = settings.installPaths.addon;
     const client = known && addonSync.isClient(known) ? known : await pickClient();
     if (!client) return { started: false };
     const exe = ['Ascension.exe', 'Wow.exe', 'WoW.exe'].map(name => path.join(client, name)).find(file => fs_exists(file));
     if (!exe) throw new Error('No Ascension.exe or Wow.exe in the game folder.');
+    if (options?.startServer === true && config.server && serverPath()) {
+      const world = (await requireControl().status()).find(service => /world/i.test(service.id));
+      if (world && world.state !== 'running') { assertServerFree(); await startEverything(); }
+    }
     const child = require('node:child_process').spawn(exe, [], { cwd: client, detached: true, stdio: 'ignore', windowsHide: false });
     child.on('error', () => {});
     child.unref();
@@ -748,9 +779,25 @@ function registerIpc() {
     const hosts = ['127.0.0.1', 'localhost', ...network.lanAddresses(), ...(net.mode === 'open' ? [net.address.toLowerCase()] : [])];
     return realmlistStatus(client, { hosts, port: inspectRepack(serverPath()).ports?.auth || 3724 }).catch(() => null);
   };
+  // The client against the files the feed lists: present, the right size, and (files under 64 MB) the right sha256.
+  // Read once per file, size and date.
+  const clientChecks = new Map();
+  const clientMissing = async client => {
+    for (const item of feed?.clientRequires || []) {
+      const file = path.join(client, ...item.file.split('/'));
+      const stat = await statOrNull(file).catch(() => null);
+      if (!stat?.isFile() || (item.bytes && stat.size !== item.bytes)) return item.file;
+      if (!item.sha256 || stat.size > 64 * 1024 ** 2) continue;
+      const key = `${file}|${stat.size}|${stat.mtimeMs}`;
+      if (!clientChecks.has(key)) clientChecks.set(key, require('node:crypto').createHash('sha256').update(await fs.readFile(file)).digest('hex'));
+      if (clientChecks.get(key) !== item.sha256) return item.file;
+    }
+    return '';
+  };
   const addonStatus = async () => {
     const status = addonSync.status(serverPath(), settings.installPaths.addon);
-    return { ...status, realmlist: await clientRealmlist(status.client) };
+    const outdated = status.client && feed?.clientRequires?.length ? await clientMissing(status.client).catch(() => '') : '';
+    return { ...status, realmlist: await clientRealmlist(status.client), clientOutdated: outdated };
   };
   const addonInstall = async () => {
     const installed = await addonSync.install(serverPath(), settings.installPaths.addon, path.join(app.getPath('userData'), 'addon-backups'));
@@ -911,7 +958,6 @@ function registerIpc() {
     try { await shell.openExternal(link); return { opened: true }; }
     catch { clipboard.writeText(link); return { copied: true }; }
   });
-  handle('feed:refresh', () => refreshFeed());
   handle('repack:check', async force => {
     requireServer();
     if (!repackUpdater) return { needsUpdate: false, disabled: true };
@@ -928,16 +974,20 @@ function registerIpc() {
     return serverInfo();
   });
   handle('repack:pause', () => { repackUpdater?.cancel(); bots?.updater.cancel(); });
-  handle('repack:start', async id => { if (id === 'all') baseByRealm = false; await network.applyNetwork(serverPath()).catch(() => {}); await modules.keepRotationOff(serverPath()); await quietLogs(serverPath()); if (id === 'all') {
-      // CoA left out of "Start all" when the player chose so and a realm starts with the server: MySQL and the authserver only.
-      const skipCoa = await realms.skipCoaAtStart(serverPath()).catch(() => false);
-      await realms.queueMarked(serverPath()).catch(() => {});
-      // The authserver after a worldserver: the world applies the updates of the auth database.
-      // A realm that did not start says why on the page (not enough memory, an error of its world).
-      const startRealms = () => realms.startMarked(serverPath()).then(failed => { if (failed.length) send('realms:failed', failed); }).catch(error => send('realms:failed', [{ key: '', error: error.message }]));
-      if (skipCoa) { await requireControl().start('mysql'); await startRealms(); await requireControl().start('auth'); }
-      else { try { await requireControl().startAll(); } finally { startRealms(); } }
-    } else await requireControl().start(text(id, 30)); return serverInfo(); });
+  const prepareStart = async () => { await network.applyNetwork(serverPath()).catch(() => {}); await modules.keepRotationOff(serverPath()); await quietLogs(serverPath()); };
+  const startEverything = async () => {
+    baseByRealm = false;
+    await prepareStart();
+    // CoA left out of "Start all" when the player chose so and a realm starts with the server: MySQL and the authserver only.
+    const skipCoa = await realms.skipCoaAtStart(serverPath()).catch(() => false);
+    await realms.queueMarked(serverPath()).catch(() => {});
+    // The authserver after a worldserver: the world applies the updates of the auth database.
+    // A realm that did not start says why on the page (not enough memory, an error of its world).
+    const startRealms = () => realms.startMarked(serverPath()).then(failed => { if (failed.length) send('realms:failed', failed); }).catch(error => send('realms:failed', [{ key: '', error: error.message }]));
+    if (skipCoa) { await requireControl().start('mysql'); await startRealms(); await requireControl().start('auth'); }
+    else { try { await requireControl().startAll(); } finally { startRealms(); } }
+  };
+  handle('repack:start', async id => { assertServerFree(); if (id === 'all') await startEverything(); else { await prepareStart(); await requireControl().start(text(id, 30)); } return serverInfo(); });
   handle('repack:stop', async id => { if (id === 'all') baseByRealm = false; if (id === 'all' || id === 'world' || id === 'mysql') await realms.stopAll(serverPath()); if (id === 'all') await requireControl().stopAll(); else await requireControl().stop(text(id, 30)); return serverInfo(); });
   handle('repack:tail', id => requireControl().tail(text(id, 30)));
   // ---- extra realms (Wildcard, Warcraft Reborn) beside the CoA realm: same MySQL, authserver and bot worldserver
@@ -988,6 +1038,7 @@ function registerIpc() {
     await c.stopAll().catch(() => {});
   };
   handle('realms:start', async key => {
+    assertServerFree();
     await network.applyNetwork(serverPath()).catch(() => {});
     if (!(await mysqlRunning())) baseByRealm = true;
     await realmBase(false);
@@ -1014,15 +1065,59 @@ function registerIpc() {
   handle('realms:modules', key => realms.modulesOf(serverPath(), text(key, 12)));
   handle('realms:module', (key, id, state) => realms.setModule(serverPath(), text(key, 12), text(id, 20), text(state, 4)));
   handle('realms:options', async (key, options) => { if (text(key, 12) === 'coa') { await realms.setCoaAutostart(serverPath(), options?.autostart === true); return realmsStatus(); } await realms.setOptions(serverPath(), text(key, 12), { autostart: options?.autostart, bots: options?.bots }); return realmsStatus(); });
-  let purging = '';
-  const onePurge = async (name, work) => {
-    if (purging) throw new Error(`The bots of ${purging} are being recreated: wait until it is done.`);
-    purging = name;
-    try { return await withMysql(work); } finally { purging = ''; }
-  };
+  const onePurge = (name, work) => oneServerJob(`recreating the bots of ${name}`, () => withMysql(work));
   handle('realms:purge', async key => { await onePurge(realms.MODES[text(key, 12)]?.title || key, () => realms.purgeBots(serverPath(), text(key, 12))); return realmsStatus(); });
   handle('realms:disable', async (key, off) => { await withMysql(() => realms.setDisabled(serverPath(), text(key, 12), off === true)); return realmsStatus(); });
   handle('realms:openLogs', async key => { const error = await shell.openPath(path.join(serverPath(), 'Royaumes', text(key, 12).replace(/[^a-z]/g, ''), 'Logs')); if (error) throw new Error(error); });
+  // The world console only reads and writes a bare file name (PlayerDump.DisallowPaths = 1), in the worldserver's own
+  // folder (where manage.py starts it): the launcher moves the file to <server>\Characters, or puts it there to import.
+  const pdumpFolder = () => path.join(serverPath(), 'Characters');
+  const worldFolder = () => {
+    try { const exe = JSON.parse(require('node:fs').readFileSync(path.join(serverPath(), '.state', 'world.json'), 'utf8')).exe; if (exe && String(exe).toLowerCase().startsWith(serverPath().toLowerCase())) return path.dirname(exe); } catch {}
+    return path.join(serverPath(), 'Core');
+  };
+  // The players' characters and accounts (random bots left out), to pick from instead of typing.
+  handle('chars:list', async () => {
+    await ensureMysql();
+    const rows = await serverTools().backup.query("SELECT c.name, a.username, c.level FROM acore_characters.characters c JOIN acore_auth.account a ON a.id = c.account WHERE a.username NOT LIKE 'RNDBOT%' ORDER BY a.username, c.name");
+    const accounts = await serverTools().backup.query("SELECT username FROM acore_auth.account WHERE username NOT LIKE 'RNDBOT%' ORDER BY username");
+    return { characters: rows.map(row => { const [name, account, level] = row.split('\t'); return { name, account, level: Number(level) || 0 }; }), accounts };
+  });
+  handle('chars:export', async name => {
+    // CoA names may hold a space (« Lord Lapin »): the world console is given the character's guid, never its name.
+    const who = text(name, 24).trim();
+    if (!/^[\p{L}][\p{L} '-]{1,23}$/u.test(who)) throw new Error('Choose the character to export.');
+    await ensureMysql();
+    const [guid] = await serverTools().backup.query(`SELECT guid FROM acore_characters.characters WHERE name = '${who.replace(/'/g, "''")}'`);
+    if (!Number(guid)) throw new Error(`No character named ${who} on this server.`);
+    const bare = `squidbots-export-${Number(guid)}-${Date.now()}.sql`;
+    const answer = await live.raCommand(serverPath(), `pdump write ${bare} ${Number(guid)}`, 60000);
+    const written = path.join(worldFolder(), bare);
+    if (!fs_exists(written)) throw new Error(answer || 'The world did not write the character: is the world running?');
+    await fs.mkdir(pdumpFolder(), { recursive: true });
+    const file = path.join(pdumpFolder(), `${who.replace(/[^\p{L}\p{N}-]+/gu, '_')}-${new Date().toISOString().slice(0, 10)}-${Number(guid)}.sql`);
+    await fs.rename(written, file).catch(async () => { await fs.copyFile(written, file); await fs.unlink(written).catch(() => {}); });
+    shell.showItemInFolder(file);
+    return { file, answer };
+  });
+  handle('chars:import', async account => {
+    const login = text(account, 20).trim();
+    if (!/^[A-Za-z0-9]{2,20}$/.test(login)) throw new Error('Choose the game account that gets the character.');
+    await ensureMysql();
+    const [known] = await serverTools().backup.query(`SELECT id FROM acore_auth.account WHERE username = '${login.toUpperCase()}'`);
+    if (!Number(known)) throw new Error(`No game account named ${login} on this server.`);
+    await fs.mkdir(pdumpFolder(), { recursive: true });
+    const result = await dialog.showOpenDialog(window, { title: 'Choose the character file (.sql)', properties: ['openFile'], filters: [{ name: 'Character (sql)', extensions: ['sql'] }], defaultPath: pdumpFolder() });
+    if (result.canceled || !result.filePaths[0]) return null;
+    const bare = `squidbots-import-${Date.now()}.sql`;
+    const copy = path.join(worldFolder(), bare);
+    await fs.copyFile(path.resolve(result.filePaths[0]), copy);
+    try {
+      const answer = await live.raCommand(serverPath(), `pdump load ${bare} ${login}`, 60000);
+      if (!/success|loaded/i.test(answer)) throw new Error(answer || 'The world did not load the character.');
+      return { answer };
+    } finally { await fs.unlink(copy).catch(() => {}); }
+  });
   handle('repack:account', (name, password, gm) => requireControl().createAccount(text(name, 20), text(password, 20), gm === true));
   // The server's logs (CoreLogs): the console scrolls too fast, the files keep everything.
   handle('repack:openLogs', async () => {
@@ -1071,7 +1166,7 @@ function registerIpc() {
   // ---- settings of the server (.conf) ----
   // A realm other than CoA: the same page, its values inherited from CoA, its own, or set by its game mode.
   const realmKey = value => (realms.MODES[text(value, 12)] ? text(value, 12) : '');
-  handle('srvconf:overview', async realm => { const overview = await serverTools().config.overview(); return realmKey(realm) ? realms.settingsOf(serverPath(), realmKey(realm), overview) : overview; });
+  handle('srvconf:overview', async realm => { const overview = await serverTools().config.overview(); const memory = { totalMb: Math.round(os.totalmem() / 1048576), freeMb: Math.round(os.freemem() / 1048576) }; return { ...(realmKey(realm) ? await realms.settingsOf(serverPath(), realmKey(realm), overview) : overview), memory }; });
   handle('srvconf:save', async (changes, realm) => {
     if (!Array.isArray(changes)) throw new Error('Nothing to save.');
     if (realmKey(realm)) return realms.saveSettings(serverPath(), realmKey(realm), changes.slice(0, 200).map(change => ({ file: text(change?.file, 80), key: text(change?.key, 100), value: text(change?.value, 400), reset: change?.reset === true })));
@@ -1091,14 +1186,54 @@ function registerIpc() {
     if (writes) backup = (await serverTools().backup.create({ label: 'before-sql', includeWorld: true, reason: 'automatic' }))?.name || 'done';
     return { ...(await sqlConsole.run(serverPath(), String(query).slice(0, 20000), { allowChanges: allowChanges === true })), backup };
   });
+  const verify = require('./verify.cjs');
+  const watch = { world: null, crashes: null, restarts: [], backupDay: '' };
+  serverStartOnOpen = async () => {
+    if (!serverPath() || !inspectRepack(serverPath()).repack || serverBusy()) return;
+    const services = await requireControl().status();
+    if (services.some(service => /world/i.test(service.id) && service.state !== 'stopped')) return;
+    await startEverything();
+    send('repack:services', await requireControl().status().catch(() => []));
+  };
+  serverWatch = async () => {
+    const root = serverPath();
+    const found = serverControl();
+    // The states are always followed (a start by the launcher is seen as starting, then running); the actions wait.
+    if (!root || !found) return;
+    const quiet = !serverBusy() && !found.states.size;
+    const services = await found.status().catch(() => null);
+    if (!services) return;
+    const world = services.find(service => /world/i.test(service.id))?.state || null;
+    const count = (await verify.crashes(root, 2).catch(() => [])).length;
+    const crashed = watch.crashes !== null && count > watch.crashes;
+    const before = watch.world;
+    Object.assign(watch, { world, crashes: count });
+    if (before === 'starting' && world === 'running' && !window?.isFocused()) notifyUser('ready');
+    if (before === 'running' && world !== 'running' && crashed) {
+      // At most 3 restarts an hour: a world that crashes at every start is left stopped.
+      watch.restarts = watch.restarts.filter(at => Date.now() - at < 3600000);
+      if (quiet && settings.restartWorldOnCrash && world === 'stopped' && watch.restarts.length < 3) { watch.restarts.push(Date.now()); notifyUser('restarted'); startEverything().catch(() => {}); }
+      else notifyUser('crash');
+    }
+    // One automatic backup a day while MySQL runs (characters, accounts, bots), the last 7 kept.
+    const day = new Date().toISOString().slice(0, 10);
+    if (quiet && settings.dailyBackup !== false && watch.backupDay !== day && services.some(service => service.id === 'mysql' && service.state === 'running')) {
+      watch.backupDay = day;
+      const list = await serverTools().backup.list();
+      const daily = list.filter(item => item.label === 'daily').sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      if (daily.some(item => item.createdAt.slice(0, 10) === day)) return;
+      await oneServerJob('the daily backup', () => serverTools().backup.create({ label: 'daily', reason: 'automatic' }));
+      for (const old of daily.slice(6)) await serverTools().backup.remove(old.name).catch(() => {});
+    }
+  };
   handle('backup:list', () => serverTools().backup.list());
   handle('backup:create', async options => { await ensureMysql(); return serverTools().backup.create({ label: text(options?.label, 40), includeWorld: options?.includeWorld === true }); });
-  handle('backup:restore', async name => {
+  handle('backup:restore', name => oneServerJob('the restore of a backup', async () => {
     await ensureMysql();
     const world = config.server.services.find(service => service.id === 'world');
     await realms.stopAll(serverPath());
     return serverTools().backup.restore(text(name, 80), { worldPort: world?.port });
-  });
+  }));
   handle('backup:remove', name => serverTools().backup.remove(text(name, 80)));
   handle('backup:openFolder', async () => {
     const folder = path.join(serverTools().root, 'Backups');
@@ -1135,6 +1270,7 @@ function registerIpc() {
     const target = serverPath();
     if (!target) throw new Error('Choose the server folder first.');
     if (upgradeState.running) throw new Error('An upgrade is already running.');
+    assertServerFree();
     upgradeState.running = true;
     upgradeState.log = [];
     upgradeNotify({ step: options?.check ? 'check' : 'migrate' });
@@ -1163,6 +1299,7 @@ function registerIpc() {
     const oldRoot = serverPath();
     if (!oldRoot || !repackUpdater) throw new Error('Choose the server folder first.');
     if (upgradeState.running || busyFiles) throw new Error('Another operation is running.');
+    assertServerFree();
     const target = path.resolve(text(options?.folder, 400));
     assertFolder(target);
     const old = inspectRepack(oldRoot);
@@ -1268,6 +1405,33 @@ function registerIpc() {
   handle('link:baseClient', async () => { if (config.game.baseClient) await shell.openExternal(config.game.baseClient.url); });
 
   handle('launcher:check', () => launcherUpdates.check());
+  handle('notify:test', () => { if (!Notification.isSupported()) throw new Error('Windows notifications are not available here.'); notifyUser('ready'); return true; });
+  // Clean the logs: the old ones (world-console.log.1 …) always, the big current ones only with every world stopped
+  // (a running world writes in them). Only files of the Logs folders, never a folder.
+  handle('verify:cleanLogs', async () => {
+    if (!serverPath()) throw new Error('Choose the server folder first.');
+    const root = serverPath();
+    const folders = ['Core/Logs', 'CoA-Bots/Core/Logs', ...(await fs.readdir(path.join(root, 'Royaumes')).catch(() => [])).map(key => `Royaumes/${key}/Logs`)];
+    const worldOn = (await requireControl().status()).some(service => /world/i.test(service.id) && service.state !== 'stopped')
+      || (await realms.status(root, { live: false }).catch(() => ({ realms: [] }))).realms.some(realm => ['running', 'starting', 'stopping'].includes(realm.state));
+    let deleted = 0;
+    let freed = 0;
+    let kept = 0;
+    for (const folder of folders) {
+      const dir = path.join(root, ...folder.split('/'));
+      for (const name of await fs.readdir(dir).catch(() => [])) {
+        const file = path.join(dir, name);
+        const stat = await fs.lstat(file).catch(() => null);
+        if (!stat?.isFile()) continue;
+        const old = /\.\d+$/.test(name) || /\.log\.\d+/i.test(name);
+        const big = stat.size > 100 * 1024 ** 2;
+        if (!old && !big) continue;
+        if (!old && worldOn) { kept++; continue; }
+        if (await fs.unlink(file).then(() => true, () => false)) { deleted++; freed += stat.size; } else kept++;
+      }
+    }
+    return { deleted, freed, kept, worldOn };
+  });
   handle('verify:archiveCrashes', () => { if (!serverPath()) throw new Error('Choose the server folder first.'); return require('./verify.cjs').archiveCrashes(serverPath()); });
   handle('launcher:install', () => launcherUpdates.install());
 }
@@ -1357,6 +1521,8 @@ async function quietLogs(root) {
 
 // The signed lists of the components, read at start and every 30 minutes (a missing one is simply not offered).
 let componentLists = {};
+let serverWatch = null;
+let serverStartOnOpen = null;
 let componentsBusy = false;
 const componentsState = () => ({ busy: componentsBusy, list: components.status(serverPath(), componentLists) });
 async function refreshComponents() {
@@ -1395,6 +1561,7 @@ async function refreshRepackUpdate() {
     update.error = null;
   } catch (error) { update.error = error.message; }
   const state = repackUpdateState();
+  if (state.state === 'available' && update.manifest?.version && notifiedUpdate !== update.manifest.version) { notifiedUpdate = update.manifest.version; notifyUser('update', { version: update.manifest.version }); }
   send('update:state', state);
   return state;
 }
@@ -1479,7 +1646,16 @@ async function patchNotes() {
     } catch {}
   }
   if (list.length) notesCache = { at: Date.now(), list };
-  return list;
+  return list.map(note => ({ ...note, ...localNote(note.text) }));
+}
+// The part of a release text in the player's language (after <!-- fr -->), the English part (before any marker) otherwise.
+function localNote(body) {
+  const parts = String(body || '').split(/^<!--\s*(en|fr|ru)\s*-->\s*$/m);
+  if (parts.length < 3) return {};
+  const byLang = { en: parts[0].trim() };
+  for (let i = 1; i < parts.length; i += 2) byLang[parts[i]] = parts[i + 1].trim();
+  const text = byLang[settings.language] || byLang.en || parts[0];
+  return { text, summary: noteSummary(text) };
 }
 
 // The dashboard in its own window of the launcher: a local page only (localhost), links to the web go to the browser.
@@ -1496,6 +1672,66 @@ function openDashboardWindow(url) {
   dashboardWindow.loadURL(url);
 }
 
+// Closing the launcher only closes the launcher: the server it started keeps running (manage.py runs it on its own).
+let closing = false;
+let notifiedUpdate = '';
+let tray = null;
+let balloonIcon = null;
+// Windows notifications (update, server ready, crash) in the player's language; a click brings the launcher back.
+const NOTE_TEXT = {
+  en: { update: ['New version {version}', 'An update of the server is ready to install in the launcher.'], ready: ['Server ready', 'The world is up: you can play.'], crash: ['The world stopped', 'The worldserver crashed. A crash report was written (Verification).'], restarted: ['The world is starting again', 'The worldserver crashed and is being started again.'], open: 'Open the launcher', quit: 'Close the launcher (the server keeps running)' },
+  fr: { update: ['Nouvelle version {version}', 'Une mise à jour du serveur est prête à installer dans le launcher.'], ready: ['Serveur prêt', 'Le monde est lancé : vous pouvez jouer.'], crash: ['Le monde s\'est arrêté', 'Le worldserver a planté. Un rapport de crash a été écrit (Vérification).'], restarted: ['Le monde redémarre', 'Le worldserver a planté et redémarre.'], open: 'Ouvrir le launcher', quit: 'Fermer le launcher (le serveur continue)' },
+  ru: { update: ['Новая версия {version}', 'Обновление сервера готово к установке в лаунчере.'], ready: ['Сервер готов', 'Мир запущен: можно играть.'], crash: ['Мир остановился', 'Worldserver упал. Записан отчёт о сбое (Проверка).'], restarted: ['Мир перезапускается', 'Worldserver упал и запускается снова.'], open: 'Открыть лаунчер', quit: 'Закрыть лаунчер (сервер продолжает работать)' },
+};
+const noteWords = () => NOTE_TEXT[settings?.language] || NOTE_TEXT.en;
+function showWindow() { if (!window) return; if (window.isMinimized()) window.restore(); window.show(); window.focus(); }
+function notifyUser(kind, values = {}) {
+  if (smokeDir || settings?.notifications === false) return;
+  const [title, body] = noteWords()[kind] || [];
+  if (!title) return;
+  const fill = value => value.replace(/\{(\w+)\}/g, (_m, key) => values[key] ?? '');
+  // Through the notification area icon on Windows: a toast of Notification needs a Start menu shortcut with the
+  // app's id, which a launcher run from its sources (or moved by hand) does not have; the icon's balloon always shows.
+  if (tray && process.platform === 'win32') { tray.displayBalloon({ title: fill(title), content: fill(body), ...(balloonIcon ? { iconType: 'custom', icon: balloonIcon } : { iconType: 'info' }), respectQuietTime: true }); return; }
+  if (!Notification.isSupported()) return;
+  const note = new Notification({ title: fill(title), body: fill(body) });
+  note.on('click', showWindow);
+  note.show();
+}
+// The notification area: the launcher can stay there when its window is closed (Settings), and comes back on a click.
+async function createTray() {
+  // The installed exe carries the edition's icon; run from the sources, the edition's own picture stands in for Electron's.
+  const own = !app.isPackaged && nativeImage.createFromPath(path.join(__dirname, '..', 'editions', config.edition || 'server', 'icon.png'));
+  const image = own && !own.isEmpty() ? own.resize({ width: 16, height: 16 }) : await app.getFileIcon(process.execPath, { size: 'small' }).catch(() => nativeImage.createEmpty());
+  // The octopus in the balloons too (the exe's large icon once installed).
+  balloonIcon = own && !own.isEmpty() ? own.resize({ width: 64, height: 64 }) : await app.getFileIcon(process.execPath, { size: 'large' }).catch(() => null);
+  tray = new Tray(image);
+  tray.setToolTip(config.appName);
+  tray.on('click', showWindow);
+  tray.on('balloon-click', showWindow);
+  const menu = () => Menu.buildFromTemplate([{ label: noteWords().open, click: showWindow }, { type: 'separator' }, { label: noteWords().quit, click: () => { closing = true; app.quit(); } }]);
+  tray.setContextMenu(menu());
+  tray.on('right-click', () => tray.setContextMenu(menu()));
+}
+const CLOSE_TEXT = {
+  en: { title: 'The server keeps running', message: 'Warning: this closes only the launcher, the server keeps running.', detail: 'Open the launcher again to stop it (Stop all on the home page).', close: 'Close the launcher', cancel: 'Cancel', again: 'Do not show this again' },
+  fr: { title: 'Le serveur continue de tourner', message: 'Attention : ceci ferme seulement le launcher, le serveur continue de tourner.', detail: "Rouvrez le launcher pour l'arrêter (Tout arrêter sur l'accueil).", close: 'Fermer le launcher', cancel: 'Annuler', again: 'Ne plus afficher' },
+  ru: { title: 'Сервер продолжает работать', message: 'Внимание: закрывается только лаунчер, сервер продолжает работать.', detail: 'Откройте лаунчер снова, чтобы остановить его (Остановить всё на главной).', close: 'Закрыть лаунчер', cancel: 'Отмена', again: 'Больше не показывать' },
+};
+async function closeWithNotice() {
+  // Kept in the notification area: the window only hides.
+  if (settings.trayOnClose && tray) { window?.hide(); return; }
+  const running = !settings.hideCloseNotice && (await serverControl()?.status().catch(() => []) || []).some(service => service.state === 'running' || service.state === 'starting');
+  if (running) {
+    const words = CLOSE_TEXT[settings.language] || CLOSE_TEXT.en;
+    const answer = await dialog.showMessageBox(window, { type: 'info', title: words.title, message: words.message, detail: words.detail, buttons: [words.close, words.cancel], defaultId: 0, cancelId: 1, checkboxLabel: words.again, noLink: true });
+    if (answer.response !== 0) return;
+    if (answer.checkboxChecked) await persist({ ...settings, hideCloseNotice: true }).catch(() => {});
+  }
+  closing = true;
+  window?.close();
+}
+
 async function main() {
   config = loadConfig(path.join(__dirname, '../launcher.config.json'), path.join(app.getPath('userData'), 'launcher.config.json'));
   settingsFile = path.join(app.getPath('userData'), 'settings.json');
@@ -1508,6 +1744,8 @@ async function main() {
     settings.language = locale.startsWith('fr') ? 'fr' : locale.startsWith('ru') ? 'ru' : 'en';
     await writeSettings(settingsFile, settings).catch(() => {});
   }
+  // Windows shows notifications only for an app with its own id (the installer's appId; the exe itself when run from the sources).
+  if (process.platform === 'win32') app.setAppUserModelId(app.isPackaged ? (config.edition === 'server' ? 'org.squidbots.server' : 'org.coa.launcher-lite') : process.execPath);
   createUpdaters();
   launcherUpdates = createLauncherUpdates(app, { feedUrl: config.launcherUpdateUrl, key: config.launcherUpdateKey, fetchImpl: (url, options) => net.fetch(String(url), options) }, status => send('launcher:update', status), async () => {
     if (busyFiles || updater?.busy) throw new Error('Wait for the current operation to finish.');
@@ -1526,7 +1764,9 @@ async function main() {
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   window.webContents.on('will-navigate', event => event.preventDefault());
   window.webContents.on('will-attach-webview', event => event.preventDefault());
-  window.once('ready-to-show', () => { if (!smokeDir || process.env.COA_SMOKE_SHOW) window.show(); });
+  // Opened by Windows at logon (--hidden): in the notification area when the player chose it, minimized otherwise.
+  const hidden = process.argv.includes('--hidden') && !smokeDir;
+  window.once('ready-to-show', () => { if (smokeDir && !process.env.COA_SMOKE_SHOW) return; if (!hidden) window.show(); else if (!settings.trayOnClose) { window.showInactive(); window.minimize(); } });
   window.on('close', event => {
     if (update.busy) {
       event.preventDefault();
@@ -1542,7 +1782,11 @@ async function main() {
     if (control?.states.size || bots?.child || upgradeState.running) {
       event.preventDefault();
       dialog.showMessageBox(window, { type: 'info', title: 'Server operation in progress', message: 'The server is starting, stopping or being updated. Please wait until it is done before closing.' });
+      return;
     }
+    if (closing || smokeDir) return;
+    event.preventDefault();
+    closeWithNotice().catch(() => { closing = true; window?.close(); });
   });
   window.on('closed', () => { window = null; });
   await window.loadURL(APP_URL);
@@ -1551,8 +1795,12 @@ async function main() {
     const found = serverControl();
     if (window && !window.isMinimized() && found) send('repack:services', await found.status().catch(() => []));
   }, 5000).unref();
-  app.on('before-quit', () => { control?.shutdownOnExit(); dashboard.stop(); if (dashboardWindow && !dashboardWindow.isDestroyed()) dashboardWindow.destroy(); });
+  app.on('before-quit', () => { closing = true; dashboard.stop(); if (dashboardWindow && !dashboardWindow.isDestroyed()) dashboardWindow.destroy(); });
   setTimeout(() => launcherUpdates.check(), 1500).unref();
+  if (config.edition === 'server' && !smokeDir) createTray().catch(() => {});
+  // The server watched every 20 seconds, window shown or not: ready, crash (and restart), the daily backup.
+  if (!smokeDir) setInterval(() => serverWatch?.().catch(() => {}), 20000).unref();
+  if (settings.startServerOnOpen && !smokeDir) setTimeout(() => serverStartOnOpen?.().catch(() => {}), 4000).unref();
   // A new launcher and the news are looked for every 30 minutes (two small signed files).
   setInterval(() => launcherUpdates.check(), 30 * 60 * 1000).unref();
   setTimeout(() => refreshFeed(), 3000).unref();
@@ -1564,7 +1812,7 @@ async function main() {
 
 if (!smokeDir && !app.requestSingleInstanceLock()) app.quit();
 else {
-  app.on('second-instance', () => { if (window?.isMinimized()) window.restore(); window?.focus(); });
+  app.on('second-instance', () => showWindow());
   app.whenReady().then(main).catch(error => { dialog.showErrorBox('The launcher could not start', error.message); app.quit(); });
   app.on('window-all-closed', () => app.quit());
 }

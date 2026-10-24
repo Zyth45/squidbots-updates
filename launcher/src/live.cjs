@@ -23,6 +23,8 @@ function raSettings(root) {
 const LINGER = 10 * 60 * 1000;
 const openOn = new Map();
 const raOpen = root => (openOn.get(root) || 0) > 0;
+// The remote console of a realm (same server, its own RA port) still busy with an earlier question.
+const raBusy = (root, port) => raOpen(port ? `${root}|${Number(port)}` : root);
 // portOverride: the RA port of another realm of the same server (same RA account, shared auth database).
 function raCommand(root, command, timeout = 15000, portOverride = 0) {
   const { port: own, user, password } = raSettings(root);
@@ -75,30 +77,33 @@ function worldPid(root) {
 }
 
 let lastCpu = null;
-function processStats(pid) {
+// tasklist (much lighter than starting PowerShell): memory in KB, CPU time in h:mm:ss with /V.
+function tasklistRow(pid, verbose) {
   return new Promise(resolve => {
-    const script = `$p = Get-Process -Id ${pid} -ErrorAction SilentlyContinue; if ($p) { '{0}|{1}' -f [int64]$p.TotalProcessorTime.TotalMilliseconds, $p.WorkingSet64 }`;
-    execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], { windowsHide: true, timeout: 8000 }, (error, out) => {
-      const [cpuMs, bytes] = String(out || '').trim().split('|').map(Number);
-      if (error || !Number.isFinite(bytes)) return resolve(null);
-      const now = Date.now();
-      let cpu = null;
-      if (lastCpu?.pid === pid && now > lastCpu.at) cpu = Math.max(0, Math.min(100, ((cpuMs - lastCpu.ms) / (now - lastCpu.at) / os.cpus().length) * 100));
-      lastCpu = { pid, ms: cpuMs, at: now };
-      resolve({ memory: bytes, cpu });
+    execFile('tasklist.exe', ['/FI', `PID eq ${Number(pid)}`, '/FO', 'CSV', '/NH', ...(verbose ? ['/V'] : [])], { windowsHide: true, timeout: 8000 }, (error, out) => {
+      const cells = (String(out || '').match(/"[^"]*"/g) || []).map(cell => cell.slice(1, -1));
+      if (error || Number(cells[1]) !== Number(pid)) return resolve(null);
+      const bytes = Number(String(cells[4] || '').replace(/\D/g, '')) * 1024;
+      const [h, m, s] = String(cells[7] || '').split(':').map(Number);
+      resolve({ bytes: bytes > 0 ? bytes : null, cpuMs: [h, m, s].every(Number.isFinite) ? ((h * 60 + m) * 60 + s) * 1000 : null });
     });
+  });
+}
+
+function processStats(pid) {
+  return tasklistRow(pid, true).then(row => {
+    if (!row?.bytes) return null;
+    const now = Date.now();
+    let cpu = null;
+    if (row.cpuMs !== null && lastCpu?.pid === pid && now > lastCpu.at) cpu = Math.max(0, Math.min(100, ((row.cpuMs - lastCpu.ms) / (now - lastCpu.at) / os.cpus().length) * 100));
+    if (row.cpuMs !== null) lastCpu = { pid, ms: row.cpuMs, at: now };
+    return { memory: row.bytes, cpu };
   });
 }
 
 // Memory of one process (the world of a realm), without touching the CPU reading of the CoA world.
 function processMemory(pid) {
-  return new Promise(resolve => {
-    const script = `$p = Get-Process -Id ${Number(pid)} -ErrorAction SilentlyContinue; if ($p) { $p.WorkingSet64 }`;
-    execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], { windowsHide: true, timeout: 8000 }, (error, out) => {
-      const bytes = Number(String(out || '').trim());
-      resolve(error || !Number.isFinite(bytes) || bytes <= 0 ? null : bytes);
-    });
-  });
+  return tasklistRow(pid, false).then(row => row?.bytes || null);
 }
 
 // The home page figures with the extra realms that run (list from realms.status, with .memory): players, bots and
@@ -165,4 +170,4 @@ function forceStopWorld(root) {
   }));
 }
 
-module.exports = { raCommand, parseInfo, stats, forceStopWorld, processMemory, withRealms };
+module.exports = { raBusy, raCommand, parseInfo, stats, forceStopWorld, processMemory, withRealms };

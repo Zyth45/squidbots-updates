@@ -1313,6 +1313,23 @@
       }
     },
     {
+      "key": "Battleground.StoreStatistics.Enable",
+      "file": "worldserver.conf",
+      "group": "dashboard",
+      "kind": "bool",
+      "when": "restart",
+      "label": {
+        "en": "Keep the battleground results",
+        "fr": "Garder les résultats des champs de bataille",
+        "ru": "Сохранять результаты полей боя"
+      },
+      "help": {
+        "en": "Each battleground is recorded (scores, winners): the PvP page of the dashboard shows them. Off, the PvP page stays empty.",
+        "fr": "Chaque champ de bataille est enregistré (scores, vainqueurs) : la page JcJ du dashboard les affiche. Désactivé, la page JcJ reste vide.",
+        "ru": "Каждое поле боя записывается (счёт, победители): их показывает страница PvP дашборда. Выключено — страница PvP пустая."
+      }
+    },
+    {
       "key": "Dynamic.XP.Preset",
       "file": "dynamicxp.conf",
       "group": "xp",
@@ -1739,6 +1756,23 @@
         "en": "Only when a bot is created: its level stays at most the highest player's + 3. It does not cap bots afterwards: with level brackets on, bots keep moving between level ranges.",
         "fr": "Seulement à la création d'un bot : son niveau reste au plus celui du joueur le plus haut + 3. Il ne bride pas les bots ensuite : avec les tranches de niveau, les bots continuent de changer de tranche.",
         "ru": "Только при создании бота: его уровень не выше самого высокого игрока + 3. Потом ботов не ограничивает: с диапазонами уровней боты продолжают переходить между ними."
+      }
+    },
+    {
+      "key": "AiPlayerbot.RandomBotXPRate",
+      "file": "playerbots.conf",
+      "group": "levels",
+      "kind": "float",
+      "when": "restart",
+      "label": {
+        "en": "Bots XP multiplier",
+        "fr": "Multiplicateur d'expérience des bots",
+        "ru": "Множитель опыта ботов"
+      },
+      "help": {
+        "en": "Applied on top of the realm XP rate (realm rate × this). With bots starting at level 1, raise it to 3 or 5 to see them level up in a few days rather than weeks. 1 = same as players.",
+        "fr": "S'applique par-dessus le taux d'XP du royaume (taux du royaume × celui-ci). Avec des bots qui partent du niveau 1, montez-le à 3 ou 5 pour les voir progresser en quelques jours plutôt qu'en semaines. 1 = comme les joueurs.",
+        "ru": "Применяется поверх множителя опыта мира (множитель мира × этот). Если боты начинают с 1 уровня, поставьте 3 или 5, чтобы они росли за дни, а не недели. 1 — как у игроков."
       }
     },
     {

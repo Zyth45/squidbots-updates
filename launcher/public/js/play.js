@@ -256,7 +256,7 @@ function showSettings() {
   const lang = code => `<option value="${code}" ${settings.language === code ? 'selected' : ''}>${{ fr: 'Français', en: 'English', ru: 'Русский' }[code]}</option>`;
   const check = (id, key, label) => `<label class="check"><input type="checkbox" id="${id}" data-setting="${key}" ${settings[key] ? 'checked' : ''}><span>${esc(label)}</span></label>`;
   const game = config.edition !== 'server';
-  dialog.open(`${dialog.header(t('settings.title', 'Settings'))}<div class="dialog-content settings">
+  dialog.open(`${dialog.header(game ? t('settings.title', 'Settings') : t('settings.launcherTitle', 'Launcher settings'))}<div class="dialog-content settings">
     ${game ? realmPicker() : ''}
     <div class="field"><span>${esc(t('settings.theme', 'Look'))}</span><select id="theme" data-setting="theme">${[['abyss', t('settings.themeAbyss', 'Abyss (deep water)')], ['classic', t('settings.themeClassic', 'Amber')]].map(([id, label]) => `<option value="${id}" ${settings.theme === id ? 'selected' : ''}>${esc(label)}</option>`).join('')}</select></div>
     ${config.hasTestChannel ? `<div class="field"><span>${esc(t('settings.channel', 'Versions'))}</span><select id="channel" data-setting="channel">${[['stable', t('settings.channelStable', 'Stable (recommended)')], ['test', t('settings.channelTest', 'Test (newest, may have bugs)')]].map(([id, label]) => `<option value="${id}" ${settings.channel === id ? 'selected' : ''}>${esc(label)}</option>`).join('')}</select><small>${esc(t('settings.channelHint', 'Test gets new server, bot and game versions first. Going back to Stable never installs an older version: you stay on the test one until Stable catches up.'))}</small></div>` : ''}
@@ -264,6 +264,12 @@ function showSettings() {
     ${game ? check('set-min', 'minimizeOnLaunch', t('settings.minimize', 'Minimize the launcher when the game starts')) : ''}
     ${check('set-motion', 'reduceMotion', t('settings.motion', 'Still background (no animation)'))}
     ${game ? check('set-addons', 'autoCheckAddons', t('settings.autoAddons', 'Look for addon updates at start')) : ''}
+    ${game ? '' : `<h3>${icon('layers')}${esc(t('settings.background', 'Background and server'))}</h3>
+    ${check('set-tray', 'trayOnClose', t('settings.tray', 'Closing the window keeps the launcher in the notification area (near the clock)'))}
+    <div class="check-with">${check('set-notes', 'notifications', t('settings.notifications', 'Windows notifications: new version, server ready, world crash'))}<button class="link-button" data-action="notify-test">${esc(t('settings.notifyTest', 'Test'))}</button></div>
+    ${check('set-login', 'startWithWindows', t('settings.startWithWindows', 'Open the launcher when Windows starts'))}
+    ${check('set-autostart', 'startServerOnOpen', t('settings.startServerOnOpen', 'Start the server when the launcher opens'))}
+    <label class="check"><input type="checkbox" id="set-closenote" data-setting="hideCloseNotice" data-invert="1" ${settings.hideCloseNotice ? '' : 'checked'}><span>${esc(t('settings.closeNotice', 'When closing, remind me that the server keeps running'))}</span></label>`}
     ${game ? `<h3>${icon('shield')}${esc(t('settings.care', 'Your game settings'))}</h3>
     <div class="button-row"><button class="button ghost small" data-action="wtf-backup">${esc(t('settings.wtfBackup', 'Back up my settings'))}</button><button class="button ghost small" data-action="wtf-restore">${esc(t('settings.wtfRestore', 'Restore…'))}</button><button class="button ghost small" data-action="clear-cache">${esc(t('settings.clearCache', 'Empty the cache'))}</button></div>
     <p class="muted small">${esc(t('settings.wtfHint', 'WTF holds your settings, key bindings, macros and the addons\' saved data. It is copied before every update and addon install (10 copies kept).'))}</p>
@@ -281,8 +287,9 @@ function showSettings() {
 
 document.addEventListener('change', event => {
   const key = event.target.dataset?.setting;
-  if (!key || !event.target.closest('#dialog')) return;
-  const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
+  // The launcher settings shown in a page (Services, Backups) are saved the same way.
+  if (!key || !(event.target.closest('#dialog') || event.target.dataset.pageSetting)) return;
+  const value = event.target.type === 'checkbox' ? (event.target.dataset.invert ? !event.target.checked : event.target.checked) : event.target.value;
   guard(async () => {
     App.state.settings = await App.api.saveSettings({ [key]: value });
     if (key === 'language') { await loadLocale(value); App.render(); showSettings(); }
@@ -364,3 +371,5 @@ Object.assign(App.actions, {
   discord: () => guard(() => App.api.openDiscord()),
   'realm-save': button => { const address = $('#custom-realm').value.trim(); if (address) saveRealm(address, button); },
 });
+
+App.actions['notify-test'] = button => guard(async () => { await App.api.notifyTest(); toast(t('settings.notifySent', 'Notification sent: it shows at the bottom right of the screen (unless Windows "Do not disturb" is on).')); }, button);

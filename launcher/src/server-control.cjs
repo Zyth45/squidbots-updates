@@ -88,7 +88,7 @@ class ServerControl {
       child.stderr.on('data', collect);
       for (const line of input) child.stdin.write(`${line}\r\n`);
       child.stdin.end();
-      const timer = setTimeout(() => { child.kill(); reject(new Error(`${command.exe} took too long.`)); }, command.timeout * 1000);
+      const timer = setTimeout(() => { exec('taskkill.exe', ['/PID', String(child.pid), '/T', '/F'], { windowsHide: true }).catch(() => child.kill()); reject(new Error(`${command.exe} took too long.`)); }, command.timeout * 1000);
       child.once('error', error => { clearTimeout(timer); reject(error); });
       child.once('exit', code => {
         clearTimeout(timer);
@@ -112,7 +112,7 @@ class ServerControl {
   // repacks use the same ports, so an answering port is not proof that this server is running.
   async portOwner(port) {
     if (process.platform !== 'win32') return null;
-    const { stdout } = await exec('netstat.exe', ['-ano', '-p', 'TCP'], { windowsHide: true, timeout: 10000 }).catch(() => ({ stdout: '' }));
+    const stdout = await listening();
     const line = stdout.split(/\r?\n/).find(row => new RegExp(`:${port}\\s+\\S+\\s+LISTENING\\s+\\d+`).test(row));
     const pid = Number(line?.trim().split(/\s+/).pop());
     if (!pid) return null;
@@ -164,9 +164,19 @@ class ServerControl {
 
   async emit() { this.notify(await this.status()); }
 
-  async start(id) {
+  // A second Start of a service already starting (double click, home page and a realm card) waits for the first one.
+  start(id) {
+    this.pending ||= new Map();
+    if (this.pending.has(id)) return this.pending.get(id);
+    const job = this.startOnce(id).finally(() => this.pending.delete(id));
+    this.pending.set(id, job);
+    return job;
+  }
+
+  async startOnce(id) {
     const service = this.services.find(item => item.id === id);
     if (!service) throw new Error('Unknown service.');
+    if (this.states.get(id) === 'stopping') throw new Error(`${service.name} is stopping: wait until it is stopped.`);
     if (await this.assertPortFree(service)) return;
     const start = this.startCommand(service);
     if (start) {
@@ -226,14 +236,8 @@ class ServerControl {
 
   // Finds the process listening on a port and returns it only if it lives in the repack folder.
   async ownedProcess(port) {
-    if (process.platform !== 'win32') return null;
-    const { stdout } = await exec('netstat.exe', ['-ano', '-p', 'TCP'], { windowsHide: true, timeout: 10000 });
-    const line = stdout.split(/\r?\n/).find(row => new RegExp(`:${port}\\s+\\S+\\s+LISTENING\\s+\\d+`).test(row));
-    const pid = Number(line?.trim().split(/\s+/).pop());
-    if (!pid) return null;
-    const { stdout: exePath } = await exec('powershell.exe', ['-NoProfile', '-Command', `(Get-Process -Id ${pid}).Path`], { windowsHide: true, timeout: 10000 });
-    const file = exePath.trim();
-    return file && path.resolve(file).toLowerCase().startsWith(this.root.toLowerCase() + path.sep) ? { pid, file } : null;
+    const owner = await this.portOwner(port);
+    return owner?.inside ? { pid: owner.pid, file: owner.file } : null;
   }
 
   async stop(id) {
@@ -321,9 +325,15 @@ class ServerControl {
     } finally { await handle.close(); }
   }
 
-  shutdownOnExit() {
-    for (const child of this.children.values()) child.stdin?.writable && child.stdin.write('server shutdown 1\r\n');
-  }
+}
+
+// netstat once for every question of the same tick (status() asks it for each running service).
+let netstatCache = { at: 0, job: null };
+function listening() {
+  if (process.platform !== 'win32') return Promise.resolve('');
+  if (netstatCache.job && Date.now() - netstatCache.at < 3000) return netstatCache.job;
+  netstatCache = { at: Date.now(), job: exec('netstat.exe', ['-ano', '-p', 'TCP'], { windowsHide: true, timeout: 10000 }).then(result => result.stdout).catch(() => '') };
+  return netstatCache.job;
 }
 
 module.exports = { ServerControl, validateServices, validateCommand, portOpen };

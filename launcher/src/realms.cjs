@@ -138,7 +138,7 @@ function imposed(key, saved) {
   const out = {};
   for (const [file, keys] of Object.entries(m.keys)) out[file] = { ...keys };
   // Its own world and console ports; SOAP and the bots' command server (8888) off: a realm never takes a port of CoA.
-  out['worldserver.conf'] = { ...out['worldserver.conf'], RealmID: String(saved?.id ?? m.id), WorldServerPort: String(saved?.worldPort ?? ''), 'Ra.Port': String(saved?.raPort ?? ''), 'SOAP.Enabled': '0' };
+  out['worldserver.conf'] = { ...out['worldserver.conf'], RealmID: String(saved?.id ?? m.id), WorldServerPort: String(saved?.worldPort ?? ''), 'Ra.Port': String(saved?.raPort ?? ''), 'Ra.IP': '127.0.0.1', 'SOAP.Enabled': '0' };
   // What a mode does not have (checked in the core 2.6): the rotation assistant only knows the CoA specializations;
   // Manastorm has rules for Wildcard but nothing for Reborn; the added races are not made for these class models.
   // The auction house bot works everywhere: it makes its seller in each realm's characters database (AHBOT account).
@@ -187,7 +187,7 @@ async function status(root, { live: withLive = true } = {}) {
     let bots = Number(own['playerbots.conf']?.[BOT_COUNT[1]]);
     if (!Number.isFinite(bots)) bots = Number(confValue(await fsp.readFile(path.join(BOTS_CONFIGS(root), 'modules', 'playerbots.conf'), 'utf8').catch(() => ''), BOT_COUNT[1])) || null;
     let info = null;
-    if (open && withLive) info = await live.raCommand(root, 'server info', 6000, p.raPort).then(live.parseInfo).catch(() => null);
+    if (open && withLive && !live.raBusy(root, p.raPort)) info = await live.raCommand(root, 'server info', 6000, p.raPort).then(live.parseInfo).catch(() => null);
     const queued = !open && !pid && !saved.disabled && queue.waiting.includes(key);
     list.push({
       key, id: saved.id, name: saved.name || m.name,

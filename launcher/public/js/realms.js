@@ -124,7 +124,7 @@ function realmCard(realm, busy) {
        <button class="link-button" data-action="realm-purge" data-key="${realm.key}" ${on || busy ? 'disabled' : ''} title="${esc(t('realms.purgeHint', 'Deletes the random bots of this realm only; they are made again at its next start.'))}">${icon('refresh')}${esc(t('realms.purge', 'New bots'))}</button>
        <button class="link-button" data-action="realm-disable" data-key="${realm.key}" ${busy ? 'disabled' : ''} title="${esc(t('realms.disableHint', 'Stops it and takes it out of the realm list; nothing is deleted.'))}">${icon('close')}${esc(t('realms.disable', 'Switch off'))}</button></span>`;
   return `<article class="realm-card realm-${realm.key}${on ? ' on' : ''}">${head}${stats}
-    <div class="realm-buttons">${startStop}<button class="button ghost small" data-action="realm-settings" data-key="${realm.key}">${icon('settings')}${esc(t('realms.settings', 'Settings'))}${realm.changed ? `<em class="count" title="${esc(t('realms.ownHint', 'Settings changed for this realm only'))}">${realm.changed}</em>` : ''}</button><button class="button ghost small" data-action="realm-console" data-key="${realm.key}" ${realm.state === 'running' ? '' : 'disabled'}>${icon('terminal')}${esc(t('realms.console', 'Console'))}</button></div>
+    <div class="realm-buttons">${startStop}<button class="button ghost small" data-action="realm-settings" data-key="${realm.key}">${icon('settings')}${esc(t('realms.settings', 'Settings'))}${realm.changed ? `<em class="count" title="${esc(t('realms.ownHint', 'Settings changed for this realm only'))}">${realm.changed}</em>` : ''}</button><button class="button ghost small" data-action="realm-console" data-key="${realm.key}" ${realm.state === 'running' ? '' : 'disabled'}>${icon('terminal')}${esc(t('realms.console', 'Console'))}</button>${App.state.dashboard?.available ? `<button class="button ghost small" data-action="realm-dashboard" data-key="${realm.key}">${icon('chart')}${esc(t('realms.dashboard', 'Dashboard'))}</button>` : ''}</div>
     <footer class="realm-more">${more}</footer>
   </article>`;
 }
@@ -223,6 +223,11 @@ Object.assign(App.actions, {
   }, button),
   'realm-settings': button => { App.state.confRealm = button.dataset.key; App.state.pending = {}; App.state.conf = null; App.state.srvTab = 'settings'; App.go('server'); loadConf(); },
   'realm-console': button => { App.state.consoleRealm = button.dataset.key; App.go('console'); },
+  // The bots dashboard on this realm: started first when it is not running yet.
+  'realm-dashboard': button => guard(async () => {
+    if (!App.state.dashboard?.running) App.state.dashboard = await App.api.startDashboard();
+    await App.api.openDashboard(button.dataset.key);
+  }, button),
   'conf-realm': button => {
     if (Object.keys(App.state.pending).length) { toast(t('realms.saveFirst', 'Save or discard your changes first.'), 'error'); return; }
     App.state.confRealm = button.dataset.key; App.state.conf = null; App.refresh('server'); loadConf();

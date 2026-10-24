@@ -18,14 +18,23 @@ const files = [];
 })(path.join(root, 'js'));
 
 const english = new Map();
-const pattern = /\bt\(\s*[`']([A-Za-z0-9_.${}]+)[`']\s*,\s*(?:'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)")/g;
+// Keys built at run time (t(`realms.${state}`, …)): every key under such a prefix counts as used.
+const built = new Set(['srv.step.', 'srv.tab.', 'err:', 'check.', 'verify.group.', 'verify.action.', 'update.step.', 'update.err.', 'update.changed.', 'race.']);
+const pattern = /\bt\(\s*[`']([A-Za-z0-9_.${}]+)[`']\s*,\s*(?:'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)"|`((?:[^`\\$]|\\.)*)`)/g;
+let everything = '';
 for (const file of files) {
   const source = fs.readFileSync(file, 'utf8');
+  everything += source;
   for (const match of source.matchAll(pattern)) {
-    if (match[1].includes('${')) continue;
-    english.set(match[1], (match[2] ?? match[3]).replace(/\\(['"])/g, '$1'));
+    if (match[1].includes('${')) { built.add(match[1].split('${')[0]); continue; }
+    english.set(match[1], (match[2] ?? match[3] ?? match[4]).replace(/\\(['"`])/g, '$1'));
   }
+  for (const match of source.matchAll(/\bt\(\s*`([A-Za-z0-9_.]+)\$\{/g)) built.add(match[1]);
 }
+// The main process names keys too (notices sent to the page with their key).
+for (const name of fs.readdirSync(path.join(root, '../src'))) if (name.endsWith('.cjs')) everything += fs.readFileSync(path.join(root, '../src', name), 'utf8');
+// A key written whole as a string elsewhere (a table of [key, English] pairs, a key passed to a helper) is used too.
+const quoted = key => everything.includes(`'${key}'`) || everything.includes(`"${key}"`) || everything.includes(`\`${key}\``);
 
 const args = process.argv.slice(2);
 if (args.includes('--english')) {
@@ -37,9 +46,7 @@ const only = args.find(arg => !arg.startsWith('--'));
 for (const lang of only ? [only] : locales) {
   const dict = JSON.parse(fs.readFileSync(path.join(root, 'locales', `${lang}.json`), 'utf8'));
   const missing = [...english.keys()].filter(key => !(key in dict)).sort();
-  // Keys built at run time (t(`ladder.board.${id}`)...) cannot be found in the source.
-  const dynamic = ['srv.step.', 'srv.tab.', 'err:', 'check.', 'verify.group.', 'verify.action.', 'update.step.', 'update.err.', 'update.changed.', 'race.'];
-  const unused = Object.keys(dict).filter(key => !english.has(key) && !dynamic.some(prefix => key.startsWith(prefix)));
+  const unused = Object.keys(dict).filter(key => !english.has(key) && ![...built].some(prefix => prefix && key.startsWith(prefix)) && !quoted(key));
   if (args.includes('--todo')) { console.log(JSON.stringify(Object.fromEntries(missing.map(key => [key, english.get(key)])), null, 2)); continue; }
   console.log(`${lang}: ${english.size - missing.length}/${english.size} translated${missing.length ? `, missing: ${missing.join(', ')}` : ''}${unused.length ? `\n    unknown keys: ${unused.join(', ')}` : ''}`);
 }

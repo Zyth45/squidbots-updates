@@ -151,6 +151,7 @@ const ACTIONS = {
   restart: ['srv-tab', 'services', 'Services'],
   backup: ['backup-create', '', 'Back up now'],
   'crashes-archive': ['crashes-archive', '', 'Put away'],
+  'logs-clean': ['logs-clean', '', 'Clean the logs'],
 };
 
 function checkText(check) {
@@ -252,7 +253,7 @@ function homeView() {
   if (!info.path) {
     const repack = s.feed?.repack;
     const first = repack
-      ? `<button class="split-button update" data-action="feed-open" data-kind="repack"><span class="split-main">${icon('download')}<span><strong>${esc(t('home.download', 'Download the server'))}</strong><small>${esc(repack.name || repack.release)}${repack.size ? ` · ${esc(repack.size)}` : ''}</small></span></span></button>`
+      ? `<button class="split-button update" data-action="feed-open" data-kind="repack"><span class="split-main">${icon('download')}<span><strong>${esc(t('home.download', 'Download the server'))}</strong><small>${esc(repack.name || repack.release)}${repack.size ? ` · ${esc(repack.size)}` : ''}</small><small class="muted">${esc(t('home.downloadThenUpdate', 'Base version: the launcher updates it to the latest one right after.'))}</small></span></span></button>`
       : `<button class="split-button ready" data-tab="server"><span class="split-main">${icon('download')}<span><strong>${esc(t('home.install', 'Install'))}</strong></span></span></button>`;
     return `<div class="page classic"><section class="hero classic-hero"><div class="classic-main"><h1>${esc(t('home.title', 'My server'))}</h1><p class="status-line">${esc(repack ? t('home.noServerFeed', 'No server yet: download the full CoA Bots repack (Proton), then import the zip here. The launcher checks it and unpacks it; after that, every update comes from here in one click.') : t('home.noServer', 'No server yet: install the CoA repack with its bots in a few clicks, or show the folder of the one you have.'))}</p>
       <div class="button-row">${first}</div>
@@ -302,7 +303,7 @@ function homeView() {
           <div class="split-menu" id="play-menu" hidden>${menu.map(([action, id, label]) => `<button data-action="${action}" ${id ? `data-id="${id}"` : ''}>${esc(label)}</button>`).join('')}</div>
         </div>
         ${playButton()}
-      </div>
+      </div>${App.state.addon?.clientOutdated ? `<p class="client-old">${icon('warning')}<span>${esc(t('home.clientOld', 'Your Ascension client is not up to date ({file} is missing or old): open the official Ascension launcher once to update it (Manastorm needs it).', { file: App.state.addon.clientOutdated }))}</span></p>` : ''}
         <span class="chip classic-folder" title="${esc(info.path)}">${icon('folder')}<span>${esc(info.path)}</span></span>
       </div>
       <aside class="classic-side">${updateCard()}${componentCards()}
@@ -334,7 +335,11 @@ function playButton() {
   return `<button class="play-game${client ? '' : ' unset'}" data-action="game-play" title="${esc(client ? t('home.playIn', 'Start the game: {path}', { path: client }) : t('home.playPick', 'Choose your game folder (the one with Ascension.exe), then play'))}">${icon('play')}<span>${esc(t('home.play', 'Play'))}</span></button>`;
 }
 App.actions['game-play'] = button => guard(async () => {
-  const result = await App.api.gamePlay();
+  const info = App.state.server;
+  const world = info?.services?.find(service => /world/i.test(service.id));
+  const startServer = !!info?.installed && !!world && world.state !== 'running' && !(info.realmsOn || []).length;
+  if (startServer) toast(t('home.playStarting', 'The server starts first; the game opens as soon as the world is ready (a few minutes).'));
+  const result = await App.api.gamePlay({ startServer });
   if (!result?.started) return;
   toast(t('home.playStarted', 'The game is starting.'), 'success');
   if (typeof refreshAddon === 'function') refreshAddon(true);
@@ -427,7 +432,7 @@ const SQL_QUICK = [
 ];
 function sqlView() {
   const q = App.state.sql;
-  const table = result => `<div class="sql-result"><code class="console-cmd">${esc(result.statement.slice(0, 160))}</code>${result.columns.length ? `<div class="sql-table-wrap"><table class="sql-table"><thead><tr>${result.columns.map(col => `<th>${esc(col)}</th>`).join('')}</tr></thead><tbody>${result.rows.map(row => `<tr>${row.map(cell => `<td class="${cell === null ? 'null' : ''}">${esc(cell === null ? 'NULL' : cell)}</td>`).join('')}</tr>`).join('')}</tbody></table></div><small class="muted">${esc(t('console.sqlRows', '{n} row(s)', { n: result.total }))}${result.total > result.rows.length ? ` · ${esc(t('console.sqlFirst', 'first {n} shown', { n: result.rows.length }))}` : ''}</small>` : `<small class="muted">${esc(t('console.sqlDone', 'Done (no rows returned).'))}</small>`}</div>`;
+  const table = result => `<div class="sql-result"><code class="console-cmd">${esc(result.statement.slice(0, 160))}</code>${result.columns.length ? `<div class="sql-table-wrap"><table class="sql-table"><thead><tr>${result.columns.map(col => `<th>${esc(col)}</th>`).join('')}</tr></thead><tbody>${result.rows.map(row => `<tr>${row.map(cell => `<td class="${cell === null ? 'null' : ''}">${esc(cell === null ? 'NULL' : cell)}</td>`).join('')}</tr>`).join('')}</tbody></table></div><small class="muted">${esc(t('console.sqlRows', '{n} row(s)', { n: result.total }))}${result.total > result.rows.length ? ` · ${esc(t('console.sqlFirst', 'first {n} shown', { n: result.rows.length }))}` : ''}</small>` : `<small class="muted">${esc(result.changed === null || result.changed === undefined ? t('console.sqlDone', 'Done (no rows returned).') : t('console.sqlChanged', 'Done: {n} row(s) changed.', { n: result.changed }))}</small>`}</div>`;
   const results = q.error ? `<pre class="bad">${esc(q.error)}</pre>` : q.results ? `${q.results.backup ? `<p class="muted small">${icon('database')}${esc(t('console.sqlBackup', 'A backup was made first: {name} (Management > Backups).', { name: q.results.backup }))}</p>` : ''}${q.results.results.map(table).join('')}<div class="button-row"><button class="button ghost small" data-action="sql-copy">${icon('copy')}${esc(t('console.sqlCopy', 'Copy the result'))}</button></div>` : `<p class="muted">${esc(t('console.sqlEmpty', 'Type a query, for example one the support sent you, then Run.'))}</p>`;
   return `<section class="panel console-panel sql-panel"><header><h2>${icon('database')}${esc(t('console.sqlTitle', 'SQL'))}</h2><div class="button-row">${SQL_QUICK.map(([key, label], index) => `<button class="button ghost small" data-action="sql-quick" data-index="${index}">${esc(t(key, label))}</button>`).join('')}</div></header>
     <p class="muted small">${esc(t('console.sqlHint', 'Queries on the databases of this server (acore_auth, acore_characters, acore_world, acore_playerbots). Reading only (SELECT, SHOW, DESCRIBE) unless you allow changes below. MySQL is started if needed.'))}</p>
@@ -443,7 +448,7 @@ function consoleView() {
   const realm = App.state.consoleRealm || 'coa';
   if (!App.state.realms && App.state.server?.path) loadRealms();
   return `<div class="page classic"><div class="srv-tabs-row console-row">${consoleTabs()}${realmPicker(realm, 'console-realm')}</div>${createdRealms().length > 1 ? realmBanner(realm, t('realms.consoleOn', 'The commands go to this realm only.')) : ''}<section class="panel console-panel">
-    <header><h2>${icon('terminal')}${esc(t('console.title', 'World console'))}</h2><div class="button-row">${CONSOLE_QUICK.map(command => `<button class="button ghost small" data-action="console-quick" data-command="${esc(command)}">${esc(command)}</button>`).join('')}</div></header>
+    <header><h2>${icon('terminal')}${esc(t('console.title', 'World console'))}</h2><div class="button-row">${CONSOLE_QUICK.map(command => `<button class="button ghost small" data-action="console-quick" data-command="${esc(command)}">${esc(command)}</button>`).join('')}<button class="button ghost small" data-action="chars-dialog">${icon('download')}${esc(t('chars.title', 'Export / import a character'))}</button></div></header>
     <p class="muted small">${esc(t('console.hint', 'The server commands, as in World_Console.bat (the worldserver must run). Up and down arrows bring back the last commands.'))}</p>
     <div class="console-log" id="console-log">${log || `<p class="muted">${esc(t('console.empty', 'Type a command below, for example server info.'))}</p>`}</div>
     <form class="console-form" id="console-form"><span>AC&gt;</span><input id="console-input" autocomplete="off" spellcheck="false" maxlength="500" placeholder="server info"><button class="button primary small" type="submit">${esc(t('console.send', 'Send'))}</button></form>
@@ -506,6 +511,29 @@ App.pages.console = {
   },
 };
 Object.assign(App.actions, { 'console-quick': button => consoleSend(button.dataset.command) });
+
+// One character to another PC or server: the world console writes it to a file (pdump), or reads one into an account.
+async function charsDialog() {
+  // The lists of the server (characters of the players, game accounts); typed by hand when MySQL cannot be read.
+  const list = await App.api.charsList().catch(() => null);
+  const pick = `<input id="chars-name" maxlength="24" list="chars-names" autocomplete="off" placeholder="${esc(t('chars.name', 'Character name'))}"><datalist id="chars-names">${(list?.characters || []).map(item => `<option value="${esc(item.name)}">${esc(t('chars.level', 'level {n}', { n: item.level }))} · ${esc(item.account)}</option>`).join('')}</datalist>`;
+  const account = `<input id="chars-account" maxlength="20" list="chars-accounts" autocomplete="off" placeholder="${esc(t('chars.account', 'Game account'))}"><datalist id="chars-accounts">${(list?.accounts || []).map(name => `<option value="${esc(name)}"></option>`).join('')}</datalist>`;
+  dialog.open(`${dialog.header(t('chars.title', 'Export / import a character'))}<div class="dialog-content">
+    <p class="muted small">${esc(t('chars.hint', 'The world must run. The file (.sql) goes to the Characters folder of the server: copy it to the other PC, then import it there into a game account.'))}</p>
+    <h3>${icon('download')}${esc(t('chars.export', 'Export'))}</h3>
+    <label class="chars-label">${esc(t('chars.which', 'The character to export'))}</label>
+    <div class="button-row">${pick}<button class="button primary small" data-action="chars-export">${esc(t('chars.exportButton', 'Export to a file'))}</button></div>
+    <h3>${icon('folder')}${esc(t('chars.import', 'Import'))}</h3>
+    <label class="chars-label">${esc(t('chars.into', 'The game account that receives it'))}</label>
+    <div class="button-row">${account}<button class="button primary small" data-action="chars-import">${esc(t('chars.importButton', 'Choose the file and import'))}</button></div>
+    <p class="muted small">${esc(t('chars.importHint', 'The account must exist (Game account card) and have a free character slot. A character of the same name gets a rename at its next login.'))}</p>
+  </div>`);
+}
+Object.assign(App.actions, {
+  'chars-dialog': button => guard(() => charsDialog(), button),
+  'chars-export': button => guard(async () => { const result = await App.api.charsExport($('#chars-name').value.trim()); toast(t('chars.exported', 'Character written: {file}', { file: result.file }), 'success'); }, button),
+  'chars-import': button => guard(async () => { const result = await App.api.charsImport($('#chars-account').value.trim()); if (result) toast(t('chars.imported', 'Character imported. Log in to see it.'), 'success'); }, button),
+});
 
 // The community server beside the news: who is online when its widget is public, and a join button.
 function discordPanel() {
@@ -597,6 +625,12 @@ Object.assign(App.actions, {
     App.render();
   }, button),
   // Settings > About: look for a new launcher now (the result also shows on the home page banner).
+  'logs-clean': button => guard(async () => {
+    if (!await confirmDialog({ title: t('verify.logsCleanTitle', 'Clean the logs?'), body: esc(t('verify.logsCleanBody', 'The old logs (.log.1 …) are deleted, and the big current ones too when the server is stopped. They only matter to look back at a past problem: send a support report first if you need them.')), confirm: t('verify.logsClean', 'Clean the logs') })) return;
+    const result = await App.api.cleanLogs();
+    toast(t('verify.logsCleaned', '{n} log file(s) deleted, {size} freed.', { n: result.deleted, size: formatBytes(result.freed) }) + (result.kept && result.worldOn ? ` ${t('verify.logsKept', 'Stop the server to clean the {n} big log(s) in use too.', { n: result.kept })}` : ''), 'success');
+    runVerify(false);
+  }, button),
   'crashes-archive': button => guard(async () => {
     const moved = await App.api.archiveCrashes();
     toast(t('verify.crashesArchived', '{n} crash file(s) put away in Crashes\\archive.', { n: moved }), 'success');

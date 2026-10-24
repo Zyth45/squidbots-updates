@@ -10,7 +10,7 @@ const THEMES = new Set(['classic', 'abyss']);
 const CHANNELS = new Set(['stable', 'test']);
 const defaults = Object.freeze({
   language: 'fr', theme: 'abyss', channel: 'stable', startPage: 'play', realmlist: '', minimizeOnLaunch: true, reduceMotion: false,
-  autoCheckAddons: true, betaUpdates: false, installPaths: {}, components: {}, instances: [], modules: { squidbots: true },
+  autoCheckAddons: true, betaUpdates: false, hideCloseNotice: false, trayOnClose: false, notifications: true, startWithWindows: false, startServerOnOpen: false, restartWorldOnCrash: false, dailyBackup: true, installPaths: {}, components: {}, instances: [], modules: { squidbots: true },
 });
 
 function sanitize(value) {
@@ -21,7 +21,7 @@ function sanitize(value) {
   if (THEMES.has(value.theme)) out.theme = value.theme;
   if (CHANNELS.has(value.channel)) out.channel = value.channel;
   if (typeof value.realmlist === 'string' && REALMLIST.test(value.realmlist)) out.realmlist = value.realmlist;
-  for (const key of ['minimizeOnLaunch', 'reduceMotion', 'autoCheckAddons', 'betaUpdates']) if (typeof value[key] === 'boolean') out[key] = value[key];
+  for (const key of ['minimizeOnLaunch', 'reduceMotion', 'autoCheckAddons', 'betaUpdates', 'hideCloseNotice', 'trayOnClose', 'notifications', 'startWithWindows', 'startServerOnOpen', 'restartWorldOnCrash', 'dailyBackup']) if (typeof value[key] === 'boolean') out[key] = value[key];
   if (value.installPaths && typeof value.installPaths === 'object') {
     for (const [area, folder] of Object.entries(value.installPaths)) if (/^[a-z]{1,20}$/.test(area) && typeof folder === 'string' && path.isAbsolute(folder)) out.installPaths[area] = path.normalize(folder);
   }

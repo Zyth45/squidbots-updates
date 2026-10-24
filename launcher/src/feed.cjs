@@ -45,6 +45,11 @@ function cleanFeed(data) {
       .map(item => ({ date: text(item?.date, 20), title: text(item?.title, 120), summary: text(item?.summary, 300), text: text(item?.text, 60000), url: url(item?.url) }))
       .filter(item => item.title),
     discord: cleanDiscord(data.discord),
+    // Files an up-to-date Ascension client has (Manastorm needs a recent one): one missing or different = client too old.
+    // Ascension.exe keeps 3.3.5.12340 whatever the update, so the game files are what tells.
+    clientRequires: (Array.isArray(data.clientRequires) ? data.clientRequires : []).slice(0, 20)
+      .filter(item => /^(Data|Interface)\/[\w.\/ -]{1,160}$/i.test(item?.file || '') && !String(item.file).split('/').includes('..'))
+      .map(item => ({ file: item.file, bytes: Number.isSafeInteger(item.bytes) && item.bytes > 0 ? item.bytes : 0, sha256: /^[0-9a-f]{64}$/i.test(item.sha256 || '') ? item.sha256.toLowerCase() : '' })),
     publishedAt: text(data.publishedAt, 40),
   };
 }

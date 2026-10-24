@@ -50,12 +50,19 @@ async function applyNetwork(root, wanted) {
     const text = await fs.readFile(file, 'utf8').catch(() => null);
     if (text === null) return;
     const next = change(text);
-    if (next !== text) { await fs.writeFile(file, next); changed.push(relative); }
+    if (next === text) return;
+    // Written beside, then renamed: a power cut never leaves half a manage.py or template.
+    const temp = `${file}.tmp-${process.pid}`;
+    await fs.writeFile(temp, next);
+    await fs.rename(temp, file);
+    changed.push(relative);
   };
   await edit('Scripts/manage.py', text => text.replace(/(UPDATE acore_auth\.realmlist SET name=')[^']*(',address=')[^']*(')/, (_m, a, b, c) => `${a}${network.name.replace(/'/g, '')}${b}${address}${c}`));
   for (const template of ['Settings/authserver.conf.template', 'Settings/worldserver.conf.template']) {
     await edit(template, text => text.replace(/^(\s*BindIP\s*=\s*)"[^"]*"/m, `$1"${open ? '0.0.0.0' : '127.0.0.1'}"`));
   }
+  // The remote console (RA, with the repack account) answers this PC only, even on an open server.
+  await edit('Settings/worldserver.conf.template', text => text.replace(/^(\s*Ra\.IP\s*=\s*)"[^"]*"/m, '$1"127.0.0.1"'));
   return changed;
 }
 
@@ -68,18 +75,17 @@ async function saveNetwork(root, value) {
   return { network, changed: await applyNetwork(root, network) };
 }
 
-// Windows Firewall: inbound rules for the login and world ports and for both worldservers. Needs the
+// Windows Firewall: one inbound rule for the login and world ports (the realms' too), never a whole program:
+// the remote console port stays closed. Needs the
 // administrator: Windows asks the player (UAC); nothing is done without that consent.
 function openFirewall(root, ports) {
   const name = `SquidBots ${path.basename(root)}`.replace(/[^\w .-]/g, '');
-  const programs = ['Core\\worldserver.exe', 'CoA-Bots\\Core\\worldserver.exe', 'Core\\authserver.exe'].map(relative => path.join(root, relative));
+  const list = [...new Set([ports.auth, ports.world, ...(ports.extra || [])].map(Number).filter(port => port > 0 && port < 65536))];
   const lines = [
     `netsh advfirewall firewall delete rule name="${name} ports" | Out-Null`,
-    `netsh advfirewall firewall add rule name="${name} ports" dir=in action=allow protocol=TCP localport=${Number(ports.auth)},${Number(ports.world)}`,
-    ...programs.flatMap((program, index) => [
-      `netsh advfirewall firewall delete rule name="${name} program ${index}" | Out-Null`,
-      `netsh advfirewall firewall add rule name="${name} program ${index}" dir=in action=allow program="${program}"`,
-    ]),
+    `netsh advfirewall firewall add rule name="${name} ports" dir=in action=allow protocol=TCP localport=${list.join(',')}`,
+    // The program rules of older launchers (every port of the worldservers) are removed.
+    ...[0, 1, 2].map(index => `netsh advfirewall firewall delete rule name="${name} program ${index}" | Out-Null`),
   ];
   // The commands go in a script file run elevated: no quoting through two shells.
   const script = path.join(os.tmpdir(), `squidbots-firewall-${process.pid}.ps1`);

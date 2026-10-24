@@ -47,7 +47,8 @@ function servicesView(info) {
       <button class="button ghost small" data-action="service-log" data-id="${esc(service.id)}">${esc(t('server.log', 'Log'))}</button>
       ${service.state === 'running' ? `<button class="button ghost small" data-action="service-stop" data-id="${esc(service.id)}">${esc(t('server.stop', 'Stop'))}</button>` : `<button class="button ghost small" data-action="service-start" data-id="${esc(service.id)}" ${info.installed && service.state === 'stopped' ? '' : 'disabled'}>${esc(t('server.start', 'Start'))}</button>`}</div>`;
   }).join('');
-  return `<div class="grid-2">
+  const restart = `<label class="check page-option"><input type="checkbox" data-setting="restartWorldOnCrash" data-page-setting="1" ${App.state.settings.restartWorldOnCrash ? 'checked' : ''}><span>${esc(t('settings.restartOnCrash', 'Start the world again after a crash (3 times an hour at most)'))}</span></label>`;
+  return `${restart}<div class="grid-2">
     <section class="panel" id="srv-services"><header><h2>${icon('layers')}${esc(t('server.services', 'Services'))}</h2><div class="button-row"><button class="button primary small" data-action="service-start-all" ${info.installed ? '' : 'disabled'}>${icon('play')}${esc(t('server.startAll', 'Start all'))}</button><button class="button ghost small" data-action="service-stop-all" ${any ? '' : 'disabled'}>${icon('pause')}${esc(t('server.stopAll', 'Stop all'))}</button></div></header>
       ${summary}<div class="service-list">${list}</div></section>
     <section class="panel"><header><h2>${icon('user')}${esc(t('server.account', 'Game account'))}</h2></header>
@@ -126,6 +127,7 @@ function backupsView() {
   return `${undo}<section class="panel"><header><h2>${icon('database')}${esc(t('backup.title', 'Database backups'))}</h2><div class="button-row"><button class="button ghost small" data-action="backup-folder">${icon('folder')}${esc(t('backup.folder', 'Folder'))}</button><button class="button primary small" data-action="backup-create">${icon('download')}${esc(t('backup.now', 'Back up now'))}</button></div></header>
     <p class="muted">${esc(t('backup.hint', 'Accounts, characters and bots, compressed, in the Backups folder of the server. One is also made before every restore and every new version.'))}</p>
     <label class="check"><input type="checkbox" id="backup-world"><span>${esc(t('backup.world', 'Also the world database (large, only if you changed it)'))}</span></label>
+    <label class="check"><input type="checkbox" data-setting="dailyBackup" data-page-setting="1" ${App.state.settings.dailyBackup ? 'checked' : ''}><span>${esc(t('settings.dailyBackup', 'One automatic backup a day while the server runs (the last 7 kept)'))}</span></label>
     ${task}
     ${backups.length ? `<div class="backup-list">${backups.map(item => `<div class="backup"><div><strong>${esc(formatDate(item.createdAt, true))}</strong><small>${esc(item.databases.map(name => name.replace('acore_', '')).join(', '))} · ${esc(formatBytes(item.size))}${item.reason === 'automatic' ? ` · ${esc(t('backup.auto', 'automatic'))}` : ''}${item.label ? ` · ${esc(item.label)}` : ''}</small></div><button class="button ghost small" data-action="backup-restore" data-name="${esc(item.name)}">${esc(t('common.restore', 'Restore'))}</button><button class="icon-button" data-action="backup-remove" data-name="${esc(item.name)}" title="${esc(t('common.remove', 'Remove'))}">${icon('close')}</button></div>`).join('')}</div>` : emptyState('database', t('backup.none', 'No backup yet'), t('backup.noneHint', 'Make one before changing anything important.'))}
   </section>`;
@@ -316,6 +318,44 @@ function modulesView() {
   <p class="modules-foot">${esc(t('modules.foot', 'SquidBots Server is open source.'))} <button class="link-button" data-action="source-link" data-id="launcher">${icon('external')}${esc(t('modules.source', 'Source code'))}</button></p>`;
 }
 
+// What the PC can carry: a world ≈ 4.5 GB plus 7 MB a bot (measured), Windows and the game ≈ 4 GB more.
+function ramAdvice(conf) {
+  const total = conf.memory?.totalMb;
+  if (!total) return '';
+  const gb = mb => (mb / 1024).toFixed(mb < 10240 ? 1 : 0);
+  const advised = Math.max(0, Math.min(3000, Math.floor((total - 4500 - 4000) / 7 / 50) * 50));
+  const set = Number(conf.settings.find(setting => setting.key === 'AiPlayerbot.MaxRandomBots')?.value);
+  const tooMany = Number.isFinite(set) && set > advised;
+  const details = `${t('conf.ramPc', 'This PC: {total} GB of memory ({free} GB free now). The server needs 8 GB at least, 16 GB advised.', { total: gb(total), free: gb(conf.memory.freeMb) })} ${advised ? t('conf.ramAdvice', 'Advised: up to {n} bots for the CoA world alone (a world takes about 4.5 GB plus 7 MB a bot; each extra realm takes 4.5 GB more).', { n: advised }) : t('conf.ramLow', 'This PC has little memory for a server with bots: keep the bots low (100 or fewer) and close other programs.')}`;
+  const line = advised ? t('conf.ramShort', 'This PC: {total} GB · up to {n} bots advised', { total: gb(total), n: advised }) : t('conf.ramShortLow', 'This PC: {total} GB · keep the bots low (100 or fewer)', { total: gb(total) });
+  return `<p class="ram-line${tooMany ? ' warn' : ''}" title="${esc(details)}">${icon(tooMany ? 'warning' : 'info')}<span>${esc(line)}</span>${tooMany ? `<strong>${esc(t('conf.ramTooMany', 'The {n} bots set now are more than this PC advises: the world may lag or stop.', { n: set }))}</strong>` : ''}</p>`;
+}
+
+// A bot keeps its level for life: the Fresh world settings only show on a world whose random bots are made again.
+function freshWorldRow(conf) {
+  const realm = conf.realm?.key || '';
+  const info = App.state.server || {};
+  if (!conf.recipes.some(recipe => recipe.id === 'fresh-level-1') || (!realm && !(info.bots?.installed && info.canPurgeBots))) return '';
+  return `<button class="link-button fresh-link" data-action="fresh-world" title="${esc(t('fresh.hint', 'Bots keep their level for life: on a world already full, the Fresh world settings change nothing you can see. This does it all: the settings, then every random bot made again at level 1.'))}">${icon('refresh')}${esc(t('fresh.link', 'Also remake the bots already there…'))}</button>`;
+}
+
+function freshWorldDialog(current) {
+  return new Promise(resolve => {
+    const rates = [...new Set(['1', '2', '3', '5', String(current || '1')])].sort((a, b) => Number(a) - Number(b));
+    dialog.open(`${dialog.header(t('fresh.title', 'Start from a fresh world'))}<div class="dialog-content">
+      <p>${esc(t('fresh.steps', 'The launcher saves the Fresh world settings (bots start at level 1, no level brackets), stops the server, deletes the random bots and starts the server again: they are made again at level 1. A few minutes.'))}</p>
+      <p class="bad"><strong>${esc(t('fresh.warning', 'Every character of the random bots is deleted, including bots in guilds.'))}</strong> ${esc(t('fresh.kept', 'Your own characters and your alts added as bots are not touched.'))}</p>
+      <label class="field"><span>${esc(t('fresh.xp', 'Bots XP multiplier'))}</span><select id="fresh-xp">${rates.map(rate => `<option value="${esc(rate)}" ${rate === String(current || '1') ? 'selected' : ''}>× ${esc(rate)}${rate === '3' ? ` (${esc(t('fresh.xpAdvised', 'advised'))})` : ''}</option>`).join('')}</select><small>${esc(t('fresh.xpHint', 'At × 1, 500 bots take weeks to leave the starting zones; × 3 or × 5 makes it a few days.'))}</small></label>
+    </div><footer class="dialog-foot"><button class="button ghost" data-choice="no">${esc(t('common.cancel', 'Cancel'))}</button><button class="button ghost" data-choice="settings">${esc(t('fresh.settingsOnly', 'Settings only'))}</button><button class="button danger" data-choice="yes">${icon('refresh')}${esc(t('fresh.go', 'Remake the world'))}</button></footer>`);
+    const element = $('#dialog');
+    const done = value => { element.removeEventListener('click', onClick); element.removeEventListener('close', onClose); dialog.close(); resolve(value); };
+    const onClick = event => { const choice = event.target.closest('[data-choice]')?.dataset.choice; if (choice) done(choice === 'no' ? null : { xp: $('#fresh-xp').value, settingsOnly: choice === 'settings' }); };
+    const onClose = () => { if (!element.open) done(null); };
+    element.addEventListener('click', onClick);
+    element.addEventListener('close', onClose, { once: true });
+  });
+}
+
 function settingsView() {
   const conf = App.state.conf;
   if (!conf) return skeleton(6);
@@ -336,8 +376,8 @@ function settingsView() {
   const changedIn = id => conf.settings.filter(setting => setting.group === id && App.state.pending[pendingKey(setting.file, setting.key)] !== undefined).length;
   const nav = `<nav class="conf-nav" id="conf-nav">${tabs.map(tab => `<button class="conf-tab${App.state.confGroup === tab.id ? ' active' : ''}" data-action="conf-group" data-id="${esc(tab.id)}">${icon(tab.icon)}<span>${esc(tab.label)}</span>${changedIn(tab.id) ? `<em>${changedIn(tab.id)}</em>` : ''}</button>`).join('')}</nav>`;
   const quick = conf.recipes.filter(recipe => ['coa-recommended', 'fresh-level-1'].includes(recipe.id));
-  const recipes = quick.length ? `<div class="recipes">${quick.map(recipe => `<button class="recipe" data-action="conf-recipe" data-id="${esc(recipe.id)}"><strong>${esc(loc(recipe.title))}</strong><small>${esc(loc(recipe.summary))}</small></button>`).join('')}</div>` : '';
-  const body = groups.filter(group => group.id === App.state.confGroup).map(group => `<section class="conf-group"><h3>${icon(group.icon)}${esc(loc(group.label))}</h3>${group.id === 'population' ? recipes : ''}${conf.settings.filter(setting => setting.group === group.id).map(setting => {
+  const recipes = quick.length ? `<div class="recipes">${quick.map(recipe => `<div class="recipe-cell"><button class="recipe" data-action="conf-recipe" data-id="${esc(recipe.id)}"><strong>${esc(loc(recipe.title))}</strong><small>${esc(loc(recipe.summary))}</small></button></div>`).join('')}</div>` : '';
+  const body = groups.filter(group => group.id === App.state.confGroup).map(group => `<section class="conf-group"><h3>${icon(group.icon)}${esc(loc(group.label))}</h3>${group.id === 'population' ? ramAdvice(conf) + recipes : ''}${conf.settings.filter(setting => setting.group === group.id).map(setting => {
     const warn = warnings(setting.key);
     const changed = App.state.pending[pendingKey(setting.file, setting.key)] !== undefined;
     return `<div class="conf-row${changed ? ' changed' : ''}${setting.origin ? ` from-${setting.origin}` : ''}"><div class="conf-label"><strong>${esc(loc(setting.label))}</strong>${originTag(setting)}<p>${esc(loc(setting.help))}</p><small class="when">${icon('refresh')}${esc(loc(conf.when?.[setting.when]))}</small><div class="conf-warn" data-warn="${esc(setting.key)}" ${warn.length ? '' : 'hidden'}>${icon('info')}<span>${esc(warn.join(' '))}</span></div></div><div class="conf-control">${control(setting)}</div></div>`;
@@ -395,7 +435,7 @@ App.pages.server = {
     if (!info.path && s.srvTab !== 'install') s.srvTab = 'install';
     const tabs = `<nav class="subtabs">${SRV_TABS.filter(([id]) => id !== 'settings' || info.path).map(([id, iconName, key, fallback]) => `<button class="subtab${s.srvTab === id ? ' active' : ''}" data-action="srv-tab" data-id="${id}" ${!info.path && id !== 'install' ? 'disabled' : ''}>${icon(iconName)}<span>${esc(t(key, fallback))}</span>${id === 'settings' && Object.keys(s.pending).length ? `<em>${Object.keys(s.pending).length}</em>` : ''}${id === 'settings' && isNew('settings') ? newDot() : ''}${(id === 'upgrade' && s.updates.core) || (id === 'install' && s.updates.bots) ? '<i class="dot"></i>' : ''}</button>`).join('')}</nav>`;
     const view = { services: servicesView, install: installView, backups: backupsView, upgrade: upgradeView, modules: modulesView, settings: settingsView }[s.srvTab];
-    return `<div class="page server"><div class="page-head"><div><span class="eyebrow">${esc(t('server.eyebrow', 'On this PC'))}</span><h1>${esc(t('server.title', 'Local server'))}</h1></div></div>${updateBanner()}<div class="srv-tabs-row">${tabs}${s.srvTab === 'settings' && info.path && App.state.conf && !App.state.conf.error ? realmPicker(App.state.conf.realm?.key || 'coa', 'conf-realm') : ''}</div><div class="srv-body">${view(info)}</div></div>`;
+    return `<div class="page server"><div class="page-head"><div><span class="eyebrow">${esc(t('server.eyebrow', 'On this PC'))}</span><h1>${esc(App.state.srvTab === 'settings' ? t('server.settingsTitle', 'Server settings') : t('server.title', 'Local server'))}</h1></div></div>${updateBanner()}<div class="srv-tabs-row">${tabs}${s.srvTab === 'settings' && info.path && App.state.conf && !App.state.conf.error ? realmPicker(App.state.conf.realm?.key || 'coa', 'conf-realm') : ''}</div><div class="srv-body">${view(info)}</div></div>`;
   },
   mount() { if (!App.state.server) loadServer(); },
 };
@@ -713,8 +753,39 @@ Object.assign(App.actions, {
     dialog.open(`${dialog.header(t('conf.history', 'History'), t('conf.historySub', 'A copy of each file is kept before every change'))}<div class="dialog-content">${list.length ? `<div class="history-list">${list.map(item => `<div class="history-row"><div><strong>${esc(when(item.id))}</strong><small>${esc(item.files.map(file => file.split('/').pop()).join(', '))}</small></div><button class="button ghost small" data-action="conf-restore" data-id="${esc(item.id)}">${esc(t('conf.putBack', 'Put back'))}</button></div>`).join('')}</div>` : emptyState('book', t('conf.noHistory', 'No change yet'), '')}</div>`, 'wide');
   }, button),
   'conf-restore': button => guard(async () => { await App.api.restoreServerSettings(button.dataset.id); dialog.close(); App.state.pending = {}; toast(t('conf.restored', 'Settings put back. They apply at the next start.'), 'success'); await loadConf(); }, button),
+  'fresh-world': button => guard(async () => {
+    const conf = App.state.conf;
+    const realm = confRealm();
+    const recipe = conf.recipes.find(item => item.id === 'fresh-level-1');
+    const xpSetting = conf.settings.find(item => item.key === 'AiPlayerbot.RandomBotXPRate');
+    const choice = await freshWorldDialog(xpSetting?.value);
+    if (!choice) return;
+    // The settings alone: prepared like any recipe, saved with Save (the bots already there keep their level).
+    if (choice.settingsOnly) { prepareRecipe({ ...recipe, changes: { ...recipe.changes, ...(xpSetting ? { 'AiPlayerbot.RandomBotXPRate': choice.xp } : {}) } }); return; }
+    // The settings first (with whatever else was being changed), then stop, remake the bots, start again.
+    const changes = { ...recipe.changes, ...(xpSetting ? { 'AiPlayerbot.RandomBotXPRate': choice.xp } : {}) };
+    for (const [key, value] of Object.entries(changes)) {
+      const setting = conf.settings.find(item => item.key === key);
+      if (setting) App.state.pending[pendingKey(setting.file, key)] = { file: setting.file, key, value, kind: setting.kind };
+    }
+    const release = holdDialog(t('fresh.running', 'Remaking the world'), t('fresh.runningBody', 'Settings saved, server stopped, random bots deleted, server started again: a few minutes. Keep the launcher open.'));
+    try {
+      await App.api.saveServerSettings(Object.values(App.state.pending), realm);
+      App.state.pending = {};
+      if (realm) { await App.api.realmsStop(realm).catch(() => {}); await App.api.realmsPurge(realm); await App.api.realmsStart(realm); }
+      else { App.state.server = await App.api.stopService('all'); await App.api.purgeBots(); App.state.server = await App.api.startService('all'); }
+    } finally { release(); await loadConf(); }
+    toast(t('fresh.done', 'Fresh world: the bots are being made again at level 1.'), 'success');
+  }, button),
   'conf-recipe': button => {
     const recipe = App.state.conf.recipes.find(item => item.id === button.dataset.id);
+    // Fresh world asks at once whether the bots already there are remade too (otherwise nothing shows in game).
+    if (recipe.id === 'fresh-level-1' && freshWorldRow(App.state.conf)) { App.actions['fresh-world'](button); return; }
+    prepareRecipe(recipe);
+  },
+});
+function prepareRecipe(recipe) {
+  {
     for (const [key, value] of Object.entries(recipe.changes)) {
       const setting = App.state.conf.settings.find(item => item.key === key);
       if (String(setting.value).trim() === value) delete App.state.pending[pendingKey(setting.file, key)];
@@ -722,8 +793,8 @@ Object.assign(App.actions, {
     }
     App.refresh('server');
     toast(t('conf.prepared', '"{name}" prepared: check the values, then save.', { name: loc(recipe.title) }));
-  },
-});
+  }
+}
 
 async function saveConf(restart) {
   const realm = confRealm();
